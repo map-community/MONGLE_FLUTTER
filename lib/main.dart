@@ -5,7 +5,7 @@ void main() {
   // TODO: 추후 Firebase, Naver Map 등 비동기 초기화 로직 추가 예정
 
   runApp(
-    // Riverpod를 앱 전체에서 사용하기 위해 ProviderScope로 감싸줍니다.
+    // Riverpod를 앱 전체에서 사용하기 위해 ProviderScope로 감싸줍니다..
     const ProviderScope(child: MyApp()),
   );
 }
