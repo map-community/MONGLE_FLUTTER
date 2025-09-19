@@ -5,7 +5,7 @@ part 'issue_grain.freezed.dart';
 part 'issue_grain.g.dart';
 
 @freezed
-class IssueGrain with _$IssueGrain {
+abstract class IssueGrain with _$IssueGrain {
   const factory IssueGrain({
     required String id,
     required Author author, // 작성자 정보 (User 모델과 결합)

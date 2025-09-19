@@ -4,7 +4,7 @@ part 'author.freezed.dart';
 part 'author.g.dart';
 
 @freezed
-class Author with _$Author {
+abstract class Author with _$Author {
   const factory Author({
     required String id,
     required String nickname,
