@@ -43,22 +43,23 @@ class _ImageCarouselState extends State<ImageCarousel> {
         ),
         const SizedBox(height: 8),
         // 4. 현재 페이지를 알려주는 인디케이터(점)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(widget.imageUrls.length, (index) {
-            return Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentPage == index
-                    ? Theme.of(context).primaryColor
-                    : Colors.grey.shade300,
-              ),
-            );
-          }),
-        ),
+        if (widget.imageUrls.length > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(widget.imageUrls.length, (index) {
+              return Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentPage == index
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey.shade300,
+                ),
+              );
+            }),
+          ),
       ],
     );
   }

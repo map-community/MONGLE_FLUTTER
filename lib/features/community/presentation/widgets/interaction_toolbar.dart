@@ -26,7 +26,7 @@ class InteractionToolbar extends ConsumerWidget {
             icon: Icons.thumb_up_outlined,
             count: grain.likeCount.toString(),
             onTap: () {
-              ref.read(issueGrainProvider(grain.id).notifier).like();
+              ref.read(issueGrainProvider(grain.postId).notifier).like();
             },
           ),
           const SizedBox(width: 8),
@@ -36,7 +36,7 @@ class InteractionToolbar extends ConsumerWidget {
             icon: Icons.thumb_down_outlined,
             count: grain.dislikeCount.toString(),
             onTap: () {
-              ref.read(issueGrainProvider(grain.id).notifier).dislike();
+              ref.read(issueGrainProvider(grain.postId).notifier).dislike();
             },
           ),
           const SizedBox(width: 8),

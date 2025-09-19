@@ -7,28 +7,32 @@ part of 'issue_grain.dart';
 // **************************************************************************
 
 _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
-  id: json['id'] as String,
+  postId: json['post_id'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
   content: json['content'] as String,
+  latitude: (json['latitude'] as num).toDouble(),
+  longitude: (json['longitude'] as num).toDouble(),
   photoUrls:
       (json['photoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  viewCount: (json['viewCount'] as num).toInt(),
-  likeCount: (json['likeCount'] as num).toInt(),
-  dislikeCount: (json['dislikeCount'] as num).toInt(),
-  commentCount: (json['commentCount'] as num).toInt(),
+  likeCount: (json['like_count'] as num).toInt(),
+  dislikeCount: (json['dislike_count'] as num).toInt(),
+  commentCount: (json['comment_count'] as num).toInt(),
+  viewCount: (json['view_count'] as num).toInt(),
+  createdAt: DateTime.parse(json['created_at'] as String),
 );
 
 Map<String, dynamic> _$IssueGrainToJson(_IssueGrain instance) =>
     <String, dynamic>{
-      'id': instance.id,
+      'post_id': instance.postId,
       'author': instance.author,
       'content': instance.content,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
       'photoUrls': instance.photoUrls,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'viewCount': instance.viewCount,
-      'likeCount': instance.likeCount,
-      'dislikeCount': instance.dislikeCount,
-      'commentCount': instance.commentCount,
+      'like_count': instance.likeCount,
+      'dislike_count': instance.dislikeCount,
+      'comment_count': instance.commentCount,
+      'view_count': instance.viewCount,
+      'created_at': instance.createdAt.toIso8601String(),
     };

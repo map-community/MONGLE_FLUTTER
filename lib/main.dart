@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/navigation/router.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
   // TODO: 추후 Firebase, Naver Map 등 비동기 초기화 로직 추가 예정
@@ -29,6 +30,8 @@ void main() async {
       }
     },
   );
+
+  timeago.setLocaleMessages('ko', timeago.KoMessages()); // 한글 메시지 설정
 
   runApp(
     // Riverpod를 앱 전체에서 사용하기 위해 ProviderScope로 감싸줍니다.

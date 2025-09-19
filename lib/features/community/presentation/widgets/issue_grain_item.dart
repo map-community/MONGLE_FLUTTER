@@ -6,6 +6,7 @@ import 'package:mongle_flutter/features/community/presentation/widgets/interacti
 import 'package:mongle_flutter/features/community/presentation/widgets/stats_and_comments.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class IssueGrainItem extends ConsumerWidget {
   final String postId;
@@ -48,9 +49,26 @@ class IssueGrainItem extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            grain.author.nickname,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          // 상단: 닉네임과 작성 시간
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                grain.author.nickname,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                // ⭐️ timeago.format() 함수로 DateTime을 '방금 전', '10분 전' 등으로 변환
+                                timeago.format(grain.createdAt, locale: 'ko'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Text(

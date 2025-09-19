@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Author {
 
- String get id; String get nickname; String get profileImageUrl;
+ String get id; String get nickname;@JsonKey(name: 'profile_image_url') String? get profileImageUrl;
 /// Create a copy of Author
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AuthorCopyWith<$Res>  {
   factory $AuthorCopyWith(Author value, $Res Function(Author) _then) = _$AuthorCopyWithImpl;
 @useResult
 $Res call({
- String id, String nickname, String profileImageUrl
+ String id, String nickname,@JsonKey(name: 'profile_image_url') String? profileImageUrl
 });
 
 
@@ -65,12 +65,12 @@ class _$AuthorCopyWithImpl<$Res>
 
 /// Create a copy of Author
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nickname = null,Object? profileImageUrl = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nickname = null,Object? profileImageUrl = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,nickname: null == nickname ? _self.nickname : nickname // ignore: cast_nullable_to_non_nullable
-as String,profileImageUrl: null == profileImageUrl ? _self.profileImageUrl : profileImageUrl // ignore: cast_nullable_to_non_nullable
-as String,
+as String,profileImageUrl: freezed == profileImageUrl ? _self.profileImageUrl : profileImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -155,7 +155,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nickname,  String profileImageUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nickname, @JsonKey(name: 'profile_image_url')  String? profileImageUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Author() when $default != null:
 return $default(_that.id,_that.nickname,_that.profileImageUrl);case _:
@@ -176,7 +176,7 @@ return $default(_that.id,_that.nickname,_that.profileImageUrl);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nickname,  String profileImageUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nickname, @JsonKey(name: 'profile_image_url')  String? profileImageUrl)  $default,) {final _that = this;
 switch (_that) {
 case _Author():
 return $default(_that.id,_that.nickname,_that.profileImageUrl);case _:
@@ -196,7 +196,7 @@ return $default(_that.id,_that.nickname,_that.profileImageUrl);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nickname,  String profileImageUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nickname, @JsonKey(name: 'profile_image_url')  String? profileImageUrl)?  $default,) {final _that = this;
 switch (_that) {
 case _Author() when $default != null:
 return $default(_that.id,_that.nickname,_that.profileImageUrl);case _:
@@ -211,12 +211,12 @@ return $default(_that.id,_that.nickname,_that.profileImageUrl);case _:
 @JsonSerializable()
 
 class _Author implements Author {
-  const _Author({required this.id, required this.nickname, required this.profileImageUrl});
+  const _Author({required this.id, required this.nickname, @JsonKey(name: 'profile_image_url') this.profileImageUrl});
   factory _Author.fromJson(Map<String, dynamic> json) => _$AuthorFromJson(json);
 
 @override final  String id;
 @override final  String nickname;
-@override final  String profileImageUrl;
+@override@JsonKey(name: 'profile_image_url') final  String? profileImageUrl;
 
 /// Create a copy of Author
 /// with the given fields replaced by the non-null parameter values.
@@ -251,7 +251,7 @@ abstract mixin class _$AuthorCopyWith<$Res> implements $AuthorCopyWith<$Res> {
   factory _$AuthorCopyWith(_Author value, $Res Function(_Author) _then) = __$AuthorCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String nickname, String profileImageUrl
+ String id, String nickname,@JsonKey(name: 'profile_image_url') String? profileImageUrl
 });
 
 
@@ -268,12 +268,12 @@ class __$AuthorCopyWithImpl<$Res>
 
 /// Create a copy of Author
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nickname = null,Object? profileImageUrl = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nickname = null,Object? profileImageUrl = freezed,}) {
   return _then(_Author(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,nickname: null == nickname ? _self.nickname : nickname // ignore: cast_nullable_to_non_nullable
-as String,profileImageUrl: null == profileImageUrl ? _self.profileImageUrl : profileImageUrl // ignore: cast_nullable_to_non_nullable
-as String,
+as String,profileImageUrl: freezed == profileImageUrl ? _self.profileImageUrl : profileImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

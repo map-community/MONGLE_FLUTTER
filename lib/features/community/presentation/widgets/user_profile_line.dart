@@ -16,14 +16,18 @@ class UserProfileLine extends StatelessWidget {
       children: [
         // 1. 프로필 이미지
         CircleAvatar(
-          radius: profileRadius,
-          // 이미지가 없을 경우 기본 아이콘 표시
-          backgroundImage: profileImageUrl != null
-              ? NetworkImage(profileImageUrl!)
-              : null,
-          child: profileImageUrl == null
-              ? Icon(Icons.person, size: profileRadius)
-              : null,
+          radius: profileRadius, // 전체 반지름
+          backgroundColor: Colors.grey.shade300, // 얇은 회색 테두리 색상
+          // 2. 안쪽 원 (실제 프로필 이미지)
+          child: CircleAvatar(
+            radius: profileRadius - 1.5, // 테두리 두께(1.5px)를 뺀 반지름
+            backgroundColor: Colors.grey.shade200,
+            backgroundImage:
+                (profileImageUrl != null && profileImageUrl!.isNotEmpty)
+                ? NetworkImage(profileImageUrl!)
+                : const AssetImage('assets/images/default_profile.png')
+                      as ImageProvider,
+          ),
         ),
         // 2. 프로필 이미지와 카드 하단을 잇는 수직선
         Expanded(
