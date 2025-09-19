@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
@@ -68,16 +69,8 @@ class MapScreen extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   children: [
                     _buildHandle(),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Card(
-                        child: ListTile(
-                          title: Text('선택된 알갱이 정보'),
-                          subtitle: Text('ID: $selectedId'),
-                          leading: Icon(Icons.ac_unit, color: Colors.blue),
-                        ),
-                      ),
-                    ),
+                    // 기존 Card 위젯 대신, IssueGrainItem을 사용합니다.
+                    IssueGrainItem(postId: selectedId),
                   ],
                 );
               }
