@@ -8,9 +8,12 @@ final mapSheetStrategyProvider =
       (ref) => MapSheetStrategy(ref),
     );
 
-/// 사용자가 지도에서 선택한 마커(장소)의 ID를 관리하는 Provider입니다.
-/// 이 상태가 바뀌면, 바텀시트의 내용이나 지도의 마커 모양 등이 바뀔 수 있습니다.
-/// 초기에는 아무것도 선택되지 않았으므로 null 입니다.
-final selectedMarkerIdProvider = StateProvider.autoDispose<String?>(
+/// 선택된 '이슈 알갱이'의 ID만 관리하는 Provider
+final selectedGrainIdProvider = StateProvider.autoDispose<String?>(
+  (ref) => null,
+);
+
+/// 선택된 '구름'의 ID만 관리하는 Provider
+final selectedCloudIdProvider = StateProvider.autoDispose<String?>(
   (ref) => null,
 );

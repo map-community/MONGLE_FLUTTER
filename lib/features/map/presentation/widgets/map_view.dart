@@ -1,11 +1,13 @@
+// lib/features/map/presentation/widgets/map_view.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/manager/map_overlay_manager.dart';
-import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/marker_factory.dart';
 
+// ConsumerStatefulWidget으로 위젯의 생명주기와 ref를 모두 사용합니다.
 class MapView extends ConsumerStatefulWidget {
   final NLatLng initialPosition;
   final double bottomPadding;
@@ -21,15 +23,27 @@ class MapView extends ConsumerStatefulWidget {
 }
 
 class _MapViewState extends ConsumerState<MapView> {
+  NaverMapController? _mapController;
   MapOverlayManager? _overlayManager;
+  final MarkerFactory _markerFactory = MarkerFactory();
 
   @override
   Widget build(BuildContext context) {
-    // 데이터가 변경되면, 매니저에게 마커 업데이트를 지시
-    ref.listen(issueGrainsInCloudProvider('any_cloud_id'), (previous, next) {
-      if (next is AsyncData) {
-        _overlayManager?.updateMarkers(next.value!);
-      }
+    // ref.listen을 사용하여 ViewModel의 상태 변화를 감지하고 오버레이를 업데이트합니다.
+    ref.listen<MapState>(mapViewModelProvider, (previous, next) {
+      // ViewModel의 상태가 'data'로 변경될 때만 오버레이를 업데이트합니다.
+      next.whenOrNull(
+        data: (_, mapObjects) {
+          // [디버깅 로그 3] ViewModel의 데이터가 View로 전달되었는지 확인
+          print(
+            "✅ [MapView] ref.listen: ViewModel 데이터 수신. Objects: ${mapObjects != null}",
+          );
+
+          if (_overlayManager != null && mapObjects != null) {
+            _overlayManager!.updateOverlays(mapObjects);
+          }
+        },
+      );
     });
 
     return NaverMap(
@@ -42,25 +56,34 @@ class _MapViewState extends ConsumerState<MapView> {
         contentPadding: EdgeInsets.only(bottom: widget.bottomPadding),
       ),
       onMapReady: (controller) {
-        // 지도가 준비되면, 매니저와 주방장을 고용
+        print("✅ [MapView] onMapReady: 지도 컨트롤러 준비 완료.");
+        _mapController = controller;
         _overlayManager = MapOverlayManager(
           controller: controller,
           ref: ref,
-          markerFactory: MarkerFactory(), // 실제로는 Provider로 주입하는 것이 더 좋음
+          markerFactory: _markerFactory,
           context: context,
         );
 
-        // 최초 데이터로 마커를 그리도록 지시
-        final initialAsyncData = ref.read(
-          issueGrainsInCloudProvider('any_cloud_id'),
-        );
-        if (initialAsyncData is AsyncData) {
-          _overlayManager?.updateMarkers(initialAsyncData.value!);
-        }
+        // 지도가 준비된 직후, 초기 데이터를 불러오도록 요청합니다.
+        // WidgetsBinding.instance.addPostFrameCallback을 사용하여
+        // build가 완료된 후 안전하게 상태를 변경합니다.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onCameraIdle();
+        });
       },
-      onMapTapped: (point, latLng) {
-        ref.read(mapSheetStrategyProvider.notifier).minimize();
-      },
+      onCameraIdle: onCameraIdle, // 카메라 이동이 멈추면 데이터 요청
     );
+  }
+
+  /// 카메라 이동이 멈췄을 때 호출되는 공통 함수
+  void onCameraIdle() async {
+    if (_mapController == null) return;
+
+    // [디버깅 로그 1] 데이터 요청이 시작되는지 확인
+    print("➡️ [MapView] onCameraIdle: 데이터 요청 시작.");
+
+    final bounds = await _mapController!.getContentBounds();
+    ref.read(mapViewModelProvider.notifier).fetchMapObjects(bounds);
   }
 }

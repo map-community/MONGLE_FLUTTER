@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
+import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
@@ -26,8 +27,7 @@ class MapScreen extends ConsumerWidget {
           mapState.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (message) => Center(child: Text(message)),
-            data: (initialPosition) {
-              // 4. 바텀시트 높이에 따라 계산된 실제 패딩 값을 MapView에 전달
+            data: (initialPosition, mapObjects) {
               return MapView(
                 initialPosition: initialPosition,
                 bottomPadding: screenHeight * sheetHeight,
@@ -43,34 +43,54 @@ class MapScreen extends ConsumerWidget {
             // 5. 3가지 높이에 모두 달라붙도록 snapSizes 설정
             snapSizes: const [peekFraction, grainPreviewFraction, fullFraction],
             builder: (context, scrollController) {
-              // 6. 선택된 마커 ID를 구독하여 UI 분기 처리
-              final selectedId = ref.watch(selectedMarkerIdProvider);
+              // 1. 현재 선택된 오버레이의 고유 ID를 구독합니다.
+              final selectedGrainId = ref.watch(selectedGrainIdProvider);
+              final selectedCloudId = ref.watch(selectedCloudIdProvider);
 
-              // 선택된 마커가 없을 때 (기본 목록 뷰)
-              if (selectedId == null) {
+              // 1. 선택된 알갱이 ID가 있다면 (알갱이를 탭했다면)
+              if (selectedGrainId != null) {
                 return ListView(
                   controller: scrollController,
                   padding: EdgeInsets.zero,
                   children: [
                     _buildHandle(),
-                    const ListTile(title: Text("주변 이슈 목록 1 (구름)")),
-                    const ListTile(title: Text("주변 이슈 목록 2 (구름)")),
-                    ...List.generate(
-                      20,
-                      (index) => ListTile(title: Text("더 보기 ${index + 1}")),
-                    ),
+                    IssueGrainItem(postId: selectedGrainId),
                   ],
                 );
               }
-              // 선택된 마커가 있을 때 ('알갱이' 미리보기 뷰)
+              // 2. 선택된 구름 ID가 있다면 (구름을 탭했다면)
+              else if (selectedCloudId != null) {
+                final postsInCloudAsync = ref.watch(
+                  issueGrainsInCloudProvider(selectedCloudId),
+                );
+
+                return postsInCloudAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (err, stack) =>
+                      Center(child: Text('게시물을 불러올 수 없습니다: $err')),
+                  data: (posts) {
+                    return ListView.builder(
+                      controller: scrollController,
+                      padding: EdgeInsets.zero,
+                      itemCount: posts.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) return _buildHandle();
+                        final post = posts[index - 1];
+                        return IssueGrainItem(postId: post.postId);
+                      },
+                    );
+                  },
+                );
+              }
+              // 3. 아무것도 선택되지 않았다면 기본 UI를 보여줍니다.
               else {
                 return ListView(
                   controller: scrollController,
                   padding: EdgeInsets.zero,
                   children: [
                     _buildHandle(),
-                    // 기존 Card 위젯 대신, IssueGrainItem을 사용합니다.
-                    IssueGrainItem(postId: selectedId),
+                    const ListTile(title: Text("주변 이슈 목록 (구름)")),
                   ],
                 );
               }
