@@ -14,7 +14,7 @@ const _author4 = Author(
 final List<IssueGrain> mockIssueGrains = [
   IssueGrain(
     // ⭐️ id -> postId로 필드명 변경
-    postId: 'grain1',
+    postId: 'grain_101',
     author: const Author(
       id: 'user1',
       nickname: '익명의 몽글러1',
@@ -36,7 +36,7 @@ final List<IssueGrain> mockIssueGrains = [
     commentCount: 5,
   ),
   IssueGrain(
-    postId: 'grain2',
+    postId: 'grain_102',
     author: const Author(
       id: 'user2',
       nickname: '센팍 지박령',
@@ -52,7 +52,7 @@ final List<IssueGrain> mockIssueGrains = [
     commentCount: 3,
   ),
   IssueGrain(
-    postId: 'grain3',
+    postId: 'grain_103',
     author: const Author(
       id: 'user3',
       nickname: '북문 매니아',
@@ -69,7 +69,7 @@ final List<IssueGrain> mockIssueGrains = [
     commentCount: 12,
   ),
   IssueGrain(
-    postId: 'grain4',
+    postId: 'grain_104',
     author: _author4, // 프로필 사진 없는 유저
     content: '글로벌 라운지 지금 문 열었나요?',
     latitude: 35.8918,
@@ -81,7 +81,7 @@ final List<IssueGrain> mockIssueGrains = [
     commentCount: 1,
   ),
   IssueGrain(
-    postId: 'grain5',
+    postId: 'grain_105',
     author: const Author(
       id: 'user5',
       nickname: '공대생',
