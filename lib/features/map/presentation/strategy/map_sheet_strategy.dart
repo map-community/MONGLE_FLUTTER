@@ -27,11 +27,16 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
   }
 
   /// '이슈 구름' 스레드 전체를 표시할 때 호출됩니다.
-  void showCloudThread(String cloudId) {
-    // 구름 Provider에 ID를 설정하고, 알갱이 Provider는 null로 초기화합니다.
+  Future<void> showCloudThread(String cloudId) async {
+    // 2. 높이 변경을 먼저 실행하여 애니메이션을 즉시 시작
+    state = const MapSheetState(height: fullFraction);
+
+    // 3. 애니메이션이 시작될 수 있도록 아주 짧은 지연을 줌
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    // 4. 지연 후 ID를 변경하여 데이터 로딩 시작
     _ref.read(selectedCloudIdProvider.notifier).state = cloudId;
     _ref.read(selectedGrainIdProvider.notifier).state = null;
-    state = const MapSheetState(height: fullFraction);
   }
 
   /// 사용자가 지도를 탐색할 때 호출됩니다.
