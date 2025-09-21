@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 
 class ImageCarousel extends StatefulWidget {
   final List<String> imageUrls;
-  const ImageCarousel({super.key, required this.imageUrls});
+  // 이 위젯이 미리보기 모드인지 여부를 외부에서 전달받습니다.
+  final bool isPreview;
+  const ImageCarousel({
+    super.key,
+    required this.imageUrls,
+    this.isPreview = false,
+  });
 
   @override
   State<ImageCarousel> createState() => _ImageCarouselState();
@@ -14,11 +20,14 @@ class _ImageCarouselState extends State<ImageCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    // isPreview 값에 따라 이미지의 종횡비를 내부에서 직접 결정합니다.
+    final double imageAspectRatio = widget.isPreview ? (21 / 9) : (16 / 9);
+
     return Column(
       children: [
         // 2. 이미지를 좌우로 넘길 수 있는 PageView
         AspectRatio(
-          aspectRatio: 16 / 9, // 이미지 비율
+          aspectRatio: imageAspectRatio, // 이미지 비율
           child: PageView.builder(
             itemCount: widget.imageUrls.length,
             // 3. 페이지가 바뀔 때마다 _currentPage 변수의 값을 업데이트

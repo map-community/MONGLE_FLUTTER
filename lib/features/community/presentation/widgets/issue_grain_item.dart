@@ -10,7 +10,15 @@ import 'package:timeago/timeago.dart' as timeago;
 
 class IssueGrainItem extends ConsumerWidget {
   final String postId;
-  const IssueGrainItem({super.key, required this.postId});
+  // 이 위젯이 미리보기 모드로 렌더링되어야 하는지 결정하는 플래그입니다.
+  // 기본값은 false로 설정하여, 이 위젯이 다른 곳에서 사용될 때 문제가 없도록 합니다.
+  final bool isPreview;
+
+  const IssueGrainItem({
+    super.key,
+    required this.postId,
+    this.isPreview = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,6 +36,8 @@ class IssueGrainItem extends ConsumerWidget {
         child: Center(child: Text('데이터를 불러오는 데 실패했습니다: $e')),
       ),
       data: (grain) {
+        final int? maxLines = isPreview ? 5 : null; // 미리보기일 때 5줄 제한
+
         return Column(
           children: [
             Padding(
@@ -35,8 +45,7 @@ class IssueGrainItem extends ConsumerWidget {
               // ⭐️ 1. IntrinsicHeight로 Row를 감싸줍니다.
               child: IntrinsicHeight(
                 child: Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.stretch, // ⭐️ 2. 다시 stretch로 변경
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SizedBox(
                       width: 40,
@@ -74,10 +83,30 @@ class IssueGrainItem extends ConsumerWidget {
                           Text(
                             grain.content,
                             style: const TextStyle(height: 1.5),
+                            maxLines: maxLines, // 동적으로 최대 라인 수 적용
+                            overflow: TextOverflow.ellipsis, // 글자가 넘치면 ...으로 표시
                           ),
+
+                          // 미리보기 상태이고 글자가 잘렸을 경우 "더보기" 표시
+                          if (isPreview &&
+                              (grain.content.split('\n').length > 5))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                '...더보기',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ),
+
+                          // 이미지 캐러셀
                           if (grain.photoUrls.isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            ImageCarousel(imageUrls: grain.photoUrls),
+                            // 외부에서 AspectRatio로 감싸 크기를 강제하던 코드를 삭제하고,
+                            // isPreview 상태만 직접 전달하여 ImageCarousel이 스스로 크기를 결정하도록 합니다.
+                            ImageCarousel(
+                              imageUrls: grain.photoUrls,
+                              isPreview: isPreview,
+                            ),
                           ],
                           InteractionToolbar(grain: grain),
                         ],
