@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/map/presentation/manager/map_overlay_manager.dart';
+import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/marker_factory.dart';
 
@@ -73,6 +74,22 @@ class _MapViewState extends ConsumerState<MapView> {
         });
       },
       onCameraIdle: onCameraIdle, // 카메라 이동이 멈추면 데이터 요청
+      // 1. 사용자가 지도를 탭했을 때 호출됩니다.
+      onMapTapped: (point, latLng) {
+        // '지도에 상호작용이 발생했다'는 신호를 보냅니다.
+        // 이 신호를 받은 Strategy는 자신을 최소화하는 동작을 수행합니다.
+        ref.read(mapSheetStrategyProvider.notifier).minimize();
+      },
+
+      // 2. 사용자가 지도를 드래그하거나 줌 하는 등 카메라가 움직일 때 호출됩니다.
+      onCameraChange: (reason, animated) {
+        // 카메라가 움직인 '이유(reason)'가 사용자의 '제스처'일 때만
+        // 바텀시트를 최소화합니다.
+        // (프로그램 코드로 카메라가 움직일 때는 최소화되지 않도록 방지)
+        if (reason == NCameraUpdateReason.gesture) {
+          ref.read(mapSheetStrategyProvider.notifier).minimize();
+        }
+      },
     );
   }
 
