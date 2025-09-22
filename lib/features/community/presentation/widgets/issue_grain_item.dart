@@ -96,12 +96,14 @@ class IssueGrainItem extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
+        // ▼▼▼ 텍스트 표시 부분을 위로 이동
+        Text(grain.content, style: const TextStyle(height: 1.6, fontSize: 15)),
+        const SizedBox(height: 16),
+        // ▼▼▼ 이미지 표시 부분을 아래로 이동
         if (grain.photoUrls.isNotEmpty) ...[
           ImageCarousel(imageUrls: grain.photoUrls, isPreview: false),
           const SizedBox(height: 16),
         ],
-        Text(grain.content, style: const TextStyle(height: 1.6, fontSize: 15)),
-        const SizedBox(height: 16),
         InteractionToolbar(grain: grain),
       ],
     );
