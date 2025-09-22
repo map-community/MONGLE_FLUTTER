@@ -53,11 +53,9 @@ class IssueGrainItem extends ConsumerWidget {
 
   // [신규] 미리보기 또는 목록 아이템을 위한 레이아웃
   Widget _buildPreviewLayout(BuildContext context, IssueGrain grain) {
-    // 1. 가장 바깥 위젯을 Row에서 Column으로 변경합니다.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 2. '전체 보기'에서 사용하는 프로필+작성자 Row를 그대로 가져옵니다.
         Row(
           children: [
             UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
@@ -65,18 +63,38 @@ class IssueGrainItem extends ConsumerWidget {
             Expanded(child: _buildAuthorRow(grain)),
           ],
         ),
-        const SizedBox(height: 8),
-        // 3. 나머지 콘텐츠는 Column 아래에 순서대로 배치합니다.
+        const SizedBox(height: 16),
+
         Text(
           grain.content,
           style: const TextStyle(height: 1.5, fontSize: 15),
           maxLines: 5, // 미리보기는 5줄 제한
           overflow: TextOverflow.ellipsis,
         ),
-        if (grain.photoUrls.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ImageCarousel(imageUrls: grain.photoUrls, isPreview: true),
-        ],
+
+        if (grain.photoUrls.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.photo_library_outlined,
+                  size: 16,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '사진 ${grain.photoUrls.length}장 보기',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         InteractionToolbar(grain: grain),
       ],
     );
@@ -96,13 +114,12 @@ class IssueGrainItem extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        // ▼▼▼ 텍스트 표시 부분을 위로 이동
+
         Text(grain.content, style: const TextStyle(height: 1.6, fontSize: 15)),
 
-        // ▼▼▼ 이미지 표시 부분을 아래로 이동
         if (grain.photoUrls.isNotEmpty) ...[
+          const SizedBox(height: 16),
           ImageCarousel(imageUrls: grain.photoUrls, isPreview: false),
-          const SizedBox(height: 12),
         ],
         InteractionToolbar(grain: grain),
       ],
