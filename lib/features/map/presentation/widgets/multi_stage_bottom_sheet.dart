@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/base_bottom_sheet_strategy.dart';
+import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_state.dart';
+import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 
 class MultiStageBottomSheet extends ConsumerStatefulWidget {
   /// 이 시트를 제어할 Strategy의 Provider입니다.
-  final AutoDisposeStateNotifierProvider<BaseBottomSheetStrategy, double>
+  final AutoDisposeStateNotifierProvider<MapSheetStrategy, MapSheetState>
   strategyProvider;
 
   /// 시트 내부에 실제로 그려질 내용을 만드는 빌더 함수입니다.
@@ -45,24 +47,24 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
     // --- 1. Strategy -> UI 로의 데이터 흐름 ---
     // Strategy의 상태(높이)가 코드에 의해 변경될 때(e.g., 마커 탭),
     // 시트의 높이를 애니메이션으로 부드럽게 조절합니다.
-    ref.listen<double>(widget.strategyProvider, (previous, next) {
-      if ((_scrollController.size - next).abs() < 0.001) return;
+    ref.listen<MapSheetState>(widget.strategyProvider, (previous, next) {
+      // 상태 객체 안의 height 값을 사용합니다.
+      if ((_scrollController.size - next.height).abs() < 0.01) return;
       if (_scrollController.isAttached) {
         _scrollController.animateTo(
-          next,
+          next.height,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
         );
       }
     });
 
-    // --- 2. UI -> Strategy 로의 데이터 흐름 ---
-    // 사용자가 직접 시트를 드래그하여 스크롤이 멈추면,
-    // 현재 높이를 Strategy에 보고하여 상태를 동기화합니다.
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollEndNotification) {
           final currentFraction = _scrollController.size;
+          // [수정] syncHeightFromUI는 이제 Strategy에 의해 직접 관리됩니다.
+          //    BaseBottomSheetStrategy를 수정해야 합니다. (다음 단계에서 진행)
           ref
               .read(widget.strategyProvider.notifier)
               .syncHeightFromUI(currentFraction);
@@ -71,7 +73,7 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
       },
       child: DraggableScrollableSheet(
         controller: _scrollController,
-        initialChildSize: ref.read(widget.strategyProvider),
+        initialChildSize: ref.read(widget.strategyProvider).height,
         minChildSize: widget.minSnapSize,
         maxChildSize: widget.maxSnapSize,
         snap: true,

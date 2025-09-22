@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/map/presentation/manager/map_overlay_manager.dart';
+import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/marker_factory.dart';
 
@@ -73,6 +75,27 @@ class _MapViewState extends ConsumerState<MapView> {
         });
       },
       onCameraIdle: onCameraIdle, // 카메라 이동이 멈추면 데이터 요청
+      // 1. 사용자가 지도를 탭했을 때 호출됩니다.
+      onMapTapped: (point, latLng) {
+        // '지도에 상호작용이 발생했다'는 신호를 보냅니다.
+        // 이 신호를 받은 Strategy는 자신을 최소화하는 동작을 수행합니다.
+        ref.read(mapSheetStrategyProvider.notifier).minimize();
+      },
+
+      // 2. 사용자가 지도를 드래그하거나 줌 하는 등 카메라가 움직일 때 호출됩니다.
+      onCameraChange: (reason, animated) {
+        // 카메라가 사용자의 제스처로 인해 움직였을 때,
+        if (reason == NCameraUpdateReason.gesture) {
+          // [핵심] 현재 바텀시트의 높이를 읽어옵니다.
+          final currentSheetHeight = ref.read(mapSheetStrategyProvider).height;
+
+          // [핵심] 바텀시트가 최소 높이(peekFraction)보다 높을 때만 minimize()를 호출합니다.
+          // 이렇게 하면 불필요한 중복 호출을 완벽하게 막을 수 있습니다.
+          if (currentSheetHeight > peekFraction) {
+            ref.read(mapSheetStrategyProvider.notifier).minimize();
+          }
+        }
+      },
     );
   }
 

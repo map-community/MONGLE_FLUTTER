@@ -67,29 +67,13 @@ class MapOverlayManager {
         outlineWidth: 2,
       );
 
-      final marker = NMarker(
-        id: cloud.placeId,
-        position: NLatLng(cloud.centerLatitude, cloud.centerLongitude),
-        icon: NOverlayImage.fromAssetImage('assets/images/transparent_1x1.png'),
-        caption: NOverlayCaption(
-          text: cloud.name,
-          color: Colors.blue.shade900,
-          textSize: 16,
-        ),
-      );
-
-      // 폴리곤과 마커 모두에 탭 리스너 추가
+      // 폴리곤에 탭 리스너 추가
       polygon.setOnTapListener(
-        (_) =>
-            _handleTap(type: TappedObjectType.staticCloud, id: cloud.placeId),
-      );
-      marker.setOnTapListener(
         (_) =>
             _handleTap(type: TappedObjectType.staticCloud, id: cloud.placeId),
       );
 
       overlaysToAdd.add(polygon);
-      overlaysToAdd.add(marker); // 수정된 마커를 추가
     }
 
     // 6. 동적 클라우드(dynamicClouds)를 NPolygonOverlay로 변환하여 Set에 추가합니다.
