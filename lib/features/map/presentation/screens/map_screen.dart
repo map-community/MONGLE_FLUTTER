@@ -104,7 +104,10 @@ class MapScreen extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         if (index == 0) return _buildHandle();
                         final post = posts[index - 1];
-                        return IssueGrainItem(postId: post.postId);
+                        return IssueGrainItem(
+                          postId: post.postId,
+                          isPreview: true,
+                        );
                       },
                     );
                   },

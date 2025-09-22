@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 
 class InteractionToolbar extends ConsumerWidget {
   final IssueGrain grain;
@@ -46,7 +47,10 @@ class InteractionToolbar extends ConsumerWidget {
             icon: Icons.comment_outlined,
             count: grain.commentCount.toString(),
             onTap: () {
-              // TODO: 댓글 화면으로 이동
+              // ref를 사용해 MapSheetStrategy의 showGrainDetail 함수를 호출합니다.
+              ref
+                  .read(mapSheetStrategyProvider.notifier)
+                  .showGrainDetail(grain.postId);
             },
           ),
           // 5. Spacer: 남은 공간을 모두 차지하여 공유 버튼을 오른쪽 끝으로 밀어냄

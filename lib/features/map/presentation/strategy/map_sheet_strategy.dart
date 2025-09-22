@@ -39,6 +39,17 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
     _ref.read(selectedGrainIdProvider.notifier).state = null;
   }
 
+  /// 특정 '이슈 알갱이'의 상세 내용을 전체 화면으로 표시할 때 호출됩니다.
+  Future<void> showGrainDetail(String grainId) async {
+    // 1. 시트 높이를 먼저 전체 화면으로 변경하여 애니메이션을 시작합니다.
+    state = const MapSheetState(height: fullFraction);
+    // 2. 애니메이션과 콘텐츠 로딩이 겹치지 않도록 짧은 지연을 줍니다.
+    await Future.delayed(const Duration(milliseconds: 50));
+    // 3. 선택된 알갱이 ID를 설정하고, 구름 ID는 초기화합니다.
+    _ref.read(selectedGrainIdProvider.notifier).state = grainId;
+    _ref.read(selectedCloudIdProvider.notifier).state = null;
+  }
+
   /// 사용자가 지도를 탐색할 때 호출됩니다.
   void minimize() {
     state = const MapSheetState(height: peekFraction);
