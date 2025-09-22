@@ -69,7 +69,7 @@ class IssueGrainItem extends ConsumerWidget {
         // 3. 나머지 콘텐츠는 Column 아래에 순서대로 배치합니다.
         Text(
           grain.content,
-          style: const TextStyle(height: 1.5),
+          style: const TextStyle(height: 1.5, fontSize: 15),
           maxLines: 5, // 미리보기는 5줄 제한
           overflow: TextOverflow.ellipsis,
         ),
@@ -98,11 +98,11 @@ class IssueGrainItem extends ConsumerWidget {
         const SizedBox(height: 16),
         // ▼▼▼ 텍스트 표시 부분을 위로 이동
         Text(grain.content, style: const TextStyle(height: 1.6, fontSize: 15)),
-        const SizedBox(height: 16),
+
         // ▼▼▼ 이미지 표시 부분을 아래로 이동
         if (grain.photoUrls.isNotEmpty) ...[
           ImageCarousel(imageUrls: grain.photoUrls, isPreview: false),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
         InteractionToolbar(grain: grain),
       ],
