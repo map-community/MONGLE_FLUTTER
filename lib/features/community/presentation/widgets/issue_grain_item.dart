@@ -53,31 +53,31 @@ class IssueGrainItem extends ConsumerWidget {
 
   // [신규] 미리보기 또는 목록 아이템을 위한 레이아웃
   Widget _buildPreviewLayout(BuildContext context, IssueGrain grain) {
-    return Row(
+    // 1. 가장 바깥 위젯을 Row에서 Column으로 변경합니다.
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildAuthorRow(grain),
-              const SizedBox(height: 8),
-              Text(
-                grain.content,
-                style: const TextStyle(height: 1.5),
-                maxLines: 5, // 미리보기는 5줄 제한
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (grain.photoUrls.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                ImageCarousel(imageUrls: grain.photoUrls, isPreview: true),
-              ],
-              InteractionToolbar(grain: grain),
-            ],
-          ),
+        // 2. '전체 보기'에서 사용하는 프로필+작성자 Row를 그대로 가져옵니다.
+        Row(
+          children: [
+            UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
+            const SizedBox(width: 8),
+            Expanded(child: _buildAuthorRow(grain)),
+          ],
         ),
+        const SizedBox(height: 8),
+        // 3. 나머지 콘텐츠는 Column 아래에 순서대로 배치합니다.
+        Text(
+          grain.content,
+          style: const TextStyle(height: 1.5),
+          maxLines: 5, // 미리보기는 5줄 제한
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (grain.photoUrls.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ImageCarousel(imageUrls: grain.photoUrls, isPreview: true),
+        ],
+        InteractionToolbar(grain: grain),
       ],
     );
   }
