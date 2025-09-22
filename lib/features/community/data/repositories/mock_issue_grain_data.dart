@@ -87,7 +87,8 @@ final List<IssueGrain> mockIssueGrains = [
       nickname: '공대생',
       profileImageUrl: 'https://i.pravatar.cc/150?u=user5',
     ),
-    content: '공대 9호관 1층에 택배 맡길 곳 있나요? 잠깐만 맡아주실 분..ㅠㅠ',
+    content:
+        '공대 9호관 1층에 택배 맡길 곳 있나요? 잠깐만 맡아주실 분공대 9호관 1층에 택배 맡길 곳 있나요? 잠깐만 맡아주실 분공대 9호관 1층에 택배 맡길 곳 있나요? 잠깐만 맡아주실 분공대 9호관 1층에 택배 맡길 곳 있나요? 잠깐만 맡아주실 분공대 9호관 1층에 택배 맡길 곳 있나요? 잠깐만 맡아주실 분',
     latitude: 35.8872,
     longitude: 128.6088,
     createdAt: DateTime.now().subtract(const Duration(minutes: 45)),

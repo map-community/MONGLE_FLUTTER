@@ -9,6 +9,12 @@ import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmode
 import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/multi_stage_bottom_sheet.dart';
 
+const double kHandleVerticalMargin = 12.0;
+const double kHandleHeight = 5.0;
+const double kTotalHandleAreaHeight =
+    (kHandleVerticalMargin * 2) + kHandleHeight; // 29.0
+const double kBottomSheetBottomPadding = 16.0;
+
 class MapScreen extends ConsumerWidget {
   const MapScreen({super.key});
 
@@ -68,7 +74,7 @@ class MapScreen extends ConsumerWidget {
                       postId: selectedGrainId,
                       isPreview: isPreview,
                       onMeasured: (measuredFraction) {
-                        // [수정] 콜백이 호출되면 로컬 변수가 아닌 Provider의 상태를 업데이트합니다.
+                        // 콜백이 호출되면 로컬 변수가 아닌 Provider의 상태를 업데이트합니다.
                         ref.read(grainPreviewFractionProvider.notifier).state =
                             measuredFraction;
                         ref
@@ -128,9 +134,9 @@ class MapScreen extends ConsumerWidget {
   Widget _buildHandle() {
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12.0),
+        margin: const EdgeInsets.symmetric(vertical: kHandleVerticalMargin),
         width: 40,
-        height: 5,
+        height: kHandleHeight,
         decoration: BoxDecoration(
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(10),
@@ -167,7 +173,8 @@ class _MeasuredIssueGrainItemState
     if (context != null && context.size != null) {
       final screenHeight = MediaQuery.of(context).size.height;
       final pixelHeight = context.size!.height;
-      final totalSheetHeight = pixelHeight + 29.0 + 16.0;
+      final totalSheetHeight =
+          pixelHeight + kTotalHandleAreaHeight + kBottomSheetBottomPadding;
 
       if (totalSheetHeight > 0) {
         final calculatedFraction = totalSheetHeight / screenHeight;

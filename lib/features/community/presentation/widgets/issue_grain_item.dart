@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/action_toolbar.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/image_carousel.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/interaction_toolbar.dart';
@@ -10,116 +11,117 @@ import 'package:timeago/timeago.dart' as timeago;
 
 class IssueGrainItem extends ConsumerWidget {
   final String postId;
-  // 이 위젯이 미리보기 모드로 렌더링되어야 하는지 결정하는 플래그입니다.
-  // 기본값은 false로 설정하여, 이 위젯이 다른 곳에서 사용될 때 문제가 없도록 합니다.
   final bool isPreview;
+  final VoidCallback? onTap;
 
   const IssueGrainItem({
     super.key,
     required this.postId,
     this.isPreview = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. postId에 해당하는 '알갱이' 데이터의 상태를 구독(watch)합니다.
     final grainAsync = ref.watch(issueGrainProvider(postId));
 
-    // 2. AsyncValue의 when을 사용해 로딩, 에러, 데이터 상태에 따라 다른 UI를 보여줍니다.
     return grainAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(16.0),
+      loading: () => const SizedBox(
+        height: 150, // 로딩 중 고정 높이를 주어 깜빡임 방지
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, stack) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(child: Text('데이터를 불러오는 데 실패했습니다: $e')),
-      ),
+      error: (e, stack) => Center(child: Text('오류: $e')),
       data: (grain) {
-        final int? maxLines = isPreview ? 5 : null; // 미리보기일 때 5줄 제한
-
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              // ⭐️ 1. IntrinsicHeight로 Row를 감싸줍니다.
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 40,
-                      child: UserProfileLine(
-                        profileImageUrl: grain.author.profileImageUrl,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 상단: 닉네임과 작성 시간
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                grain.author.nickname,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                // ⭐️ timeago.format() 함수로 DateTime을 '방금 전', '10분 전' 등으로 변환
-                                timeago.format(grain.createdAt, locale: 'ko'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            grain.content,
-                            style: const TextStyle(height: 1.5),
-                            maxLines: maxLines, // 동적으로 최대 라인 수 적용
-                            overflow: TextOverflow.ellipsis, // 글자가 넘치면 ...으로 표시
-                          ),
-
-                          // 미리보기 상태이고 글자가 잘렸을 경우 "더보기" 표시
-                          if (isPreview &&
-                              (grain.content.split('\n').length > 5))
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                '...더보기',
-                                style: TextStyle(color: Colors.grey.shade600),
-                              ),
-                            ),
-
-                          // 이미지 캐러셀
-                          if (grain.photoUrls.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            // 외부에서 AspectRatio로 감싸 크기를 강제하던 코드를 삭제하고,
-                            // isPreview 상태만 직접 전달하여 ImageCarousel이 스스로 크기를 결정하도록 합니다.
-                            ImageCarousel(
-                              imageUrls: grain.photoUrls,
-                              isPreview: isPreview,
-                            ),
-                          ],
-                          InteractionToolbar(grain: grain),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+        // [수정] isPreview 상태에 따라 다른 build 메서드를 호출
+        return InkWell(
+          onTap: onTap,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: isPreview
+                    ? _buildPreviewLayout(context, grain)
+                    : _buildFullLayout(context, grain),
               ),
-            ),
-            Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
-          ],
+              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  // [신규] 미리보기 또는 목록 아이템을 위한 레이아웃
+  Widget _buildPreviewLayout(BuildContext context, IssueGrain grain) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAuthorRow(grain),
+              const SizedBox(height: 8),
+              Text(
+                grain.content,
+                style: const TextStyle(height: 1.5),
+                maxLines: 5, // 미리보기는 5줄 제한
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (grain.photoUrls.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ImageCarousel(imageUrls: grain.photoUrls, isPreview: true),
+              ],
+              InteractionToolbar(grain: grain),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // [신규] 전체보기를 위한 레이아웃
+  Widget _buildFullLayout(BuildContext context, IssueGrain grain) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 전체보기에서는 프로필 정보가 콘텐츠 상단에 위치
+        Row(
+          children: [
+            UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
+            const SizedBox(width: 8),
+            Expanded(child: _buildAuthorRow(grain)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (grain.photoUrls.isNotEmpty) ...[
+          ImageCarousel(imageUrls: grain.photoUrls, isPreview: false),
+          const SizedBox(height: 16),
+        ],
+        Text(grain.content, style: const TextStyle(height: 1.6, fontSize: 15)),
+        const SizedBox(height: 16),
+        InteractionToolbar(grain: grain),
+      ],
+    );
+  }
+
+  // [신규] 중복 코드를 제거하기 위한 작성자 정보 위젯
+  Widget _buildAuthorRow(IssueGrain grain) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          grain.author.nickname,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          timeago.format(grain.createdAt, locale: 'ko'),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+      ],
     );
   }
 }
