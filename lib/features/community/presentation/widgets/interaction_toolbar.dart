@@ -6,7 +6,9 @@ import 'package:mongle_flutter/features/map/presentation/providers/map_interacti
 
 class InteractionToolbar extends ConsumerWidget {
   final IssueGrain grain;
-  const InteractionToolbar({super.key, required this.grain});
+  final VoidCallback? onTap;
+
+  const InteractionToolbar({super.key, required this.grain, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,12 +48,7 @@ class InteractionToolbar extends ConsumerWidget {
             context,
             icon: Icons.comment_outlined,
             count: grain.commentCount.toString(),
-            onTap: () {
-              // ref를 사용해 MapSheetStrategy의 showGrainDetail 함수를 호출합니다.
-              ref
-                  .read(mapSheetStrategyProvider.notifier)
-                  .showGrainDetail(grain.postId);
-            },
+            onTap: onTap,
           ),
           // 5. Spacer: 남은 공간을 모두 차지하여 공유 버튼을 오른쪽 끝으로 밀어냄
           const Spacer(),

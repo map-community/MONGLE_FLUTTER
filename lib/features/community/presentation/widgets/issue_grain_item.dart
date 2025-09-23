@@ -169,7 +169,7 @@ class IssueGrainItem extends ConsumerWidget {
             ),
           ),
 
-        InteractionToolbar(grain: grain),
+        InteractionToolbar(grain: grain, onTap: onTap),
       ],
     );
   }
@@ -192,7 +192,7 @@ class IssueGrainItem extends ConsumerWidget {
           const SizedBox(height: 16),
           ImageCarousel(imageUrls: grain.photoUrls),
         ],
-        InteractionToolbar(grain: grain),
+        InteractionToolbar(grain: grain, onTap: onTap),
       ],
     );
   }

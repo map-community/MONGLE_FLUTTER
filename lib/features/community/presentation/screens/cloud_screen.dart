@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 
@@ -44,8 +45,8 @@ class CloudScreen extends ConsumerWidget {
                 postId: post.postId,
                 displayMode: IssueGrainDisplayMode.boardPreview,
                 onTap: () {
-                  // TODO: 여기서 알갱이 상세 보기(바텀시트)를 띄우는 로직을 연결할 수 있습니다.
-                  // 지금은 비워둡니다.
+                  //    URL 경로를 동적으로 생성하여 전달합니다.
+                  context.push('/map/cloud/$cloudId/grain/${post.postId}');
                 },
               );
             },
