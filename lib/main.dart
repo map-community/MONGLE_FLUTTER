@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:mongle_flutter/core/navigation/router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
+  // WidgetsBinding을 변수에 저장하여 재사용할 수 있도록 합니다.
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  //  네이티브 스플래시 스크린을 앱 초기화 전까지 유지하도록 설정합니다.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   // TODO: 추후 Firebase, Naver Map 등 비동기 초기화 로직 추가 예정
   // 1. runApp() 전에 Flutter 엔진과 위젯 바인딩이 준비되도록 보장합니다.
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +37,8 @@ void main() async {
   );
 
   timeago.setLocaleMessages('ko', timeago.KoMessages()); // 한글 메시지 설정
-
+  // 모든 초기화가 끝난 후, runApp을 호출하기 직전에 스플래시 스크린을 제거합니다.
+  FlutterNativeSplash.remove();
   runApp(
     // Riverpod를 앱 전체에서 사용하기 위해 ProviderScope로 감싸줍니다.
     const ProviderScope(child: MyApp()),
