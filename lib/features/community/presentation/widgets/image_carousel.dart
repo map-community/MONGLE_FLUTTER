@@ -1,75 +1,107 @@
 import 'package:flutter/material.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/full_screen_photo_view.dart';
 
-class ImageCarousel extends StatefulWidget {
+class ImageCarousel extends StatelessWidget {
   final List<String> imageUrls;
-  // 이 위젯이 미리보기 모드인지 여부를 외부에서 전달받습니다.
-  final bool isPreview;
-  const ImageCarousel({
-    super.key,
-    required this.imageUrls,
-    this.isPreview = false,
-  });
 
-  @override
-  State<ImageCarousel> createState() => _ImageCarouselState();
-}
-
-class _ImageCarouselState extends State<ImageCarousel> {
-  // 1. 현재 보고 있는 페이지 번호를 기억할 변수
-  int _currentPage = 0;
+  const ImageCarousel({super.key, required this.imageUrls});
 
   @override
   Widget build(BuildContext context) {
-    // isPreview 값에 따라 이미지의 종횡비를 내부에서 직접 결정합니다.
-    final double imageAspectRatio = widget.isPreview ? (21 / 9) : (16 / 9);
+    // 여러 장일 때만 사용할 높이 변수
+    const double carouselHeight = 150.0;
 
-    return Column(
-      children: [
-        // 2. 이미지를 좌우로 넘길 수 있는 PageView
-        AspectRatio(
-          aspectRatio: imageAspectRatio, // 이미지 비율
-          child: PageView.builder(
-            itemCount: widget.imageUrls.length,
-            // 3. 페이지가 바뀔 때마다 _currentPage 변수의 값을 업데이트
-            onPageChanged: (value) {
-              setState(() {
-                _currentPage = value;
-              });
+    if (imageUrls.length == 1) {
+      // --- 사진이 한 장일 경우: ---
+      final imageUrl = imageUrls.first;
+      // ✅ 1. 고정 높이를 가진 SizedBox를 제거하여 높이가 가변적이 되도록 합니다.
+      return GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  FullScreenPhotoView(imageUrls: imageUrls, initialIndex: 0),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            imageUrl,
+            // ✅ 2. fit 속성을 제거하면, 너비가 제약될 때(현재는 화면 전체 너비)
+            //    원본 비율에 맞춰 높이가 자동으로 계산됩니다.
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              // ✅ 3. 로딩 중에는 고정된 비율의 회색 박스를 보여주어 '화면 울렁거림'을 방지합니다.
+              return AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: Colors.grey.shade200,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              );
             },
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    widget.imageUrls[index],
-                    fit: BoxFit.cover,
-                  ),
+            errorBuilder: (context, error, stackTrace) {
+              return AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.error_outline),
                 ),
               );
             },
           ),
         ),
-        const SizedBox(height: 8),
-        // 4. 현재 페이지를 알려주는 인디케이터(점)
-        if (widget.imageUrls.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(widget.imageUrls.length, (index) {
-              return Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentPage == index
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey.shade300,
+      );
+    } else {
+      // --- 사진이 여러 장일 경우 (기존 로직 유지): ---
+      return SizedBox(
+        height: carouselHeight,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: imageUrls.length,
+          itemBuilder: (context, index) {
+            final imageUrl = imageUrls[index];
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FullScreenPhotoView(
+                        imageUrls: imageUrls,
+                        initialIndex: index,
+                      ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.fitHeight,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 100,
+                        color: Colors.grey.shade200,
+                        child: const Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 100,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.error_outline),
+                      );
+                    },
+                  ),
                 ),
-              );
-            }),
-          ),
-      ],
-    );
+              ),
+            );
+          },
+        ),
+      );
+    }
   }
 }

@@ -28,7 +28,12 @@ class CloudScreen extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('게시물을 불러올 수 없습니다: $err')),
         data: (posts) {
           if (posts.isEmpty) {
-            return const Center(child: Text('이 구름에는 알갱이가 없어요!'));
+            return const Center(
+              child: Text(
+                '이 구름에는 아직 알갱이가 없어요.\n첫 번째 알갱이를 만들어 보세요!',
+                textAlign: TextAlign.center,
+              ),
+            );
           }
           // 6. 데이터가 성공적으로 로드되면, ListView.builder를 사용해 목록을 그립니다.
           return ListView.builder(
@@ -37,7 +42,7 @@ class CloudScreen extends ConsumerWidget {
               final post = posts[index];
               return IssueGrainItem(
                 postId: post.postId,
-                isPreview: true, // 목록에서는 항상 미리보기 형태로 표시
+                displayMode: IssueGrainDisplayMode.boardPreview,
                 onTap: () {
                   // TODO: 여기서 알갱이 상세 보기(바텀시트)를 띄우는 로직을 연결할 수 있습니다.
                   // 지금은 비워둡니다.

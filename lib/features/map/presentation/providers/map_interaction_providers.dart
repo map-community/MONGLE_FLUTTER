@@ -14,11 +14,6 @@ final selectedGrainIdProvider = StateProvider.autoDispose<String?>(
   (ref) => null,
 );
 
-/// 선택된 '구름'의 ID만 관리하는 Provider
-final selectedCloudIdProvider = StateProvider.autoDispose<String?>(
-  (ref) => null,
-);
-
 final grainPreviewFractionProvider = StateProvider.autoDispose<double>(
   (ref) => grainPreviewFraction,
 );

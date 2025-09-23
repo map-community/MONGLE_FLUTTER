@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/common/widgets/main_shell.dart';
+import 'package:mongle_flutter/features/community/presentation/screens/cloud_screen.dart';
 import 'package:mongle_flutter/features/feed/presentation/screens/feed_screen.dart';
 import 'package:mongle_flutter/features/map/presentation/screens/map_screen.dart';
 import 'package:mongle_flutter/features/profile/presentation/screens/profile_screen.dart';
@@ -34,10 +35,7 @@ final GoRouter router = GoRouter(
 
                 // TODO: 2단계에서 'CloudScreen' 위젯을 만들어 이곳에 연결할 것입니다.
                 // 지금은 라우팅이 잘 동작하는지 확인하기 위해 임시 위젯을 반환합니다.
-                return Scaffold(
-                  appBar: AppBar(title: Text('구름 게시판')),
-                  body: Center(child: Text('전달받은 구름 ID: $cloudId')),
-                );
+                return CloudScreen(cloudId: cloudId);
               },
             ),
           ],
