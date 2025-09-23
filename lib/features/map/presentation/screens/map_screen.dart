@@ -25,15 +25,11 @@ class MapScreen extends ConsumerWidget {
     final sheetState = ref.watch(mapSheetStrategyProvider);
 
     final selectedGrainId = ref.watch(selectedGrainIdProvider);
-    final selectedCloudId = ref.watch(selectedCloudIdProvider);
 
     final grainPreviewHeight = ref.watch(grainPreviewFractionProvider);
 
     final List<double> snapSizes;
-    if (selectedCloudId != null) {
-      snapSizes = [peekFraction, fullFraction];
-    } else if (selectedGrainId != null) {
-      // Provider에서 읽어온 동적 높이를 사용합니다.
+    if (selectedGrainId != null) {
       snapSizes = [peekFraction, grainPreviewHeight, fullFraction];
     } else {
       snapSizes = [peekFraction, fullFraction];
@@ -64,6 +60,10 @@ class MapScreen extends ConsumerWidget {
             builder: (context, scrollController) {
               if (selectedGrainId != null) {
                 final bool isPreview = sheetState.height < (fullFraction - 0.1);
+                final displayMode = isPreview
+                    ? IssueGrainDisplayMode.mapPreview
+                    : IssueGrainDisplayMode.fullView;
+
                 return ListView(
                   controller: scrollController,
                   padding: EdgeInsets.zero,
@@ -72,7 +72,7 @@ class MapScreen extends ConsumerWidget {
                     _MeasuredIssueGrainItem(
                       key: ValueKey(selectedGrainId),
                       postId: selectedGrainId,
-                      isPreview: isPreview,
+                      displayMode: displayMode,
                       onMeasured: (measuredFraction) {
                         // 콜백이 호출되면 로컬 변수가 아닌 Provider의 상태를 업데이트합니다.
                         ref.read(grainPreviewFractionProvider.notifier).state =
@@ -85,35 +85,7 @@ class MapScreen extends ConsumerWidget {
                   ],
                 );
               }
-              // 2. 선택된 구름 ID가 있다면 (구름을 탭했다면)
-              else if (selectedCloudId != null) {
-                final postsInCloudAsync = ref.watch(
-                  issueGrainsInCloudProvider(selectedCloudId),
-                );
-
-                return postsInCloudAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (err, stack) =>
-                      Center(child: Text('게시물을 불러올 수 없습니다: $err')),
-                  data: (posts) {
-                    return ListView.builder(
-                      controller: scrollController,
-                      padding: EdgeInsets.zero,
-                      itemCount: posts.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) return _buildHandle();
-                        final post = posts[index - 1];
-                        return IssueGrainItem(
-                          postId: post.postId,
-                          isPreview: true,
-                        );
-                      },
-                    );
-                  },
-                );
-              }
-              // 3. 아무것도 선택되지 않았다면 기본 UI를 보여줍니다.
+              // 아무것도 선택되지 않았다면 기본 UI를 보여줍니다.
               else {
                 return ListView(
                   controller: scrollController,
@@ -152,13 +124,13 @@ class MapScreen extends ConsumerWidget {
 /// IssueGrainItem 위젯의 높이를 측정하여 Provider를 업데이트하는 책임을 가지는 위젯
 class _MeasuredIssueGrainItem extends ConsumerStatefulWidget {
   final String postId;
-  final bool isPreview;
+  final IssueGrainDisplayMode displayMode;
   final Function(double) onMeasured;
 
   const _MeasuredIssueGrainItem({
     super.key,
     required this.postId,
-    required this.isPreview,
+    required this.displayMode,
     required this.onMeasured,
   });
 
@@ -206,7 +178,10 @@ class _MeasuredIssueGrainItemState
     // 실제 UI를 렌더링하고, 측정을 위해 Key를 할당합니다.
     return Container(
       key: _key,
-      child: IssueGrainItem(postId: widget.postId, isPreview: widget.isPreview),
+      child: IssueGrainItem(
+        postId: widget.postId,
+        displayMode: widget.displayMode,
+      ),
     );
   }
 }

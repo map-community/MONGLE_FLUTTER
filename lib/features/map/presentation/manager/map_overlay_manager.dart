@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/features/map/data/models/map_objects_response.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/marker_factory.dart';
@@ -68,11 +69,13 @@ class MapOverlayManager {
       );
 
       // 폴리곤에 탭 리스너 추가
-      polygon.setOnTapListener(
-        (_) =>
-            _handleTap(type: TappedObjectType.staticCloud, id: cloud.placeId),
-      );
+      polygon.setOnTapListener((_) {
+        // ❌ 기존 방식: _handleTap 메서드를 통해 바텀시트를 제어
+        // _handleTap(type: TappedObjectType.staticCloud, id: cloud.placeId);
 
+        // ✅ 변경된 방식: GoRouter를 사용하여 새로운 페이지로 이동
+        GoRouter.of(_context).push('/map/cloud/${cloud.placeId}');
+      });
       overlaysToAdd.add(polygon);
     }
 
@@ -87,10 +90,13 @@ class MapOverlayManager {
         outlineWidth: 2,
       );
 
-      polygon.setOnTapListener(
-        (_) =>
-            _handleTap(type: TappedObjectType.dynamicCloud, id: cloud.cloudId),
-      );
+      polygon.setOnTapListener((_) {
+        // ❌ 기존 방식
+        // _handleTap(type: TappedObjectType.dynamicCloud, id: cloud.cloudId);
+
+        // ✅ 변경된 방식
+        GoRouter.of(_context).push('/map/cloud/${cloud.cloudId}');
+      });
       overlaysToAdd.add(polygon);
     }
 
@@ -113,8 +119,8 @@ class MapOverlayManager {
         break;
       case TappedObjectType.staticCloud:
       case TappedObjectType.dynamicCloud:
-        // 구름을 탭하면 전체 스레드를 보여줍니다.
-        strategyNotifier.showCloudThread(id);
+        // 이제 staticCloud와 dynamicCloud 케이스는 여기서 처리하지 않습니다.
+        // strategyNotifier.showCloudThread(id);
         break;
     }
   }
