@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/image_carousel.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/interaction_toolbar.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/user_profile_line.dart';
