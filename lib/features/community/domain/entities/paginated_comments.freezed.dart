@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 mixin _$PaginatedComments {
 
 // ✨ 2. 'values' 키를 'comments' 필드에 매핑하라는 규칙을 알려줍니다.
-@JsonKey(name: 'values') List<Comment> get comments; String? get nextCursor; bool get hasNext;
+@JsonKey(name: 'values') List<Comment> get comments; String? get nextCursor; bool get hasNext;// 현재 답글을 다는 대상 댓글 정보를 저장합니다. 백엔드에서 받는 정보가 아니라, 앱 내에서 상태로 관리하는 용도입니다.
+ Comment? get replyingTo;
 /// Create a copy of PaginatedComments
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +30,16 @@ $PaginatedCommentsCopyWith<PaginatedComments> get copyWith => _$PaginatedComment
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaginatedComments&&const DeepCollectionEquality().equals(other.comments, comments)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaginatedComments&&const DeepCollectionEquality().equals(other.comments, comments)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.replyingTo, replyingTo) || other.replyingTo == replyingTo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(comments),nextCursor,hasNext);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(comments),nextCursor,hasNext,replyingTo);
 
 @override
 String toString() {
-  return 'PaginatedComments(comments: $comments, nextCursor: $nextCursor, hasNext: $hasNext)';
+  return 'PaginatedComments(comments: $comments, nextCursor: $nextCursor, hasNext: $hasNext, replyingTo: $replyingTo)';
 }
 
 
@@ -49,11 +50,11 @@ abstract mixin class $PaginatedCommentsCopyWith<$Res>  {
   factory $PaginatedCommentsCopyWith(PaginatedComments value, $Res Function(PaginatedComments) _then) = _$PaginatedCommentsCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'values') List<Comment> comments, String? nextCursor, bool hasNext
+@JsonKey(name: 'values') List<Comment> comments, String? nextCursor, bool hasNext, Comment? replyingTo
 });
 
 
-
+$CommentCopyWith<$Res>? get replyingTo;
 
 }
 /// @nodoc
@@ -66,15 +67,28 @@ class _$PaginatedCommentsCopyWithImpl<$Res>
 
 /// Create a copy of PaginatedComments
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? comments = null,Object? nextCursor = freezed,Object? hasNext = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? comments = null,Object? nextCursor = freezed,Object? hasNext = null,Object? replyingTo = freezed,}) {
   return _then(_self.copyWith(
 comments: null == comments ? _self.comments : comments // ignore: cast_nullable_to_non_nullable
 as List<Comment>,nextCursor: freezed == nextCursor ? _self.nextCursor : nextCursor // ignore: cast_nullable_to_non_nullable
 as String?,hasNext: null == hasNext ? _self.hasNext : hasNext // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,replyingTo: freezed == replyingTo ? _self.replyingTo : replyingTo // ignore: cast_nullable_to_non_nullable
+as Comment?,
   ));
 }
+/// Create a copy of PaginatedComments
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CommentCopyWith<$Res>? get replyingTo {
+    if (_self.replyingTo == null) {
+    return null;
+  }
 
+  return $CommentCopyWith<$Res>(_self.replyingTo!, (value) {
+    return _then(_self.copyWith(replyingTo: value));
+  });
+}
 }
 
 
@@ -156,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaginatedComments() when $default != null:
-return $default(_that.comments,_that.nextCursor,_that.hasNext);case _:
+return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo);case _:
   return orElse();
 
 }
@@ -177,10 +191,10 @@ return $default(_that.comments,_that.nextCursor,_that.hasNext);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo)  $default,) {final _that = this;
 switch (_that) {
 case _PaginatedComments():
-return $default(_that.comments,_that.nextCursor,_that.hasNext);case _:
+return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +211,10 @@ return $default(_that.comments,_that.nextCursor,_that.hasNext);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo)?  $default,) {final _that = this;
 switch (_that) {
 case _PaginatedComments() when $default != null:
-return $default(_that.comments,_that.nextCursor,_that.hasNext);case _:
+return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo);case _:
   return null;
 
 }
@@ -212,7 +226,7 @@ return $default(_that.comments,_that.nextCursor,_that.hasNext);case _:
 @JsonSerializable()
 
 class _PaginatedComments implements PaginatedComments {
-  const _PaginatedComments({@JsonKey(name: 'values') final  List<Comment> comments = const [], this.nextCursor, this.hasNext = true}): _comments = comments;
+  const _PaginatedComments({@JsonKey(name: 'values') final  List<Comment> comments = const [], this.nextCursor, this.hasNext = true, this.replyingTo}): _comments = comments;
   factory _PaginatedComments.fromJson(Map<String, dynamic> json) => _$PaginatedCommentsFromJson(json);
 
 // ✨ 2. 'values' 키를 'comments' 필드에 매핑하라는 규칙을 알려줍니다.
@@ -226,6 +240,8 @@ class _PaginatedComments implements PaginatedComments {
 
 @override final  String? nextCursor;
 @override@JsonKey() final  bool hasNext;
+// 현재 답글을 다는 대상 댓글 정보를 저장합니다. 백엔드에서 받는 정보가 아니라, 앱 내에서 상태로 관리하는 용도입니다.
+@override final  Comment? replyingTo;
 
 /// Create a copy of PaginatedComments
 /// with the given fields replaced by the non-null parameter values.
@@ -240,16 +256,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaginatedComments&&const DeepCollectionEquality().equals(other._comments, _comments)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaginatedComments&&const DeepCollectionEquality().equals(other._comments, _comments)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.replyingTo, replyingTo) || other.replyingTo == replyingTo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_comments),nextCursor,hasNext);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_comments),nextCursor,hasNext,replyingTo);
 
 @override
 String toString() {
-  return 'PaginatedComments(comments: $comments, nextCursor: $nextCursor, hasNext: $hasNext)';
+  return 'PaginatedComments(comments: $comments, nextCursor: $nextCursor, hasNext: $hasNext, replyingTo: $replyingTo)';
 }
 
 
@@ -260,11 +276,11 @@ abstract mixin class _$PaginatedCommentsCopyWith<$Res> implements $PaginatedComm
   factory _$PaginatedCommentsCopyWith(_PaginatedComments value, $Res Function(_PaginatedComments) _then) = __$PaginatedCommentsCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'values') List<Comment> comments, String? nextCursor, bool hasNext
+@JsonKey(name: 'values') List<Comment> comments, String? nextCursor, bool hasNext, Comment? replyingTo
 });
 
 
-
+@override $CommentCopyWith<$Res>? get replyingTo;
 
 }
 /// @nodoc
@@ -277,16 +293,29 @@ class __$PaginatedCommentsCopyWithImpl<$Res>
 
 /// Create a copy of PaginatedComments
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? comments = null,Object? nextCursor = freezed,Object? hasNext = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? comments = null,Object? nextCursor = freezed,Object? hasNext = null,Object? replyingTo = freezed,}) {
   return _then(_PaginatedComments(
 comments: null == comments ? _self._comments : comments // ignore: cast_nullable_to_non_nullable
 as List<Comment>,nextCursor: freezed == nextCursor ? _self.nextCursor : nextCursor // ignore: cast_nullable_to_non_nullable
 as String?,hasNext: null == hasNext ? _self.hasNext : hasNext // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,replyingTo: freezed == replyingTo ? _self.replyingTo : replyingTo // ignore: cast_nullable_to_non_nullable
+as Comment?,
   ));
 }
 
+/// Create a copy of PaginatedComments
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CommentCopyWith<$Res>? get replyingTo {
+    if (_self.replyingTo == null) {
+    return null;
+  }
 
+  return $CommentCopyWith<$Res>(_self.replyingTo!, (value) {
+    return _then(_self.copyWith(replyingTo: value));
+  });
+}
 }
 
 // dart format on

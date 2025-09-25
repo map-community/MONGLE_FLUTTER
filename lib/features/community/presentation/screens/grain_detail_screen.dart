@@ -51,7 +51,7 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
           error: (_, __) => const Text('오류'),
         ),
       ),
-      bottomNavigationBar: const CommentInputField(),
+      bottomNavigationBar: CommentInputField(postId: widget.grainId),
       body: grainAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('게시글을 불러올 수 없습니다: $err')),
@@ -75,7 +75,7 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
                     children: [
                       const SizedBox(height: 8), // 상단 간격
                       Divider(
-                        height: 1,
+                        height: 3,
                         thickness: 1,
                         color: Colors.grey.shade200,
                       ),

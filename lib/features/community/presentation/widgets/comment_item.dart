@@ -1,62 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
+import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CommentItem extends StatelessWidget {
+class CommentItem extends ConsumerWidget {
+  final String postId;
   final Comment comment;
   final bool isReply;
+  final bool isHighlighted;
 
-  const CommentItem({super.key, required this.comment, this.isReply = false});
+  const CommentItem({
+    super.key,
+    required this.postId,
+    required this.comment,
+    this.isReply = false,
+    this.isHighlighted = false,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (comment.isDeleted) {
       return _buildDeletedComment();
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ✨ 1. 대댓글일 경우 'ㄴ' 아이콘과 공간을 추가합니다.
-          if (isReply)
-            const SizedBox(
-              width: 40,
-              child: Icon(
-                Icons.subdirectory_arrow_right,
-                color: Colors.grey,
-                size: 20,
+    final backgroundColor = isHighlighted
+        ? Theme.of(context).primaryColor.withOpacity(0.05)
+        : Colors.transparent;
+
+    return Container(
+      color: backgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ✨ 1. 대댓글일 경우 'ㄴ' 아이콘과 공간을 추가합니다.
+            if (isReply)
+              const SizedBox(
+                width: 40,
+                child: Icon(
+                  Icons.subdirectory_arrow_right,
+                  color: Colors.grey,
+                  size: 20,
+                ),
+              ),
+
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: comment.author.profileImageUrl != null
+                  ? NetworkImage(comment.author.profileImageUrl!)
+                  : null,
+              child: comment.author.profileImageUrl == null
+                  ? const Icon(Icons.person, size: 18)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCommentHeader(context),
+                  const SizedBox(height: 4),
+                  Text(
+                    comment.content,
+                    style: const TextStyle(fontSize: 14, height: 1.5),
+                  ),
+                  const SizedBox(height: 8),
+                  // ✨ 2. 좋아요, 싫어요, 대댓글 버튼을 위한 액션 바를 추가합니다.
+                  _buildActionBar(context, ref),
+                ],
               ),
             ),
-
-          CircleAvatar(
-            radius: 18,
-            backgroundImage: comment.author.profileImageUrl != null
-                ? NetworkImage(comment.author.profileImageUrl!)
-                : null,
-            child: comment.author.profileImageUrl == null
-                ? const Icon(Icons.person, size: 18)
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCommentHeader(context),
-                const SizedBox(height: 4),
-                Text(
-                  comment.content,
-                  style: const TextStyle(fontSize: 14, height: 1.5),
-                ),
-                const SizedBox(height: 8),
-                // ✨ 2. 좋아요, 싫어요, 대댓글 버튼을 위한 액션 바를 추가합니다.
-                _buildActionBar(),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -82,7 +99,7 @@ class CommentItem extends StatelessWidget {
   }
 
   // 댓글 하단 액션 바 (좋아요, 싫어요, 대댓글)
-  Widget _buildActionBar() {
+  Widget _buildActionBar(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         _buildActionButton(
@@ -105,7 +122,11 @@ class CommentItem extends StatelessWidget {
           _buildActionButton(
             icon: Icons.reply_outlined,
             text: '답글',
-            onTap: () {},
+            onTap: () {
+              ref
+                  .read(commentProvider(postId).notifier)
+                  .enterReplyMode(comment);
+            },
           ),
         ],
       ],
@@ -200,11 +221,7 @@ class CommentItem extends StatelessWidget {
   // 삭제된 댓글 UI
   Widget _buildDeletedComment() {
     return Padding(
-      padding: EdgeInsets.only(
-        left: isReply ? 40.0 : 0.0,
-        top: 8.0,
-        bottom: 8.0,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Row(
         children: [
           if (isReply)
@@ -216,9 +233,11 @@ class CommentItem extends StatelessWidget {
                 size: 20,
               ),
             ),
-          const Text(
-            '삭제된 댓글입니다.',
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+          const Expanded(
+            child: Text(
+              '삭제된 댓글입니다.',
+              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+            ),
           ),
         ],
       ),

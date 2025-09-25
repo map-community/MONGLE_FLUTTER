@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_item.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
@@ -27,6 +28,8 @@ class CommentSection extends ConsumerWidget {
       ),
       data: (paginatedComments) {
         final comments = paginatedComments.comments;
+        final replyingToComment = paginatedComments.replyingTo;
+
         if (comments.isEmpty) {
           return const SliverToBoxAdapter(
             child: Padding(
@@ -47,18 +50,29 @@ class CommentSection extends ConsumerWidget {
               );
             }
             final comment = comments[index];
-            // CommentItem과 대댓글 로직은 Column으로 감싸서 하나의 아이템으로 만듭니다.
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                children: [
-                  CommentItem(comment: comment),
-                  ...comment.replies.map(
-                    (reply) => CommentItem(comment: reply, isReply: true),
+            final isHighlighted =
+                replyingToComment?.commentId == comment.commentId;
+
+            return Column(
+              children: [
+                CommentItem(
+                  postId: postId,
+                  comment: comment,
+                  isHighlighted: isHighlighted,
+                ),
+                ...comment.replies.map(
+                  (reply) => CommentItem(
+                    postId: postId,
+                    comment: reply,
+                    isReply: true,
+                    isHighlighted:
+                        replyingToComment?.commentId == reply.commentId,
                   ),
-                  const Divider(),
-                ],
-              ),
+                ),
+
+                // ✨ [핵심 수정] indent와 endIndent 속성을 제거합니다.
+                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+              ],
             );
           },
         );

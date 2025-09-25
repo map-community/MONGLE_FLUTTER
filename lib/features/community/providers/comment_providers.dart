@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
+import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/comment_repository.dart';
 
@@ -34,6 +35,17 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
        _postId = postId,
        super(const AsyncValue.loading()) {
     _fetchFirstPage();
+  }
+
+  // '답글 모드'로 상태를 전환하는 메서드
+  void enterReplyMode(Comment comment) {
+    // state.value는 현재 상태의 PaginatedComments 객체입니다.
+    state = AsyncValue.data(state.value!.copyWith(replyingTo: comment));
+  }
+
+  // '답글 모드'를 해제하고 일반 댓글 모드로 돌아가는 메서드
+  void exitReplyMode() {
+    state = AsyncValue.data(state.value!.copyWith(replyingTo: null));
   }
 
   /// 첫 페이지의 댓글을 불러옵니다.

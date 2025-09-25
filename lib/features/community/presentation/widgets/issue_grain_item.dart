@@ -68,6 +68,8 @@ class IssueGrainItem extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: content,
               ),
+              if (displayMode != IssueGrainDisplayMode.fullView)
+                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
             ],
           ),
         );

@@ -20,6 +20,8 @@ abstract class PaginatedComments with _$PaginatedComments {
     String? nextCursor,
 
     @Default(true) bool hasNext,
+    // 현재 답글을 다는 대상 댓글 정보를 저장합니다. 백엔드에서 받는 정보가 아니라, 앱 내에서 상태로 관리하는 용도입니다.
+    Comment? replyingTo,
   }) = _PaginatedComments;
 
   // ✨ 3. fromJson 팩토리가 우리가 만든 헬퍼 함수를 사용하도록 연결합니다.
