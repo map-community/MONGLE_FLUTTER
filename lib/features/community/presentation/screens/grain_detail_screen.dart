@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/comment_input_field.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
@@ -50,6 +51,7 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
           error: (_, __) => const Text('오류'),
         ),
       ),
+      bottomNavigationBar: const CommentInputField(),
       body: grainAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('게시글을 불러올 수 없습니다: $err')),
@@ -84,6 +86,11 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
 
                 // ✨ 5. CommentSection을 GrainDetailScreen의 Sliver로 직접 추가
                 CommentSection(postId: grain.postId),
+
+                // 이 공간 덕분에 마지막 댓글이 bottomNavigationBar 위로 스크롤될 수 있습니다.
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 80), // 입력창의 대략적인 높이만큼 설정
+                ),
               ],
             ),
           );
