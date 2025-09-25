@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
+import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/comment_repository.dart';
@@ -95,7 +96,73 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     }
   }
 
-  // TODO: 댓글/대댓글 추가 로직 구현
-  // Future<void> addComment(String content) async { ... }
-  // Future<void> addReply(String parentCommentId, String content) async { ... }
+  Future<void> addComment(String content) async {
+    // 1. 낙관적 UI: 서버 응답을 기다리지 않고 UI 상태를 즉시 업데이트
+    final newComment = Comment(
+      commentId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      content: content,
+      author: mockCurrentUser, // ✨
+      createdAt: DateTime.now(),
+    );
+
+    final previousState = state.valueOrNull;
+    if (previousState != null) {
+      state = AsyncValue.data(
+        previousState.copyWith(
+          comments: [newComment, ...previousState.comments],
+        ),
+      );
+    }
+
+    // 2. 실제 API(Repository) 호출
+    try {
+      await _repository.addComment(
+        postId: _postId,
+        content: content,
+        author: mockCurrentUser, // ✨ 목업 사용
+      ); // ✨
+
+      // 성공 시, 서버로부터 받은 실제 데이터로 상태를 다시 업데이트하거나, 목록을 새로고침할 수 있습니다.
+      // 지금은 Fake Repository이므로 첫 페이지를 다시 불러와서 동기화합니다.
+      _fetchFirstPage();
+    } catch (e) {
+      // 실패 시, 이전 상태로 되돌립니다.
+      if (previousState != null) state = AsyncValue.data(previousState);
+    }
+  }
+
+  Future<void> addReply(String parentCommentId, String content) async {
+    // 1. 낙관적 UI
+    final newReply = Comment(
+      commentId: 'temp_reply_${DateTime.now().millisecondsSinceEpoch}',
+      content: content,
+      author: mockCurrentUser, // ✨
+      createdAt: DateTime.now(),
+    );
+
+    final previousState = state.valueOrNull;
+    if (previousState != null) {
+      final updatedComments = previousState.comments.map((comment) {
+        if (comment.commentId == parentCommentId) {
+          return comment.copyWith(replies: [...comment.replies, newReply]);
+        }
+        return comment;
+      }).toList();
+      state = AsyncValue.data(
+        previousState.copyWith(comments: updatedComments),
+      );
+    }
+
+    // 2. 실제 API(Repository) 호출
+    try {
+      await _repository.addReply(
+        parentCommentId: parentCommentId,
+        content: content,
+        author: mockCurrentUser, // ✨ 목업 사용
+      ); // ✨
+      _fetchFirstPage(); // 상태 동기화
+    } catch (e) {
+      if (previousState != null) state = AsyncValue.data(previousState);
+    }
+  }
 }

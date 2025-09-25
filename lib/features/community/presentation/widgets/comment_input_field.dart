@@ -106,7 +106,19 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
                   IconButton(
                     icon: const Icon(Icons.send),
                     onPressed: () {
-                      // TODO: 댓글 등록 로직 구현
+                      final content = _textController.text.trim();
+                      if (content.isEmpty) return; // 내용이 없으면 전송 안 함
+
+                      // 답글 모드인지 확인
+                      if (replyingToComment != null) {
+                        // 답글 등록 로직 호출
+                        notifier.addReply(replyingToComment.commentId, content);
+                      } else {
+                        // 일반 댓글 등록 로직 호출
+                        notifier.addComment(content);
+                      }
+
+                      // ✨ 전송 후 입력창 비우고 키보드 내리기
                       _textController.clear();
                       _focusNode.unfocus();
                     },

@@ -1,3 +1,4 @@
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 
@@ -13,11 +14,16 @@ abstract class CommentRepository {
   });
 
   /// 특정 게시글(postId)에 새로운 댓글을 추가합니다.
-  Future<Comment> addComment({required String postId, required String content});
+  Future<Comment> addComment({
+    required String postId,
+    required String content,
+    required Author author,
+  });
 
   /// 특정 댓글(parentCommentId)에 새로운 대댓글을 추가합니다.
   Future<Comment> addReply({
     required String parentCommentId,
     required String content,
+    required Author author,
   });
 }

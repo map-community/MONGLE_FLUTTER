@@ -3,6 +3,12 @@ import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 
 // --- 테스트를 위한 다양한 가짜 유저 목록 ---
+final mockCurrentUser = Author(
+  id: 'user_daegu_789',
+  nickname: '대구토박이',
+  profileImageUrl: 'https://i.pravatar.cc/150?u=user2',
+);
+
 final _mockAuthors = List.generate(
   15,
   (i) => Author(

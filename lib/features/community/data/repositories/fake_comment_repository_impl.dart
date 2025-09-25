@@ -1,4 +1,5 @@
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/comment_repository.dart';
@@ -45,15 +46,44 @@ class FakeCommentRepositoryImpl implements CommentRepository {
   Future<Comment> addComment({
     required String postId,
     required String content,
+    required Author author,
   }) async {
-    throw UnimplementedError();
+    await Future.delayed(const Duration(milliseconds: 300));
+    final newComment = Comment(
+      commentId: 'new_comment_${DateTime.now().millisecondsSinceEpoch}',
+      content: content,
+      author: mockCurrentUser, // ✨ mockCurrentUser를 사용합니다.
+      createdAt: DateTime.now(),
+    );
+    _db[postId]?.insert(0, newComment); // 목록 맨 위에 추가
+    return newComment;
   }
 
   @override
   Future<Comment> addReply({
     required String parentCommentId,
     required String content,
+    required Author author,
   }) async {
-    throw UnimplementedError();
+    await Future.delayed(const Duration(milliseconds: 300));
+    final newReply = Comment(
+      commentId: 'new_reply_${DateTime.now().millisecondsSinceEpoch}',
+      content: content,
+      author: mockCurrentUser, // ✨ mockCurrentUser를 사용합니다.
+      createdAt: DateTime.now(),
+    );
+
+    // 모든 게시글의 댓글을 순회하며 부모 댓글을 찾습니다.
+    for (var comments in _db.values) {
+      for (var i = 0; i < comments.length; i++) {
+        if (comments[i].commentId == parentCommentId) {
+          final parentComment = comments[i];
+          final updatedReplies = [...parentComment.replies, newReply];
+          comments[i] = parentComment.copyWith(replies: updatedReplies);
+          return newReply;
+        }
+      }
+    }
+    throw Exception('Parent comment not found');
   }
 }
