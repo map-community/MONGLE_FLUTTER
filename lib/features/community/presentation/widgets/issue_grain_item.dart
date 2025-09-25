@@ -65,10 +65,9 @@ class IssueGrainItem extends ConsumerWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: content,
               ),
-              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
             ],
           ),
         );

@@ -66,6 +66,22 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
                     // ✨ 4. fullView 모드에서는 더 이상 CommentSection을 직접 포함하지 않음
                   ),
                 ),
+
+                // 게시글의 끝부분 구분선과 댓글 섹션 사이에 구분선을 추가
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8), // 상단 간격
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      const SizedBox(height: 8), // 하단 간격
+                    ],
+                  ),
+                ),
+
                 // ✨ 5. CommentSection을 GrainDetailScreen의 Sliver로 직접 추가
                 CommentSection(postId: grain.postId),
               ],
