@@ -24,34 +24,37 @@ class CloudScreen extends ConsumerWidget {
       ),
       // 5. AsyncValue의 when 메서드는 로딩/에러/데이터 상태에 따라
       // 다른 UI를 보여주도록 하여 코드를 매우 깔끔하게 만들어 줍니다.
-      body: postsInCloudAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('게시물을 불러올 수 없습니다: $err')),
-        data: (posts) {
-          if (posts.isEmpty) {
-            return const Center(
-              child: Text(
-                '이 구름에는 아직 알갱이가 없어요.\n첫 번째 알갱이를 만들어 보세요!',
-                textAlign: TextAlign.center,
-              ),
-            );
-          }
-          // 6. 데이터가 성공적으로 로드되면, ListView.builder를 사용해 목록을 그립니다.
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              final post = posts[index];
-              return IssueGrainItem(
-                postId: post.postId,
-                displayMode: IssueGrainDisplayMode.boardPreview,
-                onTap: () {
-                  //    URL 경로를 동적으로 생성하여 전달합니다.
-                  context.push('/map/cloud/$cloudId/grain/${post.postId}');
-                },
+      body: SafeArea(
+        top: false,
+        child: postsInCloudAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('게시물을 불러올 수 없습니다: $err')),
+          data: (posts) {
+            if (posts.isEmpty) {
+              return const Center(
+                child: Text(
+                  '이 구름에는 아직 알갱이가 없어요.\n첫 번째 알갱이를 만들어 보세요!',
+                  textAlign: TextAlign.center,
+                ),
               );
-            },
-          );
-        },
+            }
+            // 6. 데이터가 성공적으로 로드되면, ListView.builder를 사용해 목록을 그립니다.
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return IssueGrainItem(
+                  postId: post.postId,
+                  displayMode: IssueGrainDisplayMode.boardPreview,
+                  onTap: () {
+                    //    URL 경로를 동적으로 생성하여 전달합니다.
+                    context.push('/cloud/$cloudId/grain/${post.postId}');
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

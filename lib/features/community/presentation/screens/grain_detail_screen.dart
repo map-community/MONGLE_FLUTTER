@@ -54,19 +54,22 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('게시글을 불러올 수 없습니다: $err')),
         data: (grain) {
-          return CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: IssueGrainItem(
-                  postId: grain.postId,
-                  displayMode: IssueGrainDisplayMode.fullView,
-                  // ✨ 4. fullView 모드에서는 더 이상 CommentSection을 직접 포함하지 않음
+          return SafeArea(
+            top: false,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: IssueGrainItem(
+                    postId: grain.postId,
+                    displayMode: IssueGrainDisplayMode.fullView,
+                    // ✨ 4. fullView 모드에서는 더 이상 CommentSection을 직접 포함하지 않음
+                  ),
                 ),
-              ),
-              // ✨ 5. CommentSection을 GrainDetailScreen의 Sliver로 직접 추가
-              CommentSection(postId: grain.postId),
-            ],
+                // ✨ 5. CommentSection을 GrainDetailScreen의 Sliver로 직접 추가
+                CommentSection(postId: grain.postId),
+              ],
+            ),
           );
         },
       ),
