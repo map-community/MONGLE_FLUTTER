@@ -1,16 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
+import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
 
-class CommentInputField extends ConsumerWidget {
+class CommentInputField extends ConsumerStatefulWidget {
   final String postId;
   const CommentInputField({super.key, required this.postId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final commentStateAsync = ref.watch(commentProvider(postId));
+  ConsumerState<CommentInputField> createState() => _CommentInputFieldState();
+}
+
+class _CommentInputFieldState extends ConsumerState<CommentInputField> {
+  late final FocusNode _focusNode;
+  late final TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _textController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    // FocusNode는 반드시 dispose 해주어야 메모리 누수를 막을 수 있습니다.
+    _focusNode.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ✨ 4. ref.listen을 사용하여 상태 변화를 감지하고, 포커스를 요청합니다.
+    ref.listen(commentProvider(widget.postId), (previous, next) {
+      // is-a 검사를 통해 next.value가 null이 아님을 확인합니다.
+      if (next is AsyncData<PaginatedComments>) {
+        final wasReplying =
+            previous is AsyncData<PaginatedComments> &&
+            previous.value.replyingTo != null;
+        final isNowReplying = next.value.replyingTo != null;
+
+        // '일반 모드' -> '답글 모드'로 바뀌는 순간에만 포커스를 요청합니다.
+        if (!wasReplying && isNowReplying) {
+          _focusNode.requestFocus();
+        }
+      }
+    });
+
+    final commentStateAsync = ref.watch(commentProvider(widget.postId));
     final replyingToComment = commentStateAsync.valueOrNull?.replyingTo;
+    final notifier = ref.read(commentProvider(widget.postId).notifier);
 
     // SafeArea는 그대로 유지하여 시스템 네비게이션 바를 침범하지 않도록 합니다.
     return SafeArea(
@@ -33,7 +74,7 @@ class CommentInputField extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min, // Column이 내용물의 높이만큼만 차지하도록 설정
           children: [
             if (replyingToComment != null)
-              _buildReplyingToBar(context, ref, replyingToComment),
+              _buildReplyingToBar(context, notifier, replyingToComment),
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -45,7 +86,8 @@ class CommentInputField extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: TextField(
-                      // 텍스트 스타일을 지정하여 글자 크기를 줄입니다.
+                      controller: _textController, // ✨ 2. 컨트롤러 연결
+                      focusNode: _focusNode, // ✨ 3. 포커스 노드 연결
                       style: const TextStyle(fontSize: 14),
                       keyboardType: TextInputType.multiline,
                       minLines: 1,
@@ -65,6 +107,8 @@ class CommentInputField extends ConsumerWidget {
                     icon: const Icon(Icons.send),
                     onPressed: () {
                       // TODO: 댓글 등록 로직 구현
+                      _textController.clear();
+                      _focusNode.unfocus();
                     },
                   ),
                 ],
@@ -79,10 +123,10 @@ class CommentInputField extends ConsumerWidget {
   // '답글 대상'을 표시하는 별도의 위젯 메서드를 만듭니다.
   Widget _buildReplyingToBar(
     BuildContext context,
-    WidgetRef ref,
+    CommentNotifier notifier, // ✨ notifier를 직접 전달받도록 수정
     Comment replyingToComment,
   ) {
-    final notifier = ref.read(commentProvider(postId).notifier);
+    final notifier = ref.read(commentProvider(widget.postId).notifier);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
