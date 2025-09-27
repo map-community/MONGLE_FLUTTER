@@ -28,7 +28,6 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
   final CommentRepository _repository;
   final String _postId;
 
-  // Notifier가 생성될 때, 초기 상태를 loading으로 설정하고 첫 페이지를 불러옵니다.
   CommentNotifier({
     required CommentRepository repository,
     required String postId,
@@ -40,7 +39,7 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   // '답글 모드'로 상태를 전환하는 메서드
   void enterReplyMode(Comment comment) {
-    // state.value는 현재 상태의 PaginatedComments 객체입니다.
+    if (state.valueOrNull?.isSubmitting == true) return; // 전송 중에는 모드 변경 방지
     state = AsyncValue.data(state.value!.copyWith(replyingTo: comment));
   }
 
@@ -51,11 +50,15 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   /// 첫 페이지의 댓글을 불러옵니다.
   Future<void> _fetchFirstPage() async {
+    // ✨ isSubmitting 상태를 유지하며 데이터를 가져오기 위해 로딩 상태를 직접 관리합니다.
+    final previousState = state.valueOrNull;
     try {
       final paginatedComments = await _repository.getComments(postId: _postId);
-      // 위젯이 아직 화면에 마운트되어 있을 때만 상태를 업데이트합니다.
       if (mounted) {
-        state = AsyncValue.data(paginatedComments);
+        // 기존의 replyingTo 상태를 유지하면서 댓글 목록을 갱신합니다.
+        state = AsyncValue.data(
+          paginatedComments.copyWith(replyingTo: previousState?.replyingTo),
+        );
       }
     } catch (e, s) {
       if (mounted) {
@@ -66,103 +69,111 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   /// 다음 페이지의 댓글을 불러옵니다 (무한 스크롤).
   Future<void> fetchNextPage() async {
-    // 1. 현재 상태가 데이터가 아니거나, 다음 페이지가 없거나, 이미 로딩 중이면 실행하지 않습니다.
-    if (!state.hasValue || !state.value!.hasNext || state is AsyncLoading) {
+    if (!state.hasValue || !state.value!.hasNext || state.value!.isSubmitting) {
       return;
     }
 
     final currentState = state.value!;
+    // ✨ 다음 페이지 로딩 중임을 알리기 위해 isSubmitting을 잠시 true로 설정
+    state = AsyncValue.data(currentState.copyWith(isSubmitting: true));
 
     try {
-      // 2. Repository에 다음 페이지를 요청합니다. (cursor 사용)
       final nextPageData = await _repository.getComments(
         postId: _postId,
         cursor: currentState.nextCursor,
       );
 
       if (mounted) {
-        // 3. 기존 댓글 목록에 새로 불러온 댓글 목록을 이어붙여 상태를 업데이트합니다.
         state = AsyncValue.data(
           currentState.copyWith(
             comments: [...currentState.comments, ...nextPageData.comments],
             nextCursor: nextPageData.nextCursor,
             hasNext: nextPageData.hasNext,
+            isSubmitting: false, // ✨ 로딩 완료 후 false로 복원
           ),
         );
       }
     } catch (e) {
-      // 에러 처리는 필요에 따라 구현합니다. (예: 스낵바 표시)
+      if (mounted) {
+        // ✨ 실패 시에도 false로 복원
+        state = AsyncValue.data(currentState.copyWith(isSubmitting: false));
+      }
       print('댓글 다음 페이지 로딩 실패: $e');
     }
   }
 
   Future<void> addComment(String content) async {
-    // 1. 낙관적 UI: 서버 응답을 기다리지 않고 UI 상태를 즉시 업데이트
+    final previousState = state.valueOrNull;
+    if (previousState == null || previousState.isSubmitting) return;
+
     final newComment = Comment(
       commentId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
-      author: mockCurrentUser, // ✨
+      author: mockCurrentUser,
       createdAt: DateTime.now(),
     );
 
-    final previousState = state.valueOrNull;
-    if (previousState != null) {
-      state = AsyncValue.data(
-        previousState.copyWith(
-          comments: [newComment, ...previousState.comments],
-        ),
-      );
-    }
+    // ✨ 1. UI를 즉시 업데이트하면서, isSubmitting 상태를 true로 설정합니다.
+    state = AsyncValue.data(
+      previousState.copyWith(
+        comments: [newComment, ...previousState.comments],
+        isSubmitting: true,
+      ),
+    );
 
-    // 2. 실제 API(Repository) 호출
     try {
       await _repository.addComment(
         postId: _postId,
         content: content,
-        author: mockCurrentUser, // ✨ 목업 사용
-      ); // ✨
-
-      // 성공 시, 서버로부터 받은 실제 데이터로 상태를 다시 업데이트하거나, 목록을 새로고침할 수 있습니다.
-      // 지금은 Fake Repository이므로 첫 페이지를 다시 불러와서 동기화합니다.
-      _fetchFirstPage();
+        author: mockCurrentUser,
+      );
+      // ✨ 2. 성공 후 목록을 새로고침하면, isSubmitting은 자동으로 기본값(false)으로 돌아옵니다.
+      await _fetchFirstPage();
     } catch (e) {
-      // 실패 시, 이전 상태로 되돌립니다.
-      if (previousState != null) state = AsyncValue.data(previousState);
+      // ✨ 3. 실패 시, 이전 상태로 되돌리면서 isSubmitting을 false로 풀어줍니다.
+      if (mounted) {
+        state = AsyncValue.data(previousState.copyWith(isSubmitting: false));
+      }
     }
   }
 
   Future<void> addReply(String parentCommentId, String content) async {
-    // 1. 낙관적 UI
+    exitReplyMode();
+    final previousState = state.valueOrNull;
+    if (previousState == null || previousState.isSubmitting) return;
+
     final newReply = Comment(
       commentId: 'temp_reply_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
-      author: mockCurrentUser, // ✨
+      author: mockCurrentUser,
       createdAt: DateTime.now(),
     );
 
-    final previousState = state.valueOrNull;
-    if (previousState != null) {
-      final updatedComments = previousState.comments.map((comment) {
-        if (comment.commentId == parentCommentId) {
-          return comment.copyWith(replies: [...comment.replies, newReply]);
-        }
-        return comment;
-      }).toList();
-      state = AsyncValue.data(
-        previousState.copyWith(comments: updatedComments),
-      );
-    }
+    final updatedComments = previousState.comments.map((comment) {
+      if (comment.commentId == parentCommentId) {
+        return comment.copyWith(replies: [...comment.replies, newReply]);
+      }
+      return comment;
+    }).toList();
 
-    // 2. 실제 API(Repository) 호출
+    // ✨ 1. UI를 업데이트하면서 isSubmitting을 true로 설정합니다.
+    state = AsyncValue.data(
+      previousState.copyWith(comments: updatedComments, isSubmitting: true),
+    );
+
     try {
       await _repository.addReply(
         parentCommentId: parentCommentId,
         content: content,
-        author: mockCurrentUser, // ✨ 목업 사용
-      ); // ✨
-      _fetchFirstPage(); // 상태 동기화
+        author: mockCurrentUser,
+      );
+      // ✨ 2. 성공 시 목록 새로고침
+      await _fetchFirstPage();
     } catch (e) {
-      if (previousState != null) state = AsyncValue.data(previousState);
+      // ✨ 3. 실패 시 isSubmitting을 false로 복원
+      if (mounted) {
+        state = AsyncValue.data(previousState.copyWith(isSubmitting: false));
+      }
     }
   }
 }

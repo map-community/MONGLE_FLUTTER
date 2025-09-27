@@ -51,82 +51,97 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
 
     final commentStateAsync = ref.watch(commentProvider(widget.postId));
     final replyingToComment = commentStateAsync.valueOrNull?.replyingTo;
+    final isSubmitting =
+        commentStateAsync.valueOrNull?.isSubmitting ??
+        commentStateAsync.isLoading;
     final notifier = ref.read(commentProvider(widget.postId).notifier);
 
     // SafeArea는 그대로 유지하여 시스템 네비게이션 바를 침범하지 않도록 합니다.
-    return SafeArea(
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).canvasColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              offset: const Offset(0, -2),
-              blurRadius: 5.0,
+    return IgnorePointer(
+      ignoring: isSubmitting,
+      child: Opacity(
+        opacity: isSubmitting ? 0.5 : 1.0,
+        child: SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).canvasColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  offset: const Offset(0, -2),
+                  blurRadius: 5.0,
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: EdgeInsets.only(
-          // 키보드가 올라올 때 시스템이 추가하는 패딩을 감지하여 적용합니다.
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Column이 내용물의 높이만큼만 차지하도록 설정
-          children: [
-            if (replyingToComment != null)
-              _buildReplyingToBar(context, notifier, replyingToComment),
+            padding: EdgeInsets.only(
+              // 키보드가 올라올 때 시스템이 추가하는 패딩을 감지하여 적용합니다.
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Column이 내용물의 높이만큼만 차지하도록 설정
+              children: [
+                if (replyingToComment != null)
+                  _buildReplyingToBar(context, notifier, replyingToComment),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController, // ✨ 2. 컨트롤러 연결
-                      focusNode: _focusNode, // ✨ 3. 포커스 노드 연결
-                      style: const TextStyle(fontSize: 14),
-                      keyboardType: TextInputType.multiline,
-                      minLines: 1,
-                      maxLines: 5,
-                      decoration: InputDecoration(
-                        hintText: replyingToComment == null
-                            ? '댓글을 입력하세요.'
-                            : '답글을 입력하세요.',
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 8.0,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _textController, // ✨ 2. 컨트롤러 연결
+                          focusNode: _focusNode, // ✨ 3. 포커스 노드 연결
+                          enabled: !isSubmitting,
+                          style: const TextStyle(fontSize: 14),
+                          keyboardType: TextInputType.multiline,
+                          minLines: 1,
+                          maxLines: 5,
+                          decoration: InputDecoration(
+                            hintText: replyingToComment == null
+                                ? '댓글을 입력하세요.'
+                                : '답글을 입력하세요.',
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 8.0,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () {
-                      final content = _textController.text.trim();
-                      if (content.isEmpty) return; // 내용이 없으면 전송 안 함
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: isSubmitting
+                            ? null
+                            : () {
+                                final content = _textController.text.trim();
+                                if (content.isEmpty) return; // 내용이 없으면 전송 안 함
 
-                      // 답글 모드인지 확인
-                      if (replyingToComment != null) {
-                        // 답글 등록 로직 호출
-                        notifier.addReply(replyingToComment.commentId, content);
-                      } else {
-                        // 일반 댓글 등록 로직 호출
-                        notifier.addComment(content);
-                      }
+                                // 답글 모드인지 확인
+                                if (replyingToComment != null) {
+                                  // 답글 등록 로직 호출
+                                  notifier.addReply(
+                                    replyingToComment.commentId,
+                                    content,
+                                  );
+                                } else {
+                                  // 일반 댓글 등록 로직 호출
+                                  notifier.addComment(content);
+                                }
 
-                      // ✨ 전송 후 입력창 비우고 키보드 내리기
-                      _textController.clear();
-                      _focusNode.unfocus();
-                    },
+                                // ✨ 전송 후 입력창 비우고 키보드 내리기
+                                _textController.clear();
+                                _focusNode.unfocus();
+                              },
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

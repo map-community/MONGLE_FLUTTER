@@ -22,6 +22,9 @@ abstract class PaginatedComments with _$PaginatedComments {
     @Default(true) bool hasNext,
     // 현재 답글을 다는 대상 댓글 정보를 저장합니다. 백엔드에서 받는 정보가 아니라, 앱 내에서 상태로 관리하는 용도입니다.
     Comment? replyingTo,
+
+    // 댓글/대댓글 전송이 진행 중인지 여부를 나타내는 UI 상태
+    @Default(false) bool isSubmitting,
   }) = _PaginatedComments;
 
   // ✨ 3. fromJson 팩토리가 우리가 만든 헬퍼 함수를 사용하도록 연결합니다.

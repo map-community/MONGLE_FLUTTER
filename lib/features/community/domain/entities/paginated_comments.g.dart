@@ -18,6 +18,7 @@ _PaginatedComments _$PaginatedCommentsFromJson(Map<String, dynamic> json) =>
       replyingTo: json['replyingTo'] == null
           ? null
           : Comment.fromJson(json['replyingTo'] as Map<String, dynamic>),
+      isSubmitting: json['isSubmitting'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$PaginatedCommentsToJson(_PaginatedComments instance) =>
@@ -26,4 +27,5 @@ Map<String, dynamic> _$PaginatedCommentsToJson(_PaginatedComments instance) =>
       'nextCursor': instance.nextCursor,
       'hasNext': instance.hasNext,
       'replyingTo': instance.replyingTo,
+      'isSubmitting': instance.isSubmitting,
     };
