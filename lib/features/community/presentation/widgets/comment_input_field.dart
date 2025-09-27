@@ -171,7 +171,10 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
           ),
           IconButton(
             icon: Icon(Icons.close, size: 16, color: Colors.grey.shade700),
-            onPressed: () => notifier.exitReplyMode(),
+            onPressed: () {
+              notifier.exitReplyMode();
+              _focusNode.unfocus();
+            },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
