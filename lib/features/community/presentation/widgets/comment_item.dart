@@ -123,6 +123,13 @@ class CommentItem extends ConsumerWidget {
             icon: Icons.reply_outlined,
             text: '답글',
             onTap: () {
+              Scrollable.ensureVisible(
+                context,
+                duration: const Duration(milliseconds: 200), // 스크롤 애니메이션 시간
+                curve: Curves.easeInOut, // 부드러운 스크롤 효과
+                alignment: 0.2, // 화면 상단에서 20% 위치에 오도록 정렬
+              );
+
               ref
                   .read(commentProvider(postId).notifier)
                   .enterReplyMode(comment);
