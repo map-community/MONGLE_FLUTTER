@@ -74,7 +74,7 @@ class MapOverlayManager {
         // _handleTap(type: TappedObjectType.staticCloud, id: cloud.placeId);
 
         // ✅ 변경된 방식: GoRouter를 사용하여 새로운 페이지로 이동
-        GoRouter.of(_context).push('/map/cloud/${cloud.placeId}');
+        GoRouter.of(_context).push('/cloud/${cloud.placeId}');
       });
       overlaysToAdd.add(polygon);
     }
@@ -95,7 +95,7 @@ class MapOverlayManager {
         // _handleTap(type: TappedObjectType.dynamicCloud, id: cloud.cloudId);
 
         // ✅ 변경된 방식
-        GoRouter.of(_context).push('/map/cloud/${cloud.cloudId}');
+        GoRouter.of(_context).push('/cloud/${cloud.cloudId}');
       });
       overlaysToAdd.add(polygon);
     }

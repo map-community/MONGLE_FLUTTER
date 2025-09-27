@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/image_carousel.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/interaction_toolbar.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/user_profile_line.dart';
@@ -64,10 +65,11 @@ class IssueGrainItem extends ConsumerWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: content,
               ),
-              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+              if (displayMode != IssueGrainDisplayMode.fullView)
+                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
             ],
           ),
         );
