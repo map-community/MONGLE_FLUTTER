@@ -303,7 +303,7 @@ as List<DynamicCloudDto>,
 mixin _$IssueGrainDto {
 
 // API 명세서의 `postId` 필드와 매칭됩니다.
- String get postId; double get latitude; double get longitude; String? get profileImageUrl;
+ String get postId; double get latitude; double get longitude; Author get author;
 /// Create a copy of IssueGrainDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -316,16 +316,16 @@ $IssueGrainDtoCopyWith<IssueGrainDto> get copyWith => _$IssueGrainDtoCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IssueGrainDto&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.profileImageUrl, profileImageUrl) || other.profileImageUrl == profileImageUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IssueGrainDto&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.author, author) || other.author == author));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,postId,latitude,longitude,profileImageUrl);
+int get hashCode => Object.hash(runtimeType,postId,latitude,longitude,author);
 
 @override
 String toString() {
-  return 'IssueGrainDto(postId: $postId, latitude: $latitude, longitude: $longitude, profileImageUrl: $profileImageUrl)';
+  return 'IssueGrainDto(postId: $postId, latitude: $latitude, longitude: $longitude, author: $author)';
 }
 
 
@@ -336,11 +336,11 @@ abstract mixin class $IssueGrainDtoCopyWith<$Res>  {
   factory $IssueGrainDtoCopyWith(IssueGrainDto value, $Res Function(IssueGrainDto) _then) = _$IssueGrainDtoCopyWithImpl;
 @useResult
 $Res call({
- String postId, double latitude, double longitude, String? profileImageUrl
+ String postId, double latitude, double longitude, Author author
 });
 
 
-
+$AuthorCopyWith<$Res> get author;
 
 }
 /// @nodoc
@@ -353,16 +353,25 @@ class _$IssueGrainDtoCopyWithImpl<$Res>
 
 /// Create a copy of IssueGrainDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? postId = null,Object? latitude = null,Object? longitude = null,Object? profileImageUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? postId = null,Object? latitude = null,Object? longitude = null,Object? author = null,}) {
   return _then(_self.copyWith(
 postId: null == postId ? _self.postId : postId // ignore: cast_nullable_to_non_nullable
 as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
-as double,profileImageUrl: freezed == profileImageUrl ? _self.profileImageUrl : profileImageUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as double,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as Author,
   ));
 }
-
+/// Create a copy of IssueGrainDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AuthorCopyWith<$Res> get author {
+  
+  return $AuthorCopyWith<$Res>(_self.author, (value) {
+    return _then(_self.copyWith(author: value));
+  });
+}
 }
 
 
@@ -444,10 +453,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  double latitude,  double longitude,  String? profileImageUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  double latitude,  double longitude,  Author author)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IssueGrainDto() when $default != null:
-return $default(_that.postId,_that.latitude,_that.longitude,_that.profileImageUrl);case _:
+return $default(_that.postId,_that.latitude,_that.longitude,_that.author);case _:
   return orElse();
 
 }
@@ -465,10 +474,10 @@ return $default(_that.postId,_that.latitude,_that.longitude,_that.profileImageUr
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  double latitude,  double longitude,  String? profileImageUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  double latitude,  double longitude,  Author author)  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrainDto():
-return $default(_that.postId,_that.latitude,_that.longitude,_that.profileImageUrl);case _:
+return $default(_that.postId,_that.latitude,_that.longitude,_that.author);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -485,10 +494,10 @@ return $default(_that.postId,_that.latitude,_that.longitude,_that.profileImageUr
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  double latitude,  double longitude,  String? profileImageUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  double latitude,  double longitude,  Author author)?  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrainDto() when $default != null:
-return $default(_that.postId,_that.latitude,_that.longitude,_that.profileImageUrl);case _:
+return $default(_that.postId,_that.latitude,_that.longitude,_that.author);case _:
   return null;
 
 }
@@ -500,14 +509,14 @@ return $default(_that.postId,_that.latitude,_that.longitude,_that.profileImageUr
 @JsonSerializable()
 
 class _IssueGrainDto implements IssueGrainDto {
-  const _IssueGrainDto({required this.postId, required this.latitude, required this.longitude, this.profileImageUrl});
+  const _IssueGrainDto({required this.postId, required this.latitude, required this.longitude, required this.author});
   factory _IssueGrainDto.fromJson(Map<String, dynamic> json) => _$IssueGrainDtoFromJson(json);
 
 // API 명세서의 `postId` 필드와 매칭됩니다.
 @override final  String postId;
 @override final  double latitude;
 @override final  double longitude;
-@override final  String? profileImageUrl;
+@override final  Author author;
 
 /// Create a copy of IssueGrainDto
 /// with the given fields replaced by the non-null parameter values.
@@ -522,16 +531,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IssueGrainDto&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.profileImageUrl, profileImageUrl) || other.profileImageUrl == profileImageUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IssueGrainDto&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.author, author) || other.author == author));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,postId,latitude,longitude,profileImageUrl);
+int get hashCode => Object.hash(runtimeType,postId,latitude,longitude,author);
 
 @override
 String toString() {
-  return 'IssueGrainDto(postId: $postId, latitude: $latitude, longitude: $longitude, profileImageUrl: $profileImageUrl)';
+  return 'IssueGrainDto(postId: $postId, latitude: $latitude, longitude: $longitude, author: $author)';
 }
 
 
@@ -542,11 +551,11 @@ abstract mixin class _$IssueGrainDtoCopyWith<$Res> implements $IssueGrainDtoCopy
   factory _$IssueGrainDtoCopyWith(_IssueGrainDto value, $Res Function(_IssueGrainDto) _then) = __$IssueGrainDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String postId, double latitude, double longitude, String? profileImageUrl
+ String postId, double latitude, double longitude, Author author
 });
 
 
-
+@override $AuthorCopyWith<$Res> get author;
 
 }
 /// @nodoc
@@ -559,17 +568,26 @@ class __$IssueGrainDtoCopyWithImpl<$Res>
 
 /// Create a copy of IssueGrainDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? postId = null,Object? latitude = null,Object? longitude = null,Object? profileImageUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? postId = null,Object? latitude = null,Object? longitude = null,Object? author = null,}) {
   return _then(_IssueGrainDto(
 postId: null == postId ? _self.postId : postId // ignore: cast_nullable_to_non_nullable
 as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
-as double,profileImageUrl: freezed == profileImageUrl ? _self.profileImageUrl : profileImageUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as double,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as Author,
   ));
 }
 
-
+/// Create a copy of IssueGrainDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AuthorCopyWith<$Res> get author {
+  
+  return $AuthorCopyWith<$Res>(_self.author, (value) {
+    return _then(_self.copyWith(author: value));
+  });
+}
 }
 
 

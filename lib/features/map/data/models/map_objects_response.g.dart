@@ -37,7 +37,7 @@ _IssueGrainDto _$IssueGrainDtoFromJson(Map<String, dynamic> json) =>
       postId: json['postId'] as String,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
-      profileImageUrl: json['profileImageUrl'] as String?,
+      author: Author.fromJson(json['author'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$IssueGrainDtoToJson(_IssueGrainDto instance) =>
@@ -45,7 +45,7 @@ Map<String, dynamic> _$IssueGrainDtoToJson(_IssueGrainDto instance) =>
       'postId': instance.postId,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
-      'profileImageUrl': instance.profileImageUrl,
+      'author': instance.author,
     };
 
 _StaticCloudDto _$StaticCloudDtoFromJson(Map<String, dynamic> json) =>

@@ -3,6 +3,13 @@ import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 
+// ✨ [추가] 차단 테스트를 위한 악성 사용자 정의 (ID: 9999)
+const _maliciousUser = Author(
+  id: 'bad_user_9999',
+  nickname: '악성유저',
+  profileImageUrl: 'https://i.pravatar.cc/150?u=user9999',
+);
+
 // ⭐️ 프로필 이미지가 없는 목업 유저
 const _author4 = Author(
   id: 'user4',
@@ -12,6 +19,18 @@ const _author4 = Author(
 
 // 목업 데이터를 별도의 파일로 분리하여 관리합니다.
 final List<IssueGrain> mockIssueGrains = [
+  IssueGrain(
+    postId: 'grain_999',
+    author: _maliciousUser,
+    content: '이 앱은 별로네요. 다들 쓰지 마세요. 스팸 스팸 스팸.',
+    latitude: 35.888171, // 중앙도서관 근처
+    longitude: 128.614759,
+    createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+    viewCount: 999,
+    likeCount: 0,
+    dislikeCount: 99,
+    commentCount: 1,
+  ),
   IssueGrain(
     // ⭐️ id -> postId로 필드명 변경
     postId: 'grain_101',

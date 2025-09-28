@@ -3,6 +3,13 @@ import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 
 // --- 테스트를 위한 다양한 가짜 유저 목록 ---
+// ✨ [추가] 차단 테스트를 위한 악성 사용자 정의 (ID: 9999)
+final _maliciousUser = Author(
+  id: 'bad_user_9999',
+  nickname: '악성유저',
+  profileImageUrl: 'https://i.pravatar.cc/150?u=user9999',
+);
+
 final mockCurrentUser = Author(
   id: 'user_daegu_789',
   nickname: '대구토박이',
@@ -75,7 +82,18 @@ List<Comment> _generateLargeMockComments() {
 // --- 최종 목업 데이터 ---
 final Map<String, List<Comment>> mockCommentsData = {
   // grain_101 게시글에 대한 댓글 목록 (50개 생성)
-  'grain_101': _generateLargeMockComments(),
+  'grain_101': [
+    // ✨ [추가] 악성 사용자가 작성한 댓글을 목록 가장 위에 추가
+    Comment(
+      commentId: 'comment_999',
+      content: '이 글쓴이 말 다 거짓말임. 믿지 마세요.',
+      author: _maliciousUser,
+      likeCount: 0,
+      dislikeCount: 50,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 1)),
+    ),
+    ..._generateLargeMockComments(), // 기존에 생성되던 50개 댓글
+  ],
   'grain_102': [],
   'grain_105': _generateLargeMockComments(),
 };

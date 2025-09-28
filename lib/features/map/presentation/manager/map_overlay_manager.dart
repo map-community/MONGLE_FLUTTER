@@ -44,7 +44,7 @@ class MapOverlayManager {
     for (final grain in data.grains) {
       final icon = await _markerFactory.createProfileMarkerIcon(
         context: _context,
-        imageUrl: grain.profileImageUrl,
+        imageUrl: grain.author.profileImageUrl,
       );
       final marker = NMarker(
         id: grain.postId,

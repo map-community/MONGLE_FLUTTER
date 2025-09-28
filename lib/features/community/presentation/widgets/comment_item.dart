@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
+import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,7 +62,7 @@ class CommentItem extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCommentHeader(context),
+                  _buildCommentHeader(context, ref),
                   const SizedBox(height: 4),
                   Text(
                     comment.content,
@@ -79,7 +81,7 @@ class CommentItem extends ConsumerWidget {
   }
 
   // 댓글 상단 (작성자 정보, 시간, 더보기 메뉴)
-  Widget _buildCommentHeader(BuildContext context) {
+  Widget _buildCommentHeader(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Text(
@@ -93,7 +95,7 @@ class CommentItem extends ConsumerWidget {
         ),
         const Spacer(), // 오른쪽에 메뉴 버튼을 밀어내기 위한 Spacer
         // ✨ 3. 신고, 차단 기능이 담긴 더보기 메뉴를 추가합니다.
-        _buildMoreMenu(context),
+        _buildMoreMenu(context, ref),
       ],
     );
   }
@@ -180,8 +182,59 @@ class CommentItem extends ConsumerWidget {
     );
   }
 
+  /// 사용자 차단 확인 다이얼로그를 표시하는 함수
+  void _showBlockConfirmationDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Author author,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('사용자 차단'),
+          content: Text(
+            "'${author.nickname}'님을 차단하시겠습니까?\n차단한 사용자의 모든 게시물과 댓글이 더 이상 보이지 않게 됩니다.",
+          ),
+          actions: <Widget>[
+            // '취소' 버튼
+            TextButton(
+              child: const Text('취소'),
+              onPressed: () {
+                // 다이얼로그를 닫습니다.
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            // '차단' 버튼
+            TextButton(
+              child: const Text(
+                '차단',
+                style: TextStyle(color: Colors.red), // 위험한 동작임을 알려주는 색상
+              ),
+              onPressed: () {
+                // 1. 차단 로직을 실행합니다.
+                ref.read(blockedUsersProvider.notifier).blockUser(author.id);
+
+                // 2. 다이얼로그를 닫습니다.
+                Navigator.of(dialogContext).pop();
+
+                // 3. 작업 완료 피드백을 SnackBar로 표시합니다.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${author.nickname}님을 차단했습니다.'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // '더보기' 팝업 메뉴
-  Widget _buildMoreMenu(BuildContext context) {
+  Widget _buildMoreMenu(BuildContext context, WidgetRef ref) {
     return SizedBox(
       width: 32,
       height: 32,
@@ -193,6 +246,7 @@ class CommentItem extends ConsumerWidget {
             print('신고 처리 로직 실행');
           } else if (value == 'block') {
             print('사용자 차단 로직 실행');
+            _showBlockConfirmationDialog(context, ref, comment.author);
           }
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[

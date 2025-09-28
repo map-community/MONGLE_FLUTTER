@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
+import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 
 // ========================================================================
 // 1. Data Layer Provider
@@ -24,9 +25,28 @@ final issueGrainRepositoryProvider = Provider<IssueGrainRepository>((ref) {
 /// '읽기' 전용으로, 목록을 한번에 불러오는 경우에 사용합니다.
 /// .family: 외부에서 파라미터(cloudId)를 전달받을 수 있게 해줍니다.
 final issueGrainsInCloudProvider = FutureProvider.autoDispose
-    .family<List<IssueGrain>, String>((ref, cloudId) {
+    .family<List<IssueGrain>, String>((ref, cloudId) async {
+      // async 추가
+      // [상태 감시] ref.watch를 사용해 차단된 사용자 목록을 구독합니다.
+      // 이 Provider는 이제 blockedUsersProvider의 상태가 바뀔 때마다 자동으로 재실행됩니다.
+      final blockedUserIds = ref.watch(blockedUsersProvider);
       final repository = ref.watch(issueGrainRepositoryProvider);
-      return repository.getIssueGrainsInCloud(cloudId);
+
+      // 원래 로직: 모든 게시물을 가져옴
+      final allGrains = await repository.getIssueGrainsInCloud(cloudId);
+
+      // [필터링 로직]
+      // 차단된 사용자가 작성한 게시물을 제외하고 새로운 리스트를 만듭니다.
+      if (blockedUserIds.isEmpty) {
+        return allGrains; // 차단 목록이 비어있으면 필터링 없이 바로 반환
+      }
+
+      final visibleGrains = allGrains.where((grain) {
+        // grain.author.id가 blockedUserIds 목록에 포함되어 있지 않은 경우에만 true를 반환
+        return !blockedUserIds.contains(grain.author.id);
+      }).toList();
+
+      return visibleGrains;
     });
 
 /// [단일용] '알갱이 ID'를 받아 단일 이슈 알갱이의 '상태'를 관리하고, 관련 '동작'을 제공하는 Provider
