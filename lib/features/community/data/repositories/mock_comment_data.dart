@@ -76,6 +76,6 @@ List<Comment> _generateLargeMockComments() {
 final Map<String, List<Comment>> mockCommentsData = {
   // grain_101 게시글에 대한 댓글 목록 (50개 생성)
   'grain_101': _generateLargeMockComments(),
-
+  'grain_102': [],
   'grain_105': _generateLargeMockComments(),
 };
