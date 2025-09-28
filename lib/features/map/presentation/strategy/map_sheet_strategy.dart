@@ -5,7 +5,7 @@ import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_stat
 
 // MONGLE 지도 바텀시트의 높이 상태(Fraction) 정의
 const double peekFraction = 0.1; // 최소 높이 (핸들만 보임)
-const double grainPreviewFraction = 0.35; // '알갱이' 선택 시 미리보기 높이
+const double grainPreviewFraction = 0.4; // '알갱이' 선택 시 미리보기 높이
 const double fullFraction = 0.95; // 전체 스레드 높이
 
 class MapSheetStrategy extends StateNotifier<MapSheetState> {

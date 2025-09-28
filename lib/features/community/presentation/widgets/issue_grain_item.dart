@@ -61,6 +61,22 @@ class IssueGrainItem extends ConsumerWidget {
 
   /// 지도 미리보기 전용 레이아웃입니다. (단순 카드 형태)
   Widget _buildMapPreviewLayout(BuildContext context, IssueGrain grain) {
+    // 1. TextPainter를 사용해 텍스트가 3줄을 넘어가는지 미리 계산합니다.
+    final textPainter =
+        TextPainter(
+          text: TextSpan(
+            text: grain.content,
+            style: const TextStyle(height: 1.5, fontSize: 15),
+          ),
+          maxLines: 3, // 미리보기에서는 최대 3줄로 제한
+          textDirection: TextDirection.ltr,
+        )..layout(
+          maxWidth: MediaQuery.of(context).size.width - 32,
+        ); // 양쪽 패딩(16*2) 제외
+
+    // 텍스트가 실제로 3줄을 넘어가는지 여부를 저장합니다.
+    final isTextOverflow = textPainter.didExceedMaxLines;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       // [핵심 수정] Expanded가 없는 단순 Column으로 변경
@@ -77,12 +93,59 @@ class IssueGrainItem extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            grain.content,
-            maxLines: 3, // 3줄 초과 시 ... 처리
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(height: 1.5, fontSize: 15),
+
+          // Column을 사용하여 텍스트 관련 위젯들을 세로로 쌓습니다.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 2. 기본 텍스트를 표시합니다. (넘치면 ...으로 자동 처리)
+              Text(
+                grain.content,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(height: 1.5, fontSize: 15),
+              ),
+
+              // 3. [핵심] 텍스트가 3줄을 넘어갈 경우에만 '...더보기'를 표시합니다.
+              if (isTextOverflow)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    "...더보기",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+
+              // 4. [핵심] 사진이 있을 경우에만, 요청하신 사진 개수 위젯을 표시합니다.
+              if (grain.photoUrls.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '사진 ${grain.photoUrls.length}장 보기',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
+
           InteractionToolbar(grain: grain, onTap: onTap),
         ],
       ),
