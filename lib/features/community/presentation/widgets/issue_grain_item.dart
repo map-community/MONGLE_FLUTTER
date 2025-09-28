@@ -1,30 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
-import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/image_carousel.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/interaction_toolbar.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-/// IssueGrainItem 위젯이 UI를 표시하는 세 가지 다른 모드를 정의합니다.
-enum IssueGrainDisplayMode {
-  /// 지도 위에서 탭했을 때 (사진X, 텍스트 생략)
-  mapPreview,
-
-  /// 구름 게시판 목록 (사진O, 텍스트 '더보기')
-  boardPreview,
-
-  /// 전체 내용 보기
-  fullView,
-}
+enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
 
 class IssueGrainItem extends ConsumerWidget {
   final String postId;
   final VoidCallback? onTap;
-
-  /// 위젯의 UI를 결정하는 표시 모드입니다.
   final IssueGrainDisplayMode displayMode;
 
   const IssueGrainItem({
@@ -40,7 +27,7 @@ class IssueGrainItem extends ConsumerWidget {
 
     return grainAsync.when(
       loading: () => const SizedBox(
-        height: 150, // 로딩 중 고정 높이를 주어 UI 깜빡임 방지
+        height: 150,
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (e, stack) => Padding(
@@ -48,53 +35,73 @@ class IssueGrainItem extends ConsumerWidget {
         child: Center(child: Text('오류: $e')),
       ),
       data: (grain) {
-        // displayMode에 따라 적절한 레이아웃을 선택합니다.
         Widget content;
         switch (displayMode) {
           case IssueGrainDisplayMode.mapPreview:
-            content = _buildMapPreviewLayout(context, grain, displayMode);
+            content = _buildMapPreviewLayout(context, grain);
             break;
           case IssueGrainDisplayMode.boardPreview:
-            content = _buildBoardPreviewLayout(context, grain, displayMode);
+            content = _buildBoardPreviewLayout(context, grain);
             break;
           case IssueGrainDisplayMode.fullView:
             content = _buildFullLayout(context, grain);
             break;
         }
 
-        return InkWell(
-          onTap: onTap,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: content,
-              ),
-              if (displayMode != IssueGrainDisplayMode.fullView)
-                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
-            ],
-          ),
-        );
+        // [핵심 수정] mapPreview 모드에서는 InkWell을 사용하지 않아 제약조건이 끊기지 않게 합니다.
+        if (displayMode == IssueGrainDisplayMode.mapPreview) {
+          return content;
+        }
+
+        // 다른 모드에서는 기존처럼 InkWell을 사용합니다.
+        return InkWell(onTap: onTap, child: content);
       },
     );
   }
 
-  Widget _buildMapPreviewLayout(
-    BuildContext context,
-    IssueGrain grain,
-    IssueGrainDisplayMode mode,
-  ) {
-    // TODO: 다음 단계에서 고정 높이 레이아웃으로 구현할 예정
-    return const Text("지도 미리보기 (임시)");
+  /// 지도 미리보기 전용 레이아웃입니다. (단순 카드 형태)
+  Widget _buildMapPreviewLayout(BuildContext context, IssueGrain grain) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      // [핵심 수정] Expanded가 없는 단순 Column으로 변경
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        // Column이 내용물 만큼의 높이만 차지하도록 설정
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
+              const SizedBox(width: 8),
+              Expanded(child: _buildAuthorRow(grain)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            grain.content,
+            maxLines: 3, // 3줄 초과 시 ... 처리
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(height: 1.5, fontSize: 15),
+          ),
+          InteractionToolbar(grain: grain, onTap: onTap),
+        ],
+      ),
+    );
   }
 
-  /// '미리보기' 모드 (mapPreview, boardPreview)를 위한 레이아웃을 빌드합니다.
-  Widget _buildBoardPreviewLayout(
-    BuildContext context,
-    IssueGrain grain,
-    IssueGrainDisplayMode mode,
-  ) {
-    // '더보기' 표시를 위해 텍스트가 최대 줄 수를 초과하는지 계산합니다.
+  Widget _buildBoardPreviewLayout(BuildContext context, IssueGrain grain) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: _buildBoardPreviewContent(context, grain),
+        ),
+        Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+      ],
+    );
+  }
+
+  Widget _buildBoardPreviewContent(BuildContext context, IssueGrain grain) {
     const maxLinesForBoardPreview = 5;
     final textPainter = TextPainter(
       text: TextSpan(
@@ -103,7 +110,7 @@ class IssueGrainItem extends ConsumerWidget {
       ),
       maxLines: maxLinesForBoardPreview,
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: MediaQuery.of(context).size.width - 64); // 좌우 패딩 고려
+    )..layout(maxWidth: MediaQuery.of(context).size.width - 64);
     final isTextOverflow = textPainter.didExceedMaxLines;
 
     return Column(
@@ -117,8 +124,7 @@ class IssueGrainItem extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-
-        if (mode == IssueGrainDisplayMode.boardPreview && isTextOverflow)
+        if (isTextOverflow)
           InkWell(
             onTap: onTap,
             child: Column(
@@ -131,7 +137,6 @@ class IssueGrainItem extends ConsumerWidget {
                   style: const TextStyle(height: 1.5, fontSize: 15),
                 ),
                 const SizedBox(height: 4),
-                // ✅ 'Align' 위젯을 제거하여 왼쪽 정렬로 변경
                 const Text(
                   "...더보기",
                   style: TextStyle(
@@ -150,67 +155,44 @@ class IssueGrainItem extends ConsumerWidget {
             maxLines: 5,
             overflow: TextOverflow.ellipsis,
           ),
-
-        if (mode == IssueGrainDisplayMode.boardPreview &&
-            grain.photoUrls.isNotEmpty)
+        if (grain.photoUrls.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 16.0),
             child: ImageCarousel(imageUrls: grain.photoUrls),
           ),
-
-        if (mode == IssueGrainDisplayMode.mapPreview &&
-            grain.photoUrls.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 12.0),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.photo_library_outlined,
-                  size: 16,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '사진 ${grain.photoUrls.length}장 보기',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
         InteractionToolbar(grain: grain, onTap: onTap),
       ],
     );
   }
 
-  /// '전체보기' 모드 (fullView)를 위한 레이아웃을 빌드합니다.
   Widget _buildFullLayout(BuildContext context, IssueGrain grain) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
-            const SizedBox(width: 8),
-            Expanded(child: _buildAuthorRow(grain)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(grain.content, style: const TextStyle(height: 1.6, fontSize: 15)),
-        if (grain.photoUrls.isNotEmpty) ...[
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
+              const SizedBox(width: 8),
+              Expanded(child: _buildAuthorRow(grain)),
+            ],
+          ),
           const SizedBox(height: 16),
-          ImageCarousel(imageUrls: grain.photoUrls),
+          Text(
+            grain.content,
+            style: const TextStyle(height: 1.6, fontSize: 15),
+          ),
+          if (grain.photoUrls.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            ImageCarousel(imageUrls: grain.photoUrls),
+          ],
+          InteractionToolbar(grain: grain, onTap: onTap),
         ],
-        InteractionToolbar(grain: grain, onTap: onTap),
-      ],
+      ),
     );
   }
 
-  /// 작성자 정보 Row를 만드는 공통 위젯입니다.
   Widget _buildAuthorRow(IssueGrain grain) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,

@@ -5,7 +5,7 @@ import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_stat
 
 // MONGLE 지도 바텀시트의 높이 상태(Fraction) 정의
 const double peekFraction = 0.1; // 최소 높이 (핸들만 보임)
-const double grainPreviewFraction = 0.3; // '알갱이' 선택 시 미리보기 높이
+const double grainPreviewFraction = 0.35; // '알갱이' 선택 시 미리보기 높이
 const double fullFraction = 0.95; // 전체 스레드 높이
 
 class MapSheetStrategy extends StateNotifier<MapSheetState> {
@@ -14,8 +14,14 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
   MapSheetStrategy(this._ref) : super(MapSheetState(height: peekFraction));
 
   /// '이슈 알갱이' 미리보기를 표시할 때 호출됩니다.
-  void showGrainPreview(String grainId) {
+  Future<void> showGrainPreview(String grainId) async {
+    // 1단계: 먼저 내용물을 바꿀 상태(ID)만 변경합니다.
     _ref.read(selectedGrainIdProvider.notifier).state = grainId;
+
+    // [수정 2] Flutter가 위젯 재구축을 완료할 시간을 줍니다.
+    await Future.delayed(Duration.zero);
+
+    // 2단계: 위젯 재구축이 끝난 후, 높이를 변경하여 애니메이션을 실행합니다.
     state = const MapSheetState(height: grainPreviewFraction);
   }
 
