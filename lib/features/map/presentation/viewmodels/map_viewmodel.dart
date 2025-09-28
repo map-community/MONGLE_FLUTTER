@@ -4,7 +4,9 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
+import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:mongle_flutter/features/map/data/models/map_objects_response.dart';
 import 'package:mongle_flutter/features/map/domain/repositories/map_repository.dart';
 import 'package:mongle_flutter/features/map/providers/map_providers.dart';
@@ -79,30 +81,41 @@ class MapViewModel extends StateNotifier<MapState> {
     try {
       final response = await _mapRepository.getMapObjects(bounds);
 
-      // ✅ 2. [필터링 로직 추가]
-      // 현재 차단된 사용자 목록을 가져옵니다.
+      // [필터링 로직 추가]
+      // 두 개의 필터 목록을 모두 가져옵니다.
       final blockedUserIds = _ref.read(blockedUsersProvider);
+      final reportedContents = _ref.read(reportedContentProvider);
 
-      // 최종적으로 지도에 표시될 데이터를 담을 변수
-      MapObjectsResponse visibleMapObjects;
-
-      if (blockedUserIds.isNotEmpty) {
-        // response에서 'grains' 목록만 필터링합니다.
-        final visibleGrains = response.grains.where((grain) {
-          // ❗️ 중요: DTO의 ID와 Author 모델의 ID 타입을 맞춰야 합니다.
-          // 우선 String으로 가정하고 진행합니다. 만약 타입이 다르다면 맞춰야 합니다.
-          // (이전 단계에서 Author ID를 String으로 되돌렸다고 가정)
-          return !blockedUserIds.contains(
-            grain.author.id,
-          ); // postId 대신 author.id로 변경
-        }).toList();
-
-        // 필터링된 grains 목록으로 새로운 MapObjectsResponse를 만듭니다.
-        visibleMapObjects = response.copyWith(grains: visibleGrains);
-      } else {
-        // 차단 목록이 비어있으면 원본 데이터를 그대로 사용합니다.
-        visibleMapObjects = response;
+      // 필터링할 조건이 없으면 바로 반환하여 성능을 최적화합니다.
+      if (blockedUserIds.isEmpty && reportedContents.isEmpty) {
+        state.whenOrNull(
+          data: (initialPosition, _) => state = MapState.data(
+            initialPosition: initialPosition,
+            mapObjects: response,
+          ),
+        );
+        return;
       }
+
+      // ✅ 2. 차단과 신고 필터를 모두 적용합니다.
+      final visibleGrains = response.grains.where((grain) {
+        // 조건 1: 작성자가 차단된 사용자인지 확인
+        final isBlocked = blockedUserIds.contains(grain.author.id);
+        if (isBlocked) return false;
+
+        // 조건 2: 이 게시물이 내가 신고한 게시물인지 확인
+        final isReported = reportedContents.any(
+          (reported) =>
+              reported.id == grain.postId &&
+              reported.type == ReportContentType.POST,
+        );
+        if (isReported) return false;
+
+        return true;
+      }).toList();
+
+      // 필터링된 grains 목록으로 새로운 MapObjectsResponse를 만듭니다.
+      final visibleMapObjects = response.copyWith(grains: visibleGrains);
 
       state.whenOrNull(
         data: (initialPosition, _) {
@@ -129,6 +142,7 @@ final mapViewModelProvider =
       // 이로써 차단 목록이 변경될 때마다 MapViewModel이 재실행되고,
       // 지도 객체를 다시 불러와 필터링하게 됩니다.
       ref.watch(blockedUsersProvider);
+      ref.watch(reportedContentProvider);
 
       return MapViewModel(ref);
     });

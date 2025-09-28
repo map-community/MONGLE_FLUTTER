@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
+import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 
 // ========================================================================
 // 1. Data Layer Provider
@@ -30,20 +32,32 @@ final issueGrainsInCloudProvider = FutureProvider.autoDispose
       // [상태 감시] ref.watch를 사용해 차단된 사용자 목록을 구독합니다.
       // 이 Provider는 이제 blockedUsersProvider의 상태가 바뀔 때마다 자동으로 재실행됩니다.
       final blockedUserIds = ref.watch(blockedUsersProvider);
-      final repository = ref.watch(issueGrainRepositoryProvider);
+      final reportedContents = ref.watch(reportedContentProvider);
 
-      // 원래 로직: 모든 게시물을 가져옴
+      final repository = ref.watch(issueGrainRepositoryProvider);
       final allGrains = await repository.getIssueGrainsInCloud(cloudId);
 
       // [필터링 로직]
       // 차단된 사용자가 작성한 게시물을 제외하고 새로운 리스트를 만듭니다.
-      if (blockedUserIds.isEmpty) {
-        return allGrains; // 차단 목록이 비어있으면 필터링 없이 바로 반환
-      }
-
       final visibleGrains = allGrains.where((grain) {
-        // grain.author.id가 blockedUserIds 목록에 포함되어 있지 않은 경우에만 true를 반환
-        return !blockedUserIds.contains(grain.author.id);
+        // ✅ 2. 차단된 사용자인지 확인
+        final isBlocked = blockedUserIds.contains(grain.author.id);
+        if (isBlocked) {
+          return false; // 차단된 유저의 글이면 보이지 않게 처리
+        }
+
+        // ✅ 3. 내가 신고한 게시물인지 확인
+        final isReported = reportedContents.any(
+          (reported) =>
+              reported.id == grain.postId &&
+              reported.type == ReportContentType.POST,
+        );
+        if (isReported) {
+          return false; // 내가 신고한 글이면 보이지 않게 처리
+        }
+
+        // 모든 필터링을 통과한 경우에만 보이도록 처리
+        return true;
       }).toList();
 
       return visibleGrains;

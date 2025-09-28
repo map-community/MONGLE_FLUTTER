@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/image_carousel.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/interaction_toolbar.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
+import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
@@ -337,6 +339,95 @@ class IssueGrainItem extends ConsumerWidget {
     );
   }
 
+  /// 게시글 신고 다이얼로그를 표시하는 함수
+  void _showReportDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String contentId,
+    ReportContentType contentType,
+  ) {
+    ReportReason? selectedReason;
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              // ✅ [수정] 제목을 '게시글 신고'로 변경
+              title: const Text('게시글 신고'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ✅ [수정] 안내 문구 변경
+                    const Text('이 게시글을 신고하는 이유를 선택해주세요.'),
+                    ...ReportReason.values.map((reason) {
+                      return RadioListTile<ReportReason>(
+                        title: Text(reason.korean),
+                        value: reason,
+                        groupValue: selectedReason,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedReason = value;
+                          });
+                        },
+                      );
+                    }).toList(),
+                    const SizedBox(height: 16),
+                    const Text('상세 내용 (선택 사항)'),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: '문제 상황을 더 자세히 알려주세요.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('취소'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+                TextButton(
+                  onPressed: selectedReason == null
+                      ? null
+                      : () {
+                          // ⭐️ 이 부분의 로직은 댓글용과 완전히 동일합니다.
+                          ref
+                              .read(reportRepositoryProvider)
+                              .reportContent(
+                                contentId: contentId,
+                                contentType: contentType,
+                                reason: selectedReason!,
+                                description: descriptionController.text,
+                              );
+                          ref
+                              .read(reportedContentProvider.notifier)
+                              .addReportedContent(
+                                contentId: contentId,
+                                contentType: contentType,
+                              );
+                          Navigator.of(dialogContext).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('신고가 접수되었습니다.')),
+                          );
+                        },
+                  child: const Text('제출'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // IssueGrainItem 클래스 내부에 추가
   /// 게시글 우측 상단의 '더보기' 팝업 메뉴
   Widget _buildMoreMenu(BuildContext context, WidgetRef ref, IssueGrain grain) {
@@ -348,8 +439,12 @@ class IssueGrainItem extends ConsumerWidget {
         tooltip: '더보기',
         onSelected: (value) {
           if (value == 'report') {
-            // TODO: 게시글 신고 기능 구현
-            print('게시글 신고 처리 로직 실행');
+            _showReportDialog(
+              context,
+              ref,
+              grain.postId,
+              ReportContentType.POST,
+            );
           } else if (value == 'block') {
             _showBlockConfirmationDialog(context, ref, grain.author);
           }
