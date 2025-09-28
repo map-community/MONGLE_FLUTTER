@@ -12,8 +12,11 @@ part of 'map_sheet_state.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$MapSheetState implements DiagnosticableTreeMixin {
+mixin _$MapSheetState {
 
+// 2. 현재 모드를 나타내는 상태 추가
+ SheetMode get mode;// 3. 선택된 알갱이 ID도 여기서 관리
+ String? get selectedGrainId;// 4. UI가 참조할 높이 값은 그대로 둡니다.
  double get height;
 /// Create a copy of MapSheetState
 /// with the given fields replaced by the non-null parameter values.
@@ -22,25 +25,19 @@ mixin _$MapSheetState implements DiagnosticableTreeMixin {
 $MapSheetStateCopyWith<MapSheetState> get copyWith => _$MapSheetStateCopyWithImpl<MapSheetState>(this as MapSheetState, _$identity);
 
 
-@override
-void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
-    ..add(DiagnosticsProperty('type', 'MapSheetState'))
-    ..add(DiagnosticsProperty('height', height));
-}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MapSheetState&&(identical(other.height, height) || other.height == height));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MapSheetState&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.selectedGrainId, selectedGrainId) || other.selectedGrainId == selectedGrainId)&&(identical(other.height, height) || other.height == height));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,height);
+int get hashCode => Object.hash(runtimeType,mode,selectedGrainId,height);
 
 @override
-String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'MapSheetState(height: $height)';
+String toString() {
+  return 'MapSheetState(mode: $mode, selectedGrainId: $selectedGrainId, height: $height)';
 }
 
 
@@ -51,7 +48,7 @@ abstract mixin class $MapSheetStateCopyWith<$Res>  {
   factory $MapSheetStateCopyWith(MapSheetState value, $Res Function(MapSheetState) _then) = _$MapSheetStateCopyWithImpl;
 @useResult
 $Res call({
- double height
+ SheetMode mode, String? selectedGrainId, double height
 });
 
 
@@ -68,9 +65,11 @@ class _$MapSheetStateCopyWithImpl<$Res>
 
 /// Create a copy of MapSheetState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? height = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = null,Object? selectedGrainId = freezed,Object? height = null,}) {
   return _then(_self.copyWith(
-height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
+mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as SheetMode,selectedGrainId: freezed == selectedGrainId ? _self.selectedGrainId : selectedGrainId // ignore: cast_nullable_to_non_nullable
+as String?,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -156,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double height)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SheetMode mode,  String? selectedGrainId,  double height)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MapSheetState() when $default != null:
-return $default(_that.height);case _:
+return $default(_that.mode,_that.selectedGrainId,_that.height);case _:
   return orElse();
 
 }
@@ -177,10 +176,10 @@ return $default(_that.height);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double height)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SheetMode mode,  String? selectedGrainId,  double height)  $default,) {final _that = this;
 switch (_that) {
 case _MapSheetState():
-return $default(_that.height);case _:
+return $default(_that.mode,_that.selectedGrainId,_that.height);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +196,10 @@ return $default(_that.height);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double height)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SheetMode mode,  String? selectedGrainId,  double height)?  $default,) {final _that = this;
 switch (_that) {
 case _MapSheetState() when $default != null:
-return $default(_that.height);case _:
+return $default(_that.mode,_that.selectedGrainId,_that.height);case _:
   return null;
 
 }
@@ -211,10 +210,15 @@ return $default(_that.height);case _:
 /// @nodoc
 
 
-class _MapSheetState with DiagnosticableTreeMixin implements MapSheetState {
-  const _MapSheetState({required this.height});
+class _MapSheetState implements MapSheetState {
+  const _MapSheetState({this.mode = SheetMode.minimized, this.selectedGrainId, required this.height});
   
 
+// 2. 현재 모드를 나타내는 상태 추가
+@override@JsonKey() final  SheetMode mode;
+// 3. 선택된 알갱이 ID도 여기서 관리
+@override final  String? selectedGrainId;
+// 4. UI가 참조할 높이 값은 그대로 둡니다.
 @override final  double height;
 
 /// Create a copy of MapSheetState
@@ -224,25 +228,19 @@ class _MapSheetState with DiagnosticableTreeMixin implements MapSheetState {
 _$MapSheetStateCopyWith<_MapSheetState> get copyWith => __$MapSheetStateCopyWithImpl<_MapSheetState>(this, _$identity);
 
 
-@override
-void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
-    ..add(DiagnosticsProperty('type', 'MapSheetState'))
-    ..add(DiagnosticsProperty('height', height));
-}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MapSheetState&&(identical(other.height, height) || other.height == height));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MapSheetState&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.selectedGrainId, selectedGrainId) || other.selectedGrainId == selectedGrainId)&&(identical(other.height, height) || other.height == height));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,height);
+int get hashCode => Object.hash(runtimeType,mode,selectedGrainId,height);
 
 @override
-String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'MapSheetState(height: $height)';
+String toString() {
+  return 'MapSheetState(mode: $mode, selectedGrainId: $selectedGrainId, height: $height)';
 }
 
 
@@ -253,7 +251,7 @@ abstract mixin class _$MapSheetStateCopyWith<$Res> implements $MapSheetStateCopy
   factory _$MapSheetStateCopyWith(_MapSheetState value, $Res Function(_MapSheetState) _then) = __$MapSheetStateCopyWithImpl;
 @override @useResult
 $Res call({
- double height
+ SheetMode mode, String? selectedGrainId, double height
 });
 
 
@@ -270,9 +268,11 @@ class __$MapSheetStateCopyWithImpl<$Res>
 
 /// Create a copy of MapSheetState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? height = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = null,Object? selectedGrainId = freezed,Object? height = null,}) {
   return _then(_MapSheetState(
-height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
+mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as SheetMode,selectedGrainId: freezed == selectedGrainId ? _self.selectedGrainId : selectedGrainId // ignore: cast_nullable_to_non_nullable
+as String?,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }

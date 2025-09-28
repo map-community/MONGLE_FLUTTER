@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
-import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_state.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
@@ -18,7 +17,7 @@ class MapScreen extends ConsumerWidget {
     final mapState = ref.watch(mapViewModelProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final sheetState = ref.watch(mapSheetStrategyProvider);
-    final selectedGrainId = ref.watch(selectedGrainIdProvider);
+    final selectedGrainId = sheetState.selectedGrainId;
 
     final List<double> snapSizes;
     if (selectedGrainId != null) {
@@ -27,56 +26,74 @@ class MapScreen extends ConsumerWidget {
       snapSizes = [peekFraction, fullFraction];
     }
 
-    return Scaffold(
-      // Stack 위젯으로 지도와 바텀시트를 겹치게 함
-      body: Stack(
-        children: [
-          // 지도 UI (화면 전체를 차지)
-          mapState.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (message) => Center(child: Text(message)),
-            data: (initialPosition, mapObjects) {
-              return MapView(
-                initialPosition: initialPosition,
-                bottomPadding: screenHeight * sheetState.height,
-              );
-            },
-          ),
+    final isSheetMinimized = sheetState.height <= peekFraction;
 
-          // 바텀시트 UI
-          MultiStageBottomSheet(
-            strategyProvider: mapSheetStrategyProvider,
-            minSnapSize: peekFraction,
-            maxSnapSize: fullFraction,
-            snapSizes: snapSizes,
-            builder: (context, scrollController) {
-              // 알갱이가 선택되지 않았다면 기본 UI 표시
-              if (selectedGrainId == null) {
-                return _buildDefaultSheet(scrollController);
-              }
+    // [핵심 2] Scaffold를 PopScope로 감싸기
+    return PopScope(
+      // 바텀시트가 최소화 상태일 때만 뒤로가기로 화면을 나갈 수 있음
+      canPop: sheetState.mode == SheetMode.minimized, // 모드 기준으로 변경
+      // 뒤로가기가 시도되었을 때 호출되는 콜백
+      onPopInvoked: (didPop) {
+        if (didPop) return;
 
-              // [핵심] 시트 높이를 기준으로 '미리보기'와 '전체보기'를 분기
-              final bool isPreview = sheetState.height < (fullFraction - 0.1);
-
-              if (isPreview) {
-                // 미리보기 상태: 스크롤 없는 고정 크기 카드
-                return _buildPreviewCard(
-                  context,
-                  selectedGrainId,
-                  ref,
-                  scrollController,
+        final notifier = ref.read(mapSheetStrategyProvider.notifier);
+        // [핵심] 현재 모드에 따라 다음 상태를 명확하게 지시
+        switch (sheetState.mode) {
+          case SheetMode.full:
+            notifier.showGrainPreview(selectedGrainId!);
+            break;
+          case SheetMode.preview:
+            notifier.minimize();
+            break;
+          case SheetMode.minimized:
+            break; // 아무것도 안 함
+        }
+      },
+      child: Scaffold(
+        // Stack 위젯으로 지도와 바텀시트를 겹치게 함
+        body: Stack(
+          children: [
+            // 지도 UI (화면 전체를 차지)
+            mapState.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (message) => Center(child: Text(message)),
+              data: (initialPosition, mapObjects) {
+                return MapView(
+                  initialPosition: initialPosition,
+                  bottomPadding: screenHeight * sheetState.height,
                 );
-              } else {
-                // 전체보기 상태: 스크롤 가능한 전체 뷰
-                return _buildFullScrollView(
-                  context,
-                  scrollController,
-                  selectedGrainId,
-                );
-              }
-            },
-          ),
-        ],
+              },
+            ),
+
+            // 바텀시트 UI
+            MultiStageBottomSheet(
+              strategyProvider: mapSheetStrategyProvider,
+              minSnapSize: peekFraction,
+              maxSnapSize: fullFraction,
+              snapSizes: snapSizes,
+              builder: (context, scrollController) {
+                switch (sheetState.mode) {
+                  case SheetMode.full:
+                    return _buildFullScrollView(
+                      context,
+                      scrollController,
+                      selectedGrainId!,
+                    );
+                  case SheetMode.preview:
+                    return _buildPreviewCard(
+                      context,
+                      selectedGrainId!,
+                      ref,
+                      scrollController,
+                    );
+                  case SheetMode.minimized:
+                  default:
+                    return _buildDefaultSheet(scrollController);
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

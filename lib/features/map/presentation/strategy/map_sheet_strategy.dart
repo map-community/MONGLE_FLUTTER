@@ -11,38 +11,66 @@ const double fullFraction = 0.95; // 전체 스레드 높이
 class MapSheetStrategy extends StateNotifier<MapSheetState> {
   final Ref _ref;
 
-  MapSheetStrategy(this._ref) : super(MapSheetState(height: peekFraction));
+  MapSheetStrategy(this._ref)
+    : super(const MapSheetState(height: peekFraction));
 
   /// '이슈 알갱이' 미리보기를 표시할 때 호출됩니다.
-  Future<void> showGrainPreview(String grainId) async {
-    // 1단계: 먼저 내용물을 바꿀 상태(ID)만 변경합니다.
-    _ref.read(selectedGrainIdProvider.notifier).state = grainId;
-
-    // [수정 2] Flutter가 위젯 재구축을 완료할 시간을 줍니다.
-    await Future.delayed(Duration.zero);
-
-    // 2단계: 위젯 재구축이 끝난 후, 높이를 변경하여 애니메이션을 실행합니다.
-    state = const MapSheetState(height: grainPreviewFraction);
+  void showGrainPreview(String grainId) {
+    // 미리보기 모드로 상태 변경을 요청
+    state = MapSheetState(
+      mode: SheetMode.preview,
+      selectedGrainId: grainId,
+      height: grainPreviewFraction,
+    );
   }
 
   /// 특정 '이슈 알갱이'의 상세 내용을 전체 화면으로 표시할 때 호출됩니다.
-  Future<void> showGrainDetail(String grainId) async {
-    // 1. 시트 높이를 먼저 전체 화면으로 변경하여 애니메이션을 시작합니다.
-    state = const MapSheetState(height: fullFraction);
-    // 2. 애니메이션과 콘텐츠 로딩이 겹치지 않도록 짧은 지연을 줍니다.
-    await Future.delayed(const Duration(milliseconds: 100));
-    // 3. 선택된 알갱이 ID를 설정
-    _ref.read(selectedGrainIdProvider.notifier).state = grainId;
+  void showGrainDetail(String grainId) {
+    // 전체 보기 모드로 상태 변경을 요청
+    state = MapSheetState(
+      mode: SheetMode.full,
+      selectedGrainId: grainId,
+      height: fullFraction,
+    );
   }
 
-  /// 사용자가 지도를 탐색할 때 호출됩니다.
+  /// 사용자가 지도를 탐색하거나 뒤로가기를 눌렀을 때 호출됩니다.
   void minimize() {
-    state = const MapSheetState(height: peekFraction);
+    // 최소화 모드로 상태 변경을 요청
+    state = const MapSheetState(
+      mode: SheetMode.minimized,
+      selectedGrainId: null,
+      height: peekFraction,
+    );
   }
 
   void syncHeightFromUI(double currentHeight) {
-    if ((state.height - currentHeight).abs() > 0.001) {
-      state = MapSheetState(height: currentHeight);
+    // 0.01 정도의 작은 오차는 무시
+    const tolerance = 0.01;
+    SheetMode newMode;
+
+    // [핵심] 현재 높이가 어떤 모드에 가장 가까운지 판단합니다.
+    if ((currentHeight - fullFraction).abs() < tolerance) {
+      newMode = SheetMode.full;
+    } else if ((currentHeight - grainPreviewFraction).abs() < tolerance) {
+      newMode = SheetMode.preview;
+    } else {
+      newMode = SheetMode.minimized;
+    }
+
+    // 현재 상태와 달라졌을 때만 상태를 업데이트합니다.
+    if (state.mode != newMode ||
+        (state.height - currentHeight).abs() > tolerance) {
+      // selectedGrainId는 최소화 모드가 아닐 때만 유지합니다.
+      final newSelectedGrainId = (newMode == SheetMode.minimized)
+          ? null
+          : state.selectedGrainId;
+
+      state = state.copyWith(
+        mode: newMode,
+        height: currentHeight,
+        selectedGrainId: newSelectedGrainId,
+      );
     }
   }
 }
