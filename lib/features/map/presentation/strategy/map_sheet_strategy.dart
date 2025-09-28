@@ -45,11 +45,26 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
   }
 
   void syncHeightFromUI(double currentHeight) {
-    // 0.01 정도의 작은 오차는 무시
     const tolerance = 0.01;
-    SheetMode newMode;
 
-    // [핵심] 현재 높이가 어떤 모드에 가장 가까운지 판단합니다.
+    // [핵심 수정] 선택된 알갱이가 없을 때의 동작 정의
+    if (state.selectedGrainId == null) {
+      SheetMode newMode;
+      // 높이가 거의 전체화면이면 localFeed 모드로, 아니면 minimized 모드로 판단
+      if ((currentHeight - fullFraction).abs() < tolerance) {
+        newMode = SheetMode.localFeed;
+      } else {
+        newMode = SheetMode.minimized;
+      }
+
+      if (state.mode != newMode) {
+        state = state.copyWith(mode: newMode, height: currentHeight);
+      }
+      return; // 함수 종료
+    }
+
+    // --- 이하 선택된 알갱이가 있을 때의 기존 로직 ---
+    SheetMode newMode;
     if ((currentHeight - fullFraction).abs() < tolerance) {
       newMode = SheetMode.full;
     } else if ((currentHeight - grainPreviewFraction).abs() < tolerance) {
@@ -58,10 +73,8 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
       newMode = SheetMode.minimized;
     }
 
-    // 현재 상태와 달라졌을 때만 상태를 업데이트합니다.
     if (state.mode != newMode ||
         (state.height - currentHeight).abs() > tolerance) {
-      // selectedGrainId는 최소화 모드가 아닐 때만 유지합니다.
       final newSelectedGrainId = (newMode == SheetMode.minimized)
           ? null
           : state.selectedGrainId;

@@ -26,12 +26,12 @@ class MapScreen extends ConsumerWidget {
       snapSizes = [peekFraction, fullFraction];
     }
 
-    final isSheetMinimized = sheetState.height <= peekFraction;
+    final canPop = sheetState.mode == SheetMode.minimized;
 
     // [핵심 2] Scaffold를 PopScope로 감싸기
     return PopScope(
       // 바텀시트가 최소화 상태일 때만 뒤로가기로 화면을 나갈 수 있음
-      canPop: sheetState.mode == SheetMode.minimized, // 모드 기준으로 변경
+      canPop: canPop, // 모드 기준으로 변경
       // 뒤로가기가 시도되었을 때 호출되는 콜백
       onPopInvoked: (didPop) {
         if (didPop) return;
@@ -43,6 +43,7 @@ class MapScreen extends ConsumerWidget {
             notifier.showGrainPreview(selectedGrainId!);
             break;
           case SheetMode.preview:
+          case SheetMode.localFeed:
             notifier.minimize();
             break;
           case SheetMode.minimized:
@@ -86,6 +87,8 @@ class MapScreen extends ConsumerWidget {
                       ref,
                       scrollController,
                     );
+                  case SheetMode.localFeed:
+                    return _buildLocalFeedSheet(context, scrollController, ref);
                   case SheetMode.minimized:
                   default:
                     return _buildDefaultSheet(scrollController);
@@ -165,6 +168,70 @@ class MapScreen extends ConsumerWidget {
         // 댓글 입력창에 가려지지 않도록 하단 여백 추가
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
+    );
+  }
+
+  /// [신규] 주변 알갱이 목록을 보여주는 '로컬 피드' 위젯
+  Widget _buildLocalFeedSheet(
+    BuildContext context,
+    ScrollController scrollController,
+    WidgetRef ref,
+  ) {
+    // ViewModel을 통해 현재 지도에 보이는 객체들의 데이터를 가져옵니다.
+    final mapState = ref.watch(mapViewModelProvider);
+
+    return mapState.when(
+      // 로딩 및 에러 상태 처리
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (message) => Center(child: Text(message)),
+      // 데이터가 있을 때 UI를 그립니다.
+      data: (_, mapObjects) {
+        // mapObjects에서 grain(알갱이) 목록만 추출합니다.
+        final grains = mapObjects?.grains ?? [];
+
+        if (grains.isEmpty) {
+          return Column(
+            children: [
+              _buildHandle(),
+              const Expanded(
+                child: Center(child: Text('현재 위치에 알갱이가 없어요.\n첫 알갱이를 만들어 보세요!')),
+              ),
+            ],
+          );
+        }
+
+        return CustomScrollView(
+          controller: scrollController,
+          slivers: [
+            SliverToBoxAdapter(child: _buildHandle()),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  '주변 알갱이 목록',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            SliverList.builder(
+              itemCount: grains.length,
+              itemBuilder: (context, index) {
+                final grain = grains[index];
+                return IssueGrainItem(
+                  postId: grain.postId,
+                  displayMode: IssueGrainDisplayMode.boardPreview,
+                  onTap: () {
+                    // 아이템 클릭 시 해당 알갱이의 미리보기로 전환
+                    ref
+                        .read(mapSheetStrategyProvider.notifier)
+                        .showGrainPreview(grain.postId);
+                  },
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
