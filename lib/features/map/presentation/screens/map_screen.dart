@@ -26,11 +26,9 @@ class MapScreen extends ConsumerWidget {
 
     final selectedGrainId = ref.watch(selectedGrainIdProvider);
 
-    final grainPreviewHeight = ref.watch(grainPreviewFractionProvider);
-
     final List<double> snapSizes;
     if (selectedGrainId != null) {
-      snapSizes = [peekFraction, grainPreviewHeight, fullFraction];
+      snapSizes = [peekFraction, grainPreviewFraction, fullFraction];
     } else {
       snapSizes = [peekFraction, fullFraction];
     }
@@ -69,18 +67,10 @@ class MapScreen extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   children: [
                     _buildHandle(),
-                    _MeasuredIssueGrainItem(
+                    IssueGrainItem(
                       key: ValueKey(selectedGrainId),
                       postId: selectedGrainId,
                       displayMode: displayMode,
-                      onMeasured: (measuredFraction) {
-                        // 콜백이 호출되면 로컬 변수가 아닌 Provider의 상태를 업데이트합니다.
-                        ref.read(grainPreviewFractionProvider.notifier).state =
-                            measuredFraction;
-                        ref
-                            .read(mapSheetStrategyProvider.notifier)
-                            .updatePreviewHeight(measuredFraction);
-                      },
                     ),
                   ],
                 );
@@ -116,71 +106,6 @@ class MapScreen extends ConsumerWidget {
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(10),
         ),
-      ),
-    );
-  }
-}
-
-/// IssueGrainItem 위젯의 높이를 측정하여 Provider를 업데이트하는 책임을 가지는 위젯
-class _MeasuredIssueGrainItem extends ConsumerStatefulWidget {
-  final String postId;
-  final IssueGrainDisplayMode displayMode;
-  final Function(double) onMeasured;
-
-  const _MeasuredIssueGrainItem({
-    super.key,
-    required this.postId,
-    required this.displayMode,
-    required this.onMeasured,
-  });
-
-  @override
-  ConsumerState<_MeasuredIssueGrainItem> createState() =>
-      _MeasuredIssueGrainItemState();
-}
-
-class _MeasuredIssueGrainItemState
-    extends ConsumerState<_MeasuredIssueGrainItem> {
-  final _key = GlobalKey();
-
-  void _measureHeight() {
-    final context = _key.currentContext;
-    if (context != null && context.size != null) {
-      final screenHeight = MediaQuery.of(context).size.height;
-      final pixelHeight = context.size!.height;
-      final totalSheetHeight =
-          pixelHeight + kTotalHandleAreaHeight + kBottomSheetBottomPadding;
-
-      if (totalSheetHeight > 0) {
-        final calculatedFraction = totalSheetHeight / screenHeight;
-        final newFraction = calculatedFraction > 0.45
-            ? 0.45
-            : calculatedFraction;
-
-        // Provider를 직접 업데이트하는 대신, 전달받은 콜백 함수를 실행합니다.
-        widget.onMeasured(newFraction);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // issueGrainProvider의 상태가 '데이터 로딩 완료'로 변경될 때 높이를 측정합니다.
-    ref.listen<AsyncValue<IssueGrain>>(issueGrainProvider(widget.postId), (
-      previous,
-      next,
-    ) {
-      if (!next.isLoading && next.hasValue) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _measureHeight());
-      }
-    });
-
-    // 실제 UI를 렌더링하고, 측정을 위해 Key를 할당합니다.
-    return Container(
-      key: _key,
-      child: IssueGrainItem(
-        postId: widget.postId,
-        displayMode: widget.displayMode,
       ),
     );
   }

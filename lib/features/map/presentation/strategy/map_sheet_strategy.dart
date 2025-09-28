@@ -16,12 +16,7 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
   /// '이슈 알갱이' 미리보기를 표시할 때 호출됩니다.
   void showGrainPreview(String grainId) {
     _ref.read(selectedGrainIdProvider.notifier).state = grainId;
-  }
-
-  void updatePreviewHeight(double newFraction) {
-    if ((state.height - newFraction).abs() > 0.001) {
-      state = MapSheetState(height: newFraction);
-    }
+    state = const MapSheetState(height: grainPreviewFraction);
   }
 
   /// 특정 '이슈 알갱이'의 상세 내용을 전체 화면으로 표시할 때 호출됩니다.
