@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/comment_input_field.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
@@ -95,6 +96,17 @@ class MapScreen extends ConsumerWidget {
                 }
               },
             ),
+
+            // 전체 보기 모드일 때만 댓글 입력창을 맨 위에 띄웁니다.
+            if (sheetState.mode == SheetMode.full)
+              Align(
+                alignment: Alignment.bottomCenter,
+                // [수정] SafeArea로 감싸서 시스템 UI를 침범하지 않도록 합니다.
+                child: SafeArea(
+                  top: false, // 상단 패딩은 필요 없으므로 false로 설정
+                  child: CommentInputField(postId: sheetState.selectedGrainId!),
+                ),
+              ),
           ],
         ),
       ),
@@ -120,24 +132,30 @@ class MapScreen extends ConsumerWidget {
     WidgetRef ref,
     ScrollController scrollController,
   ) {
-    // [수정] SingleChildScrollView로 감싸 스크롤이 가능하도록 변경
-    return SingleChildScrollView(
-      controller: scrollController,
-      // DraggableScrollableSheet와 스크롤을 연동하기 위해 physics 설정
-      physics: const ClampingScrollPhysics(),
-      child: Column(
-        children: [
-          _buildHandle(),
-          IssueGrainItem(
-            postId: grainId,
-            displayMode: IssueGrainDisplayMode.mapPreview,
-            onTap: () {
-              ref
-                  .read(mapSheetStrategyProvider.notifier)
-                  .showGrainDetail(grainId);
-            },
+    return GestureDetector(
+      onTap: () {
+        // 탭하면 전체화면 보기 모드로 변경합니다.
+        ref.read(mapSheetStrategyProvider.notifier).showGrainDetail(grainId);
+      },
+      child: SingleChildScrollView(
+        controller: scrollController,
+        physics: const ClampingScrollPhysics(),
+        // 탭 이벤트가 하위 위젯으로 전달되는 것을 막기 위해 동작을 설정합니다.
+        // 이렇게 하면 배경을 탭해도 IssueGrainItem의 onTap이 중복 호출되지 않습니다.
+        child: AbsorbPointer(
+          child: Column(
+            children: [
+              _buildHandle(),
+              IssueGrainItem(
+                postId: grainId,
+                displayMode: IssueGrainDisplayMode.mapPreview,
+                // onTap 로직을 부모인 GestureDetector로 옮겼으므로 여기서는 null 처리합니다.
+                // 또는 IssueGrainItem의 onTap 자체를 제거해도 좋습니다.
+                onTap: null,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
