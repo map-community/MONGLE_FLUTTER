@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
-import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_state.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/multi_stage_bottom_sheet.dart';
-
-const double kHandleVerticalMargin = 12.0;
-const double kHandleHeight = 5.0;
-const double kTotalHandleAreaHeight =
-    (kHandleVerticalMargin * 2) + kHandleHeight; // 29.0
-const double kBottomSheetBottomPadding = 16.0;
 
 class MapScreen extends ConsumerWidget {
   const MapScreen({super.key});
@@ -23,81 +17,124 @@ class MapScreen extends ConsumerWidget {
     final mapState = ref.watch(mapViewModelProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final sheetState = ref.watch(mapSheetStrategyProvider);
-
-    final selectedGrainId = ref.watch(selectedGrainIdProvider);
-
-    final grainPreviewHeight = ref.watch(grainPreviewFractionProvider);
+    final selectedGrainId = sheetState.selectedGrainId;
 
     final List<double> snapSizes;
     if (selectedGrainId != null) {
-      snapSizes = [peekFraction, grainPreviewHeight, fullFraction];
+      snapSizes = [peekFraction, grainPreviewFraction, fullFraction];
     } else {
       snapSizes = [peekFraction, fullFraction];
     }
 
-    return Scaffold(
-      // Stack 위젯으로 지도와 바텀시트를 겹치게 함
-      body: Stack(
+    final canPop = sheetState.mode == SheetMode.minimized;
+
+    // [핵심 2] Scaffold를 PopScope로 감싸기
+    return PopScope(
+      // 바텀시트가 최소화 상태일 때만 뒤로가기로 화면을 나갈 수 있음
+      canPop: canPop, // 모드 기준으로 변경
+      // 뒤로가기가 시도되었을 때 호출되는 콜백
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+
+        final notifier = ref.read(mapSheetStrategyProvider.notifier);
+        // [핵심] 현재 모드에 따라 다음 상태를 명확하게 지시
+        switch (sheetState.mode) {
+          case SheetMode.full:
+            notifier.showGrainPreview(selectedGrainId!);
+            break;
+          case SheetMode.preview:
+          case SheetMode.localFeed:
+            notifier.minimize();
+            break;
+          case SheetMode.minimized:
+            break; // 아무것도 안 함
+        }
+      },
+      child: Scaffold(
+        // Stack 위젯으로 지도와 바텀시트를 겹치게 함
+        body: Stack(
+          children: [
+            // 지도 UI (화면 전체를 차지)
+            mapState.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (message) => Center(child: Text(message)),
+              data: (initialPosition, mapObjects) {
+                return MapView(
+                  initialPosition: initialPosition,
+                  bottomPadding: screenHeight * sheetState.height,
+                );
+              },
+            ),
+
+            // 바텀시트 UI
+            MultiStageBottomSheet(
+              strategyProvider: mapSheetStrategyProvider,
+              minSnapSize: peekFraction,
+              maxSnapSize: fullFraction,
+              snapSizes: snapSizes,
+              builder: (context, scrollController) {
+                switch (sheetState.mode) {
+                  case SheetMode.full:
+                    return _buildFullScrollView(
+                      context,
+                      scrollController,
+                      selectedGrainId!,
+                    );
+                  case SheetMode.preview:
+                    return _buildPreviewCard(
+                      context,
+                      selectedGrainId!,
+                      ref,
+                      scrollController,
+                    );
+                  case SheetMode.localFeed:
+                    return _buildLocalFeedSheet(context, scrollController, ref);
+                  case SheetMode.minimized:
+                  default:
+                    return _buildDefaultSheet(scrollController);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// [신규] 기본 상태의 바텀시트
+  Widget _buildDefaultSheet(ScrollController scrollController) {
+    return ListView(
+      controller: scrollController,
+      padding: EdgeInsets.zero,
+      children: [
+        _buildHandle(),
+        const ListTile(title: Text("주변 이슈 목록(구름)")),
+      ],
+    );
+  }
+
+  /// [신규] 미리보기 상태의 바텀시트 (고정 크기 카드)
+  Widget _buildPreviewCard(
+    BuildContext context,
+    String grainId,
+    WidgetRef ref,
+    ScrollController scrollController,
+  ) {
+    // [수정] SingleChildScrollView로 감싸 스크롤이 가능하도록 변경
+    return SingleChildScrollView(
+      controller: scrollController,
+      // DraggableScrollableSheet와 스크롤을 연동하기 위해 physics 설정
+      physics: const ClampingScrollPhysics(),
+      child: Column(
         children: [
-          // 지도 UI (화면 전체를 차지)
-          mapState.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (message) => Center(child: Text(message)),
-            data: (initialPosition, mapObjects) {
-              return MapView(
-                initialPosition: initialPosition,
-                bottomPadding: screenHeight * sheetState.height,
-              );
-            },
-          ),
-
-          // 바텀시트 UI
-          MultiStageBottomSheet(
-            strategyProvider: mapSheetStrategyProvider,
-            minSnapSize: peekFraction,
-            maxSnapSize: fullFraction,
-            snapSizes: snapSizes,
-            builder: (context, scrollController) {
-              if (selectedGrainId != null) {
-                final bool isPreview = sheetState.height < (fullFraction - 0.1);
-                final displayMode = isPreview
-                    ? IssueGrainDisplayMode.mapPreview
-                    : IssueGrainDisplayMode.fullView;
-
-                return ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _buildHandle(),
-                    _MeasuredIssueGrainItem(
-                      key: ValueKey(selectedGrainId),
-                      postId: selectedGrainId,
-                      displayMode: displayMode,
-                      onMeasured: (measuredFraction) {
-                        // 콜백이 호출되면 로컬 변수가 아닌 Provider의 상태를 업데이트합니다.
-                        ref.read(grainPreviewFractionProvider.notifier).state =
-                            measuredFraction;
-                        ref
-                            .read(mapSheetStrategyProvider.notifier)
-                            .updatePreviewHeight(measuredFraction);
-                      },
-                    ),
-                  ],
-                );
-              }
-              // 아무것도 선택되지 않았다면 기본 UI를 보여줍니다.
-              else {
-                return ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _buildHandle(),
-                    // [수정] 기존 코드의 Text(":)") 부분은 사용자가 어떤 상황인지 알기 어려워,
-                    // 원래의 '주변 이슈 목록' 텍스트로 되돌려놓았습니다.
-                    const ListTile(title: Text("주변 이슈 목록(구름)")),
-                  ],
-                );
-              }
+          _buildHandle(),
+          IssueGrainItem(
+            postId: grainId,
+            displayMode: IssueGrainDisplayMode.mapPreview,
+            onTap: () {
+              ref
+                  .read(mapSheetStrategyProvider.notifier)
+                  .showGrainDetail(grainId);
             },
           ),
         ],
@@ -105,82 +142,110 @@ class MapScreen extends ConsumerWidget {
     );
   }
 
-  // 바텀시트 핸들 UI를 위한 작은 헬퍼 위젯
+  /// [신규] 전체보기 상태의 바텀시트 (스크롤 뷰)
+  Widget _buildFullScrollView(
+    BuildContext context,
+    ScrollController scrollController,
+    String grainId,
+  ) {
+    return CustomScrollView(
+      controller: scrollController,
+      slivers: [
+        // SliverToBoxAdapter는 일반 위젯을 Sliver로 만들어줍니다.
+        SliverToBoxAdapter(child: _buildHandle()),
+        SliverToBoxAdapter(
+          child: IssueGrainItem(
+            postId: grainId,
+            displayMode: IssueGrainDisplayMode.fullView,
+          ),
+        ),
+        // 댓글과 본문 사이의 구분선
+        SliverToBoxAdapter(
+          child: Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+        ),
+        // CommentSection은 이미 SliverList로 구현되어 있어 바로 사용 가능
+        CommentSection(postId: grainId),
+        // 댓글 입력창에 가려지지 않도록 하단 여백 추가
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+      ],
+    );
+  }
+
+  /// [신규] 주변 알갱이 목록을 보여주는 '로컬 피드' 위젯
+  Widget _buildLocalFeedSheet(
+    BuildContext context,
+    ScrollController scrollController,
+    WidgetRef ref,
+  ) {
+    // ViewModel을 통해 현재 지도에 보이는 객체들의 데이터를 가져옵니다.
+    final mapState = ref.watch(mapViewModelProvider);
+
+    return mapState.when(
+      // 로딩 및 에러 상태 처리
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (message) => Center(child: Text(message)),
+      // 데이터가 있을 때 UI를 그립니다.
+      data: (_, mapObjects) {
+        // mapObjects에서 grain(알갱이) 목록만 추출합니다.
+        final grains = mapObjects?.grains ?? [];
+
+        if (grains.isEmpty) {
+          return Column(
+            children: [
+              _buildHandle(),
+              const Expanded(
+                child: Center(child: Text('현재 위치에 알갱이가 없어요.\n첫 알갱이를 만들어 보세요!')),
+              ),
+            ],
+          );
+        }
+
+        return CustomScrollView(
+          controller: scrollController,
+          slivers: [
+            SliverToBoxAdapter(child: _buildHandle()),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  '주변 알갱이 목록',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            SliverList.builder(
+              itemCount: grains.length,
+              itemBuilder: (context, index) {
+                final grain = grains[index];
+                return IssueGrainItem(
+                  postId: grain.postId,
+                  displayMode: IssueGrainDisplayMode.boardPreview,
+                  onTap: () {
+                    // 아이템 클릭 시 해당 알갱이의 미리보기로 전환
+                    ref
+                        .read(mapSheetStrategyProvider.notifier)
+                        .showGrainPreview(grain.postId);
+                  },
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 바텀시트 핸들 UI
   Widget _buildHandle() {
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: kHandleVerticalMargin),
+        margin: const EdgeInsets.symmetric(vertical: 12.0),
         width: 40,
-        height: kHandleHeight,
+        height: 5.0,
         decoration: BoxDecoration(
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(10),
         ),
-      ),
-    );
-  }
-}
-
-/// IssueGrainItem 위젯의 높이를 측정하여 Provider를 업데이트하는 책임을 가지는 위젯
-class _MeasuredIssueGrainItem extends ConsumerStatefulWidget {
-  final String postId;
-  final IssueGrainDisplayMode displayMode;
-  final Function(double) onMeasured;
-
-  const _MeasuredIssueGrainItem({
-    super.key,
-    required this.postId,
-    required this.displayMode,
-    required this.onMeasured,
-  });
-
-  @override
-  ConsumerState<_MeasuredIssueGrainItem> createState() =>
-      _MeasuredIssueGrainItemState();
-}
-
-class _MeasuredIssueGrainItemState
-    extends ConsumerState<_MeasuredIssueGrainItem> {
-  final _key = GlobalKey();
-
-  void _measureHeight() {
-    final context = _key.currentContext;
-    if (context != null && context.size != null) {
-      final screenHeight = MediaQuery.of(context).size.height;
-      final pixelHeight = context.size!.height;
-      final totalSheetHeight =
-          pixelHeight + kTotalHandleAreaHeight + kBottomSheetBottomPadding;
-
-      if (totalSheetHeight > 0) {
-        final calculatedFraction = totalSheetHeight / screenHeight;
-        final newFraction = calculatedFraction > 0.45
-            ? 0.45
-            : calculatedFraction;
-
-        // Provider를 직접 업데이트하는 대신, 전달받은 콜백 함수를 실행합니다.
-        widget.onMeasured(newFraction);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // issueGrainProvider의 상태가 '데이터 로딩 완료'로 변경될 때 높이를 측정합니다.
-    ref.listen<AsyncValue<IssueGrain>>(issueGrainProvider(widget.postId), (
-      previous,
-      next,
-    ) {
-      if (!next.isLoading && next.hasValue) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _measureHeight());
-      }
-    });
-
-    // 실제 UI를 렌더링하고, 측정을 위해 Key를 할당합니다.
-    return Container(
-      key: _key,
-      child: IssueGrainItem(
-        postId: widget.postId,
-        displayMode: widget.displayMode,
       ),
     );
   }

@@ -44,19 +44,21 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // --- 1. Strategy -> UI 로의 데이터 흐름 ---
-    // Strategy의 상태(높이)가 코드에 의해 변경될 때(e.g., 마커 탭),
-    // 시트의 높이를 애니메이션으로 부드럽게 조절합니다.
     ref.listen<MapSheetState>(widget.strategyProvider, (previous, next) {
-      // 상태 객체 안의 height 값을 사용합니다.
-      if ((_scrollController.size - next.height).abs() < 0.01) return;
-      if (_scrollController.isAttached) {
-        _scrollController.animateTo(
-          next.height,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-        );
-      }
+      // 이전 높이와 다음 높이가 다를 때만 애니메이션 실행
+      if (previous?.height == next.height) return;
+
+      // 이번 프레임 렌더링(리빌드)이 끝난 후 애니메이션을 실행하도록 예약
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // 컨트롤러가 아직 위젯 트리에 붙어있는지 안전하게 확인
+        if (_scrollController.isAttached) {
+          _scrollController.animateTo(
+            next.height,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      });
     });
 
     return NotificationListener<ScrollNotification>(

@@ -13,7 +13,3 @@ final mapSheetStrategyProvider =
 final selectedGrainIdProvider = StateProvider.autoDispose<String?>(
   (ref) => null,
 );
-
-final grainPreviewFractionProvider = StateProvider.autoDispose<double>(
-  (ref) => grainPreviewFraction,
-);
