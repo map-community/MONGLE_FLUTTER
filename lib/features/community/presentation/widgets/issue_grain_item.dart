@@ -52,8 +52,10 @@ class IssueGrainItem extends ConsumerWidget {
         Widget content;
         switch (displayMode) {
           case IssueGrainDisplayMode.mapPreview:
+            content = _buildMapPreviewLayout(context, grain, displayMode);
+            break;
           case IssueGrainDisplayMode.boardPreview:
-            content = _buildPreviewLayout(context, grain, displayMode);
+            content = _buildBoardPreviewLayout(context, grain, displayMode);
             break;
           case IssueGrainDisplayMode.fullView:
             content = _buildFullLayout(context, grain);
@@ -77,8 +79,17 @@ class IssueGrainItem extends ConsumerWidget {
     );
   }
 
+  Widget _buildMapPreviewLayout(
+    BuildContext context,
+    IssueGrain grain,
+    IssueGrainDisplayMode mode,
+  ) {
+    // TODO: 다음 단계에서 고정 높이 레이아웃으로 구현할 예정
+    return const Text("지도 미리보기 (임시)");
+  }
+
   /// '미리보기' 모드 (mapPreview, boardPreview)를 위한 레이아웃을 빌드합니다.
-  Widget _buildPreviewLayout(
+  Widget _buildBoardPreviewLayout(
     BuildContext context,
     IssueGrain grain,
     IssueGrainDisplayMode mode,
