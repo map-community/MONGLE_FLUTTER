@@ -68,7 +68,6 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // build 메소드에 ref 추가
     return Scaffold(
-      extendBody: true,
       body: child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tabs.indexWhere(
