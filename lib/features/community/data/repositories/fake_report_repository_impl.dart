@@ -8,7 +8,6 @@ class FakeReportRepositoryImpl implements ReportRepository {
     required String contentId,
     required ReportContentType contentType,
     required ReportReason reason,
-    String? description,
   }) async {
     // 실제 서버와 통신하는 것처럼 0.3초의 딜레이를 줍니다.
     await Future.delayed(const Duration(milliseconds: 300));
@@ -21,12 +20,6 @@ class FakeReportRepositoryImpl implements ReportRepository {
       '✅ Content Type: ${contentType.name}',
     ); // .name을 통해 Enum의 이름을 문자열로 가져옵니다.
     print('✅ Reason: ${reason.name}');
-
-    // 상세 설명이 있는 경우에만 출력합니다.
-    if (description != null && description.isNotEmpty) {
-      print('✅ Description: $description');
-    }
-
     print('------------------------------------');
   }
 }

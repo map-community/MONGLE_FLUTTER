@@ -63,7 +63,7 @@ List<Comment> _generateLargeMockComments() {
                 Comment(
                   commentId: 'reply_for_${50 - i}',
                   content:
-                      'ㄴ ${_sampleContents[random.nextInt(_sampleContents.length)]}',
+                      '${_sampleContents[random.nextInt(_sampleContents.length)]}',
                   author: _mockAuthors[random.nextInt(_mockAuthors.length)],
                   likeCount: random.nextInt(20),
                   dislikeCount: 0,

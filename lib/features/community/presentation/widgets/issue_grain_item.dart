@@ -13,7 +13,8 @@ import 'package:timeago/timeago.dart' as timeago;
 
 enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
 
-class IssueGrainItem extends ConsumerWidget {
+// ✅ 1. ConsumerWidget -> ConsumerStatefulWidget으로 변경
+class IssueGrainItem extends ConsumerStatefulWidget {
   final String postId;
   final VoidCallback? onTap;
   final IssueGrainDisplayMode displayMode;
@@ -26,8 +27,18 @@ class IssueGrainItem extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final grainAsync = ref.watch(issueGrainProvider(postId));
+  ConsumerState<IssueGrainItem> createState() => _IssueGrainItemState();
+}
+
+// ✅ 2. State 클래스 생성
+class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
+  // ✅ 3. GlobalKey를 State 클래스 내부로 이동
+  final GlobalKey _menuKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    // State 클래스 안에서는 widget. 키워드를 통해 변수에 접근
+    final grainAsync = ref.watch(issueGrainProvider(widget.postId));
 
     return grainAsync.when(
       loading: () => const SizedBox(
@@ -40,35 +51,29 @@ class IssueGrainItem extends ConsumerWidget {
       ),
       data: (grain) {
         Widget content;
-        switch (displayMode) {
+        switch (widget.displayMode) {
           case IssueGrainDisplayMode.mapPreview:
-            content = _buildMapPreviewLayout(context, ref, grain);
+            content = _buildMapPreviewLayout(context, grain);
             break;
           case IssueGrainDisplayMode.boardPreview:
-            content = _buildBoardPreviewLayout(context, ref, grain);
+            content = _buildBoardPreviewLayout(context, grain);
             break;
           case IssueGrainDisplayMode.fullView:
-            content = _buildFullLayout(context, ref, grain);
+            content = _buildFullLayout(context, grain);
             break;
         }
 
-        // [핵심 수정] mapPreview 모드에서는 InkWell을 사용하지 않아 제약조건이 끊기지 않게 합니다.
-        if (displayMode == IssueGrainDisplayMode.mapPreview) {
+        if (widget.displayMode == IssueGrainDisplayMode.mapPreview) {
           return content;
         }
 
-        // 다른 모드에서는 기존처럼 InkWell을 사용합니다.
-        return InkWell(onTap: onTap, child: content);
+        return InkWell(onTap: widget.onTap, child: content);
       },
     );
   }
 
   /// 지도 미리보기 전용 레이아웃입니다. (단순 카드 형태)
-  Widget _buildMapPreviewLayout(
-    BuildContext context,
-    WidgetRef ref,
-    IssueGrain grain,
-  ) {
+  Widget _buildMapPreviewLayout(BuildContext context, IssueGrain grain) {
     // 1. TextPainter를 사용해 텍스트가 3줄을 넘어가는지 미리 계산합니다.
     final textPainter =
         TextPainter(
@@ -154,17 +159,13 @@ class IssueGrainItem extends ConsumerWidget {
             ],
           ),
 
-          InteractionToolbar(grain: grain, onTap: onTap),
+          InteractionToolbar(grain: grain, onTap: widget.onTap),
         ],
       ),
     );
   }
 
-  Widget _buildBoardPreviewLayout(
-    BuildContext context,
-    WidgetRef ref,
-    IssueGrain grain,
-  ) {
+  Widget _buildBoardPreviewLayout(BuildContext context, IssueGrain grain) {
     return Column(
       children: [
         Padding(
@@ -205,7 +206,7 @@ class IssueGrainItem extends ConsumerWidget {
         const SizedBox(height: 16),
         if (isTextOverflow)
           InkWell(
-            onTap: onTap,
+            onTap: widget.onTap,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -239,16 +240,12 @@ class IssueGrainItem extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 16.0),
             child: ImageCarousel(imageUrls: grain.photoUrls),
           ),
-        InteractionToolbar(grain: grain, onTap: onTap),
+        InteractionToolbar(grain: grain, onTap: widget.onTap),
       ],
     );
   }
 
-  Widget _buildFullLayout(
-    BuildContext context,
-    WidgetRef ref,
-    IssueGrain grain,
-  ) {
+  Widget _buildFullLayout(BuildContext context, IssueGrain grain) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
@@ -270,7 +267,7 @@ class IssueGrainItem extends ConsumerWidget {
             const SizedBox(height: 16),
             ImageCarousel(imageUrls: grain.photoUrls),
           ],
-          InteractionToolbar(grain: grain, onTap: onTap),
+          InteractionToolbar(grain: grain, onTap: widget.onTap),
         ],
       ),
     );
@@ -405,7 +402,6 @@ class IssueGrainItem extends ConsumerWidget {
                                 contentId: contentId,
                                 contentType: contentType,
                                 reason: selectedReason!,
-                                description: descriptionController.text,
                               );
                           ref
                               .read(reportedContentProvider.notifier)
