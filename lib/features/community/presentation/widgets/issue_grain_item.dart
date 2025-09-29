@@ -13,7 +13,6 @@ import 'package:timeago/timeago.dart' as timeago;
 
 enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
 
-// ✅ 1. ConsumerWidget -> ConsumerStatefulWidget으로 변경
 class IssueGrainItem extends ConsumerStatefulWidget {
   final String postId;
   final VoidCallback? onTap;
@@ -30,14 +29,11 @@ class IssueGrainItem extends ConsumerStatefulWidget {
   ConsumerState<IssueGrainItem> createState() => _IssueGrainItemState();
 }
 
-// ✅ 2. State 클래스 생성
 class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
-  // ✅ 3. GlobalKey를 State 클래스 내부로 이동
   final GlobalKey _menuKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
-    // State 클래스 안에서는 widget. 키워드를 통해 변수에 접근
     final grainAsync = ref.watch(issueGrainProvider(widget.postId));
 
     return grainAsync.when(
@@ -102,7 +98,7 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             children: [
               UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
               const SizedBox(width: 8),
-              Expanded(child: _buildAuthorRow(context, ref, grain)),
+              Expanded(child: _buildAuthorRow(context, grain)),
             ],
           ),
           const SizedBox(height: 16),
@@ -200,7 +196,7 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
           children: [
             UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
             const SizedBox(width: 8),
-            Expanded(child: _buildAuthorRow(context, ref, grain)),
+            Expanded(child: _buildAuthorRow(context, grain)),
           ],
         ),
         const SizedBox(height: 16),
@@ -255,7 +251,7 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             children: [
               UserProfileLine(profileImageUrl: grain.author.profileImageUrl),
               const SizedBox(width: 8),
-              Expanded(child: _buildAuthorRow(context, ref, grain)),
+              Expanded(child: _buildAuthorRow(context, grain)),
             ],
           ),
           const SizedBox(height: 16),
@@ -273,11 +269,7 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
     );
   }
 
-  Widget _buildAuthorRow(
-    BuildContext context,
-    WidgetRef ref,
-    IssueGrain grain,
-  ) {
+  Widget _buildAuthorRow(BuildContext context, IssueGrain grain) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -290,18 +282,13 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
           timeago.format(grain.createdAt, locale: 'ko'),
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
-
-        const Spacer(), // 이 위젯이 메뉴를 오른쪽 끝으로 밀어냅니다.
-        _buildMoreMenu(context, ref, grain), // 방금 추가한 메뉴 위젯 호출
+        const Spacer(),
+        _buildMoreMenu(context, grain),
       ],
     );
   }
 
-  void _showBlockConfirmationDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Author author,
-  ) {
+  void _showBlockConfirmationDialog(BuildContext context, Author author) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -313,9 +300,7 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
           actions: <Widget>[
             TextButton(
               child: const Text('취소'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
               child: const Text('차단', style: TextStyle(color: Colors.red)),
@@ -336,142 +321,69 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
     );
   }
 
-  /// 게시글 신고 다이얼로그를 표시하는 함수
-  void _showReportDialog(
-    BuildContext context,
-    WidgetRef ref,
-    String contentId,
-    ReportContentType contentType,
-  ) {
-    ReportReason? selectedReason;
-    final descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              // ✅ [수정] 제목을 '게시글 신고'로 변경
-              title: const Text('게시글 신고'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ✅ [수정] 안내 문구 변경
-                    const Text('이 게시글을 신고하는 이유를 선택해주세요.'),
-                    ...ReportReason.values.map((reason) {
-                      return RadioListTile<ReportReason>(
-                        title: Text(reason.korean),
-                        value: reason,
-                        groupValue: selectedReason,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedReason = value;
-                          });
-                        },
-                      );
-                    }).toList(),
-                    const SizedBox(height: 16),
-                    const Text('상세 내용 (선택 사항)'),
-                    TextField(
-                      controller: descriptionController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: '문제 상황을 더 자세히 알려주세요.',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('취소'),
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                ),
-                TextButton(
-                  onPressed: selectedReason == null
-                      ? null
-                      : () {
-                          // ⭐️ 이 부분의 로직은 댓글용과 완전히 동일합니다.
-                          ref
-                              .read(reportRepositoryProvider)
-                              .reportContent(
-                                contentId: contentId,
-                                contentType: contentType,
-                                reason: selectedReason!,
-                              );
-                          ref
-                              .read(reportedContentProvider.notifier)
-                              .addReportedContent(
-                                contentId: contentId,
-                                contentType: contentType,
-                              );
-                          Navigator.of(dialogContext).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('신고가 접수되었습니다.')),
-                          );
-                        },
-                  child: const Text('제출'),
-                ),
-              ],
-            );
-          },
-        );
+  // IssueGrainItem 클래스 내부에 추가
+  /// 게시글 우측 상단의 '더보기' 팝업 메뉴
+  Widget _buildMoreMenu(BuildContext context, IssueGrain grain) {
+    return PopupMenuButton<String>(
+      key: _menuKey,
+      icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
+      tooltip: '더보기',
+      onSelected: (value) {
+        if (value == 'report') {
+          Future.delayed(
+            const Duration(milliseconds: 100),
+            () => _showReportReasonMenu(context, grain),
+          );
+        } else if (value == 'block') {
+          _showBlockConfirmationDialog(context, grain.author);
+        }
       },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        const PopupMenuItem<String>(value: 'report', child: Text('신고하기')),
+        const PopupMenuItem<String>(value: 'block', child: Text('이 사용자 차단하기')),
+      ],
     );
   }
 
-  // IssueGrainItem 클래스 내부에 추가
-  /// 게시글 우측 상단의 '더보기' 팝업 메뉴
-  Widget _buildMoreMenu(BuildContext context, WidgetRef ref, IssueGrain grain) {
-    return SizedBox(
-      width: 32,
-      height: 32,
-      child: PopupMenuButton<String>(
-        icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
-        tooltip: '더보기',
-        onSelected: (value) {
-          if (value == 'report') {
-            _showReportDialog(
-              context,
-              ref,
-              grain.postId,
-              ReportContentType.POST,
-            );
-          } else if (value == 'block') {
-            _showBlockConfirmationDialog(context, ref, grain.author);
-          }
-        },
-        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-          PopupMenuItem<String>(
-            value: 'report',
-            child: Row(
-              children: [
-                Icon(
-                  Icons.report_outlined,
-                  size: 20,
-                  color: Colors.grey.shade700,
-                ),
-                const SizedBox(width: 8),
-                const Text('신고하기'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'block',
-            child: Row(
-              children: [
-                Icon(Icons.block, size: 20, color: Colors.grey.shade700),
-                const SizedBox(width: 8),
-                const Text('이 사용자 차단하기'),
-              ],
-            ),
-          ),
-        ],
+  void _showReportReasonMenu(BuildContext context, IssueGrain grain) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RenderBox renderBox =
+        _menuKey.currentContext!.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final position = renderBox.localToGlobal(Offset.zero);
+
+    showMenu<ReportReason>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, size.width, size.height),
+        Offset.zero & overlay.size,
       ),
-    );
+      items: ReportReason.values.map((reason) {
+        return PopupMenuItem<ReportReason>(
+          value: reason,
+          child: Text(reason.korean),
+        );
+      }).toList(),
+    ).then((selectedReason) {
+      if (selectedReason != null) {
+        ref
+            .read(reportRepositoryProvider)
+            .reportContent(
+              contentId: grain.postId,
+              contentType: ReportContentType.POST,
+              reason: selectedReason,
+            );
+        ref
+            .read(reportedContentProvider.notifier)
+            .addReportedContent(
+              contentId: grain.postId,
+              contentType: ReportContentType.POST,
+            );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('신고가 접수되었습니다.')));
+      }
+    });
   }
 }
