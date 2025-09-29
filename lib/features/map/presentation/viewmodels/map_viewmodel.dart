@@ -4,6 +4,9 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
+import 'package:mongle_flutter/features/community/providers/block_providers.dart';
+import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:mongle_flutter/features/map/data/models/map_objects_response.dart';
 import 'package:mongle_flutter/features/map/domain/repositories/map_repository.dart';
 import 'package:mongle_flutter/features/map/providers/map_providers.dart';
@@ -76,25 +79,54 @@ class MapViewModel extends StateNotifier<MapState> {
   /// 지도 객체(알갱이, 구름)를 불러오는 핵심 비즈니스 로직 메서드
   Future<void> fetchMapObjects(NLatLngBounds bounds) async {
     try {
-      // 1. Data 계층의 Repository에 데이터 요청을 위임합니다.
       final response = await _mapRepository.getMapObjects(bounds);
-      print(
-        "✅ [ViewModel] fetchMapObjects: Repository로부터 데이터 수신. Grains: ${response.grains.length}",
-      );
 
-      // 2. state.whenOrNull을 사용하여 현재 상태가 'data'일 때만 안전하게 업데이트합니다.
-      //    로딩이나 에러 상태일 때는 아무 작업도 하지 않습니다.
+      // [필터링 로직 추가]
+      // 두 개의 필터 목록을 모두 가져옵니다.
+      final blockedUserIds = _ref.read(blockedUsersProvider);
+      final reportedContents = _ref.read(reportedContentProvider);
+
+      // 필터링할 조건이 없으면 바로 반환하여 성능을 최적화합니다.
+      if (blockedUserIds.isEmpty && reportedContents.isEmpty) {
+        state.whenOrNull(
+          data: (initialPosition, _) => state = MapState.data(
+            initialPosition: initialPosition,
+            mapObjects: response,
+          ),
+        );
+        return;
+      }
+
+      // ✅ 2. 차단과 신고 필터를 모두 적용합니다.
+      final visibleGrains = response.grains.where((grain) {
+        // 조건 1: 작성자가 차단된 사용자인지 확인
+        final isBlocked = blockedUserIds.contains(grain.author.id);
+        if (isBlocked) return false;
+
+        // 조건 2: 이 게시물이 내가 신고한 게시물인지 확인
+        final isReported = reportedContents.any(
+          (reported) =>
+              reported.id == grain.postId &&
+              reported.type == ReportContentType.POST,
+        );
+        if (isReported) return false;
+
+        return true;
+      }).toList();
+
+      // 필터링된 grains 목록으로 새로운 MapObjectsResponse를 만듭니다.
+      final visibleMapObjects = response.copyWith(grains: visibleGrains);
+
       state.whenOrNull(
         data: (initialPosition, _) {
-          // 기존 상태의 initialPosition 값을 그대로 유지합니다.
           state = MapState.data(
             initialPosition: initialPosition,
-            mapObjects: response, // 새로 불러온 지도 객체 데이터를 상태에 업데이트합니다.
+            // ✅ 3. 필터링된 데이터를 상태에 업데이트합니다.
+            mapObjects: visibleMapObjects,
           );
         },
       );
     } catch (e) {
-      // 3. 에러 발생 시 상태를 'error'로 변경하여 UI에 피드백을 줍니다.
       state = MapState.error('지도 정보를 불러오는 데 실패했습니다: ${e.toString()}');
     }
   }
@@ -105,6 +137,12 @@ class MapViewModel extends StateNotifier<MapState> {
 /// UI 위젯이 MapViewModel의 인스턴스에 접근할 수 있도록 해주는 전역 Provider입니다.
 /// autoDispose는 지도 화면이 위젯 트리에서 제거될 때 ViewModel을 자동으로 파기하여 메모리를 절약해줍니다.
 final mapViewModelProvider =
-    StateNotifierProvider.autoDispose<MapViewModel, MapState>(
-      (ref) => MapViewModel(ref),
-    );
+    StateNotifierProvider.autoDispose<MapViewModel, MapState>((ref) {
+      // ✅ 4. [상태 감시] blockedUsersProvider를 watch 합니다.
+      // 이로써 차단 목록이 변경될 때마다 MapViewModel이 재실행되고,
+      // 지도 객체를 다시 불러와 필터링하게 됩니다.
+      ref.watch(blockedUsersProvider);
+      ref.watch(reportedContentProvider);
+
+      return MapViewModel(ref);
+    });

@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 
 // build_runner가 자동으로 생성할 파일들을 명시합니다.
 part 'map_objects_response.freezed.dart';
@@ -27,7 +28,7 @@ abstract class IssueGrainDto with _$IssueGrainDto {
     required String postId,
     required double latitude,
     required double longitude,
-    String? profileImageUrl,
+    required Author author,
   }) = _IssueGrainDto;
 
   factory IssueGrainDto.fromJson(Map<String, dynamic> json) =>

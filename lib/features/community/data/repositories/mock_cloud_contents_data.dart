@@ -5,11 +5,17 @@
 /// Value: 해당 클라우드에 속한 postId 리스트
 final Map<String, List<String>> mockCloudContents = {
   // IT 5호관 (정적 클라우드)에 속한 게시물들
-  'static_cloud_1': ['grain_101', 'grain_102', 'grain_105'],
+  'static_cloud_1': ['grain_101', 'grain_102', 'grain_105', 'grain_999'],
 
   // 중앙도서관 (정적 클라우드)에 속한 게시물들 (예시)
-  'static_cloud_2': ['grain_101', 'grain_105'],
+  'static_cloud_2': ['grain_101', 'grain_105', 'grain_999'],
 
   // 동적 클라우드에 속한 게시물들 (예시)
-  'dynamic_cloud_21': ['grain_101', 'grain_102', 'grain_103', 'grain_105'],
+  'dynamic_cloud_21': [
+    'grain_101',
+    'grain_102',
+    'grain_103',
+    'grain_105',
+    'grain_999',
+  ],
 };

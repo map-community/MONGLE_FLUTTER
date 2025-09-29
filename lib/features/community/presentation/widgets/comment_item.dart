@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
+import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
+import 'package:mongle_flutter/features/community/providers/block_providers.dart';
+import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,7 +64,7 @@ class CommentItem extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCommentHeader(context),
+                  _buildCommentHeader(context, ref),
                   const SizedBox(height: 4),
                   Text(
                     comment.content,
@@ -79,7 +83,7 @@ class CommentItem extends ConsumerWidget {
   }
 
   // 댓글 상단 (작성자 정보, 시간, 더보기 메뉴)
-  Widget _buildCommentHeader(BuildContext context) {
+  Widget _buildCommentHeader(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Text(
@@ -93,7 +97,7 @@ class CommentItem extends ConsumerWidget {
         ),
         const Spacer(), // 오른쪽에 메뉴 버튼을 밀어내기 위한 Spacer
         // ✨ 3. 신고, 차단 기능이 담긴 더보기 메뉴를 추가합니다.
-        _buildMoreMenu(context),
+        _buildMoreMenu(context, ref),
       ],
     );
   }
@@ -180,8 +184,154 @@ class CommentItem extends ConsumerWidget {
     );
   }
 
+  /// 사용자 차단 확인 다이얼로그를 표시하는 함수
+  void _showBlockConfirmationDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Author author,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('사용자 차단'),
+          content: Text(
+            "'${author.nickname}'님을 차단하시겠습니까?\n차단한 사용자의 모든 게시물과 댓글이 더 이상 보이지 않게 됩니다.",
+          ),
+          actions: <Widget>[
+            // '취소' 버튼
+            TextButton(
+              child: const Text('취소'),
+              onPressed: () {
+                // 다이얼로그를 닫습니다.
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            // '차단' 버튼
+            TextButton(
+              child: const Text(
+                '차단',
+                style: TextStyle(color: Colors.red), // 위험한 동작임을 알려주는 색상
+              ),
+              onPressed: () {
+                // 1. 차단 로직을 실행합니다.
+                ref.read(blockedUsersProvider.notifier).blockUser(author.id);
+
+                // 2. 다이얼로그를 닫습니다.
+                Navigator.of(dialogContext).pop();
+
+                // 3. 작업 완료 피드백을 SnackBar로 표시합니다.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${author.nickname}님을 차단했습니다.'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 콘텐츠 신고 다이얼로그를 표시하는 함수
+  void _showReportDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String contentId,
+    ReportContentType contentType,
+  ) {
+    ReportReason? selectedReason; // 사용자가 선택한 신고 사유를 저장할 변수
+    final descriptionController = TextEditingController(); // 상세 내용을 위한 컨트롤러
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        // StatefulBuilder를 사용해야 다이얼로그 내부에서 상태(선택된 사유) 변경이 가능합니다.
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('콘텐츠 신고'),
+              content: SingleChildScrollView(
+                // 내용이 길어질 수 있으므로 스크롤 가능하게
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('신고 사유를 선택해주세요.'),
+                    // ReportReason Enum의 모든 값을 가져와 라디오 버튼으로 만듭니다.
+                    ...ReportReason.values.map((reason) {
+                      return RadioListTile<ReportReason>(
+                        title: Text(reason.korean), // 간단하게 Enum 이름으로 표시
+                        value: reason,
+                        groupValue: selectedReason,
+                        onChanged: (value) {
+                          setState(() {
+                            // 다이얼로그 내부 UI만 새로고침
+                            selectedReason = value;
+                          });
+                        },
+                      );
+                    }).toList(),
+                    const SizedBox(height: 16),
+                    const Text('상세 내용 (선택 사항)'),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: '문제 상황을 더 자세히 알려주세요.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('취소'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+                TextButton(
+                  // 사유를 선택해야만 제출 버튼이 활성화됩니다.
+                  onPressed: selectedReason == null
+                      ? null
+                      : () {
+                          // 1. 백엔드(가짜 서버)에 신고 내용 전송
+                          ref
+                              .read(reportRepositoryProvider)
+                              .reportContent(
+                                contentId: contentId,
+                                contentType: contentType,
+                                reason: selectedReason!,
+                                description: descriptionController.text,
+                              );
+
+                          // 2. '즉시 숨김'을 위해 로컬 상태 업데이트
+                          ref
+                              .read(reportedContentProvider.notifier)
+                              .addReportedContent(
+                                contentId: contentId,
+                                contentType: contentType,
+                              );
+
+                          Navigator.of(dialogContext).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('신고가 접수되었습니다.')),
+                          );
+                        },
+                  child: const Text('제출'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // '더보기' 팝업 메뉴
-  Widget _buildMoreMenu(BuildContext context) {
+  Widget _buildMoreMenu(BuildContext context, WidgetRef ref) {
     return SizedBox(
       width: 32,
       height: 32,
@@ -190,9 +340,14 @@ class CommentItem extends ConsumerWidget {
         tooltip: '더보기',
         onSelected: (value) {
           if (value == 'report') {
-            print('신고 처리 로직 실행');
+            _showReportDialog(
+              context,
+              ref,
+              comment.commentId,
+              ReportContentType.COMMENT,
+            );
           } else if (value == 'block') {
-            print('사용자 차단 로직 실행');
+            _showBlockConfirmationDialog(context, ref, comment.author);
           }
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[

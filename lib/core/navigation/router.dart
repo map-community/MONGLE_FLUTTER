@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/common/widgets/main_shell.dart';
+import 'package:mongle_flutter/common/widgets/simple_info_screen.dart';
+import 'package:mongle_flutter/core/constants/policy_strings.dart';
 import 'package:mongle_flutter/features/community/presentation/screens/cloud_screen.dart';
 import 'package:mongle_flutter/features/community/presentation/screens/grain_detail_screen.dart';
 import 'package:mongle_flutter/features/feed/presentation/screens/feed_screen.dart';
@@ -89,6 +91,29 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
+          routes: [
+            GoRoute(
+              path: 'privacy-policy', // -> /profile/privacy-policy
+              builder: (context, state) => const SimpleInfoScreen(
+                title: '개인정보처리방침',
+                body: privacyPolicyMarkdown,
+              ),
+            ),
+            GoRoute(
+              path: 'terms-of-service', // -> /profile/terms-of-service
+              builder: (context, state) => const SimpleInfoScreen(
+                title: '이용약관',
+                body: termsOfServiceMarkdown,
+              ),
+            ),
+            GoRoute(
+              path: 'contact', // -> /profile/contact
+              builder: (context, state) => const SimpleInfoScreen(
+                title: '문의하기',
+                body: contactInfoMarkdown,
+              ),
+            ),
+          ],
         ),
       ],
     ),

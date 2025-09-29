@@ -1,6 +1,7 @@
 // lib/features/map/data/repositories/mock_map_objects_data.dart
 
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/map/data/models/map_objects_response.dart';
 
 /// 지도에 표시될 객체들에 대한 가짜(Mock) 데이터입니다.
@@ -9,34 +10,64 @@ final mockMapObjectsResponse = MapObjectsResponse(
   // === 1. 이슈 알갱이 데이터 (개별 마커) ===
   grains: [
     IssueGrainDto(
+      postId: 'grain_999',
+      latitude: 35.888171, // mock_issue_grain_data.dart와 동일한 좌표
+      longitude: 128.614759,
+      author: const Author(
+        id: 'bad_user_9999',
+        nickname: '악성유저',
+        profileImageUrl: 'https://i.pravatar.cc/150?u=user9999',
+      ),
+    ),
+    IssueGrainDto(
       postId: 'grain_101',
       latitude: 35.8925, // 북문 근처
       longitude: 128.6095,
-      profileImageUrl: 'https://i.pravatar.cc/150?u=user1',
+      author: const Author(
+        id: 'user1',
+        nickname: '익명의 몽글러1',
+        profileImageUrl: 'https://i.pravatar.cc/150?u=user1',
+      ),
     ),
     IssueGrainDto(
       postId: 'grain_102',
       latitude: 35.8885, // 중앙도서관 근처
       longitude: 128.6105,
-      profileImageUrl: 'https://i.pravatar.cc/150?u=user2',
+      author: const Author(
+        id: 'user2',
+        nickname: '센팍 지박령',
+        profileImageUrl: 'https://i.pravatar.cc/150?u=user2',
+      ),
     ),
     IssueGrainDto(
       postId: 'grain_103',
       latitude: 35.8925, // 북문 근처
       longitude: 128.6095,
-      profileImageUrl: 'https://i.pravatar.cc/150?u=user3', // 프로필 이미지가 없는 사용자
+      author: const Author(
+        id: 'user3',
+        nickname: '북문 매니아',
+        profileImageUrl: 'https://i.pravatar.cc/150?u=user3',
+      ),
     ),
     IssueGrainDto(
       postId: 'grain_104',
       latitude: 35.8918,
       longitude: 128.6135,
-      profileImageUrl: null, // 프로필 이미지가 없는 사용자
+      author: const Author(
+        id: 'user4',
+        nickname: '조용한 몽글러',
+        profileImageUrl: null,
+      ), // 프로필 이미지가 없는 사용자
     ),
     IssueGrainDto(
       postId: 'grain_105',
       latitude: 35.8872,
       longitude: 128.6088,
-      profileImageUrl: 'https://i.pravatar.cc/150?u=user5', // 프로필 이미지가 없는 사용자
+      author: const Author(
+        id: 'user5',
+        nickname: '공대생',
+        profileImageUrl: 'https://i.pravatar.cc/150?u=user5',
+      ),
     ),
   ],
   // === 2. 정적 클라우드 데이터 (폴리곤 + 중심 마커) ===

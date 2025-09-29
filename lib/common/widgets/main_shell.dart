@@ -41,8 +41,12 @@ class MainShell extends ConsumerWidget {
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       label: '내 정보',
+      // 로그인 확인 로직을 잠시 비활성화하고, 단순 페이지 이동으로 변경합니다.
+      onTap: (context, ref) => context.go('/profile'),
+      /*
       // '내 정보' 탭은 더 복잡한 동작을 가집니다.
       onTap: (context, ref) {
+
         // --- ▼▼▼ 로그인 기능 추가 시 이 부분만 수정하면 됩니다 ▼▼▼ ---
 
         // final currentUser = ref.read(authProvider); // 예시: 나중에 authProvider를 읽어옴
@@ -61,6 +65,8 @@ class MainShell extends ConsumerWidget {
         }
         // --- ▲▲▲ 여기까지 ---
       },
+
+ */
     ),
   ];
 

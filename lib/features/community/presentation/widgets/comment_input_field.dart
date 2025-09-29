@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/services/profanity_filter_service.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
@@ -118,6 +119,29 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
                             : () {
                                 final content = _textController.text.trim();
                                 if (content.isEmpty) return; // 내용이 없으면 전송 안 함
+
+                                final filterService = ref.read(
+                                  profanityFilterProvider,
+                                );
+
+                                // ✅ [수정] bool 대신 String? 타입으로 결과를 받습니다.
+                                final String? foundProfanity = filterService
+                                    .findFirstProfanity(content);
+
+                                // ✅ [수정] 결과(foundProfanity)가 null이 아닌지 확인하여 분기 처리합니다.
+                                if (foundProfanity != null) {
+                                  // ✅ [수정] SnackBar 메시지에 발견된 단어를 포함하여 보여줍니다.
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "'${foundProfanity}'은(는) 사용할 수 없는 단어입니다.",
+                                      ),
+                                      backgroundColor:
+                                          Colors.red, // 경고 메시지이므로 색상 강조
+                                    ),
+                                  );
+                                  return; // 제출을 중단합니다.
+                                }
 
                                 // 답글 모드인지 확인
                                 if (replyingToComment != null) {
