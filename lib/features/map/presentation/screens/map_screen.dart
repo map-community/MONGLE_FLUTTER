@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_input_field.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
@@ -28,6 +29,11 @@ class MapScreen extends ConsumerWidget {
     }
 
     final canPop = sheetState.mode == SheetMode.minimized;
+
+    // [1. 수정] FAB의 표시 여부를 결정하는 변수
+    final isFabVisible =
+        sheetState.mode == SheetMode.minimized ||
+        sheetState.mode == SheetMode.localFeed;
 
     // [핵심 2] Scaffold를 PopScope로 감싸기
     return PopScope(
@@ -107,6 +113,30 @@ class MapScreen extends ConsumerWidget {
                   child: CommentInputField(postId: sheetState.selectedGrainId!),
                 ),
               ),
+
+            // [2. 수정] AnimatedPositioned를 사용하여 위치를 동적으로 변경
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              right: 16,
+              // [3. 수정] 바텀시트의 높이(sheetState.height)를 기반으로 FAB의 bottom 위치를 계산
+              bottom: (screenHeight * sheetState.height) + 16,
+              child: AnimatedOpacity(
+                // [4. 수정] isFabVisible 값에 따라 투명도를 조절하여 자연스럽게 숨기거나 보여줌
+                opacity: isFabVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: IgnorePointer(
+                  // [5. 수정] FAB가 투명할 때(숨겨졌을 때) 터치되지 않도록 설정
+                  ignoring: !isFabVisible,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      context.push('/write');
+                    },
+                    child: const Icon(Icons.edit),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -2,6 +2,14 @@ import '../entities/issue_grain.dart';
 
 /// '이슈 알갱이' 데이터 통신을 위한 계약서(추상 클래스)
 abstract class IssueGrainRepository {
+  /// 새로운 이슈 알갱이를 생성합니다.
+  Future<IssueGrain> createIssueGrain({
+    required String content,
+    required List<String> photoUrls,
+    required double latitude,
+    required double longitude,
+  });
+
   /// 특정 구름(Cloud)에 속한 모든 이슈 알갱이 목록을 가져옵니다.
   Future<List<IssueGrain>> getIssueGrainsInCloud(String cloudId);
 

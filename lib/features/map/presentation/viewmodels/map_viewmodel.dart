@@ -66,6 +66,14 @@ class MapViewModel extends StateNotifier<MapState> {
         state = MapState.data(
           initialPosition: NLatLng(position.latitude, position.longitude),
         );
+
+        // [수정] ViewModel이 초기화될 때 첫 데이터 로드를 수행합니다.
+        // Fake Repository는 bounds를 사용하지 않으므로 임시 값을 전달합니다.
+        final initialBounds = NLatLngBounds(
+          southWest: NLatLng(position.latitude, position.longitude),
+          northEast: NLatLng(position.latitude, position.longitude),
+        );
+        await fetchMapObjects(initialBounds);
       } catch (e) {
         // 위치 정보를 가져오다 실패하면 'error' 상태로 변경합니다.
         state = MapState.error('현재 위치를 가져오는 데 실패했습니다: ${e.toString()}');

@@ -4,6 +4,7 @@ import 'package:mongle_flutter/common/widgets/simple_info_screen.dart';
 import 'package:mongle_flutter/core/constants/policy_strings.dart';
 import 'package:mongle_flutter/features/community/presentation/screens/cloud_screen.dart';
 import 'package:mongle_flutter/features/community/presentation/screens/grain_detail_screen.dart';
+import 'package:mongle_flutter/features/community/presentation/screens/write_grain_screen.dart';
 import 'package:mongle_flutter/features/feed/presentation/screens/feed_screen.dart';
 import 'package:mongle_flutter/features/map/presentation/screens/map_screen.dart';
 import 'package:mongle_flutter/features/profile/presentation/screens/profile_screen.dart';
@@ -49,6 +50,15 @@ final GoRouter router = GoRouter(
   initialLocation: '/map',
 
   routes: [
+    GoRoute(
+      path: '/write',
+      // [2] 페이지 빌더를 사용하여 화면 전환 애니메이션을 적용합니다.
+      pageBuilder: (context, state) => _buildSlideTransitionPage(
+        context: context,
+        state: state,
+        child: const WriteGrainScreen(),
+      ),
+    ),
     // CloudScreen 경로를 이곳, ShellRoute와 같은 레벨로 이동시킵니다.
     GoRoute(
       path: '/cloud/:cloudId', // 경로를 '/map/cloud...' 에서 '/cloud...'로 변경

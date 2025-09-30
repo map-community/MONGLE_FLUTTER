@@ -18,7 +18,7 @@ const _author4 = Author(
 );
 
 // 목업 데이터를 별도의 파일로 분리하여 관리합니다.
-final List<IssueGrain> mockIssueGrains = [
+final List<IssueGrain> mockGrainsDatabase = [
   IssueGrain(
     postId: 'grain_999',
     author: _maliciousUser,
