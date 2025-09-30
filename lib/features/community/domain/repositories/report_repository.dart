@@ -12,6 +12,5 @@ abstract class ReportRepository {
     required String contentId,
     required ReportContentType contentType,
     required ReportReason reason,
-    String? description,
   });
 }
