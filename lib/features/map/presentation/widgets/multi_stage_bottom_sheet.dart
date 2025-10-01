@@ -64,12 +64,9 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollEndNotification) {
-          final currentFraction = _scrollController.size;
-          // [수정] syncHeightFromUI는 이제 Strategy에 의해 직접 관리됩니다.
-          //    BaseBottomSheetStrategy를 수정해야 합니다. (다음 단계에서 진행)
           ref
               .read(widget.strategyProvider.notifier)
-              .syncHeightFromUI(currentFraction);
+              .syncHeightFromUI(_scrollController.size);
         }
         return false;
       },
@@ -91,7 +88,6 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
                 BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8),
               ],
             ),
-            // 3. 외부에서 주입받은 builder를 호출하여 실제 콘텐츠를 그립니다.
             child: widget.builder(context, scrollController),
           );
         },

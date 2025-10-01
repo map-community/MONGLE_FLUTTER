@@ -30,10 +30,7 @@ class MapScreen extends ConsumerWidget {
 
     final canPop = sheetState.mode == SheetMode.minimized;
 
-    // [1. 수정] FAB의 표시 여부를 결정하는 변수
-    final isFabVisible =
-        sheetState.mode == SheetMode.minimized ||
-        sheetState.mode == SheetMode.localFeed;
+    final isFabVisible = sheetState.mode == SheetMode.minimized;
 
     // [핵심 2] Scaffold를 PopScope로 감싸기
     return PopScope(
@@ -61,7 +58,7 @@ class MapScreen extends ConsumerWidget {
         // Stack 위젯으로 지도와 바텀시트를 겹치게 함
         body: Stack(
           children: [
-            // 지도 UI (화면 전체를 차지)
+            // 1. 지도
             mapState.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (message) => Center(child: Text(message)),
@@ -73,7 +70,27 @@ class MapScreen extends ConsumerWidget {
               },
             ),
 
-            // 바텀시트 UI
+            // 2. FAB (지도 바로 위에 그려짐)
+            Positioned(
+              right: 16,
+              // 바텀시트 최소 높이(peekFraction) 바로 위에 고정
+              bottom: (screenHeight * peekFraction) + 16,
+              child: AnimatedOpacity(
+                opacity: isFabVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: IgnorePointer(
+                  ignoring: !isFabVisible,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      context.push('/write');
+                    },
+                    child: const Icon(Icons.edit),
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. 바텀시트 (FAB 위에 그려짐)
             MultiStageBottomSheet(
               strategyProvider: mapSheetStrategyProvider,
               minSnapSize: peekFraction,
@@ -103,7 +120,7 @@ class MapScreen extends ConsumerWidget {
               },
             ),
 
-            // 전체 보기 모드일 때만 댓글 입력창을 맨 위에 띄웁니다.
+            // 4. 댓글 입력창 (가장 위에 그려짐)
             if (sheetState.mode == SheetMode.full)
               Align(
                 alignment: Alignment.bottomCenter,
@@ -113,30 +130,6 @@ class MapScreen extends ConsumerWidget {
                   child: CommentInputField(postId: sheetState.selectedGrainId!),
                 ),
               ),
-
-            // [2. 수정] AnimatedPositioned를 사용하여 위치를 동적으로 변경
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              right: 16,
-              // [3. 수정] 바텀시트의 높이(sheetState.height)를 기반으로 FAB의 bottom 위치를 계산
-              bottom: (screenHeight * sheetState.height) + 16,
-              child: AnimatedOpacity(
-                // [4. 수정] isFabVisible 값에 따라 투명도를 조절하여 자연스럽게 숨기거나 보여줌
-                opacity: isFabVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                child: IgnorePointer(
-                  // [5. 수정] FAB가 투명할 때(숨겨졌을 때) 터치되지 않도록 설정
-                  ignoring: !isFabVisible,
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      context.push('/write');
-                    },
-                    child: const Icon(Icons.edit),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
