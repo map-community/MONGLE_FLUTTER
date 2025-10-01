@@ -1,68 +1,110 @@
+// lib/features/community/data/repositories/fake_issue_grain_repository_impl.dart
+
 import 'package:mongle_flutter/features/community/data/repositories/mock_cloud_contents_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_issue_grain_data.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
+import 'package:mongle_flutter/features/community/providers/write_grain_providers.dart'; // IssuedUrlInfo 사용을 위해 import
 
 class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
-  // [수정] 복사본을 만드는 대신, 공유 데이터베이스를 직접 사용합니다.
   final List<IssueGrain> _db = mockGrainsDatabase;
 
+  // --- 🔽 기존 createIssueGrain 함수는 삭제하고 아래 3개 함수를 새로 구현합니다. 🔽 ---
+
   @override
-  Future<IssueGrain> createIssueGrain({
+  Future<void> createPost({
     required String content,
-    required List<String> photoUrls,
     required double latitude,
     required double longitude,
   }) async {
-    // [2] 실제 서버와 통신하는 것처럼 0.5초 딜레이를 줍니다.
     await Future.delayed(const Duration(milliseconds: 500));
-
-    // [3] 새로운 IssueGrain 객체를 생성합니다.
     final newGrain = IssueGrain(
-      // postId는 보통 서버에서 생성해주므로, 임시로 고유한 값을 만들어줍니다.
       postId: 'grain_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
-      photoUrls: photoUrls,
+      photoUrls: [],
       latitude: latitude,
       longitude: longitude,
-      // 현재 로그인한 사용자는 임시로 mockCurrentUser를 사용합니다.
       author: mockCurrentUser,
       createdAt: DateTime.now(),
-      // 새 글이므로 모든 카운트는 0으로 시작합니다.
+      viewCount: 0,
+      likeCount: 0,
+      dislikeCount: 0,
+      commentCount: 0,
+    );
+    _db.insert(0, newGrain);
+    print('✅ [FakeRepo] 새 알갱이 생성됨 (텍스트 전용): ${newGrain.postId}');
+  }
+
+  @override
+  Future<List<IssuedUrlInfo>> requestUploadUrls({
+    required List<UploadFileInfo> files,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    print('✅ [FakeRepo] ${files.length}개 파일에 대한 Presigned URL 요청 받음');
+
+    final fakeUrls = files.map((fileInfo) {
+      final fakeFileKey =
+          'uploads/${DateTime.now().millisecondsSinceEpoch}-${fileInfo.fileName}';
+      final fakeUrl =
+          'https://s3.fake-region.amazonaws.com/fake-bucket/$fakeFileKey?signature=fake_signature';
+
+      return IssuedUrlInfo(
+        fileKey: fakeFileKey,
+        presignedUrl: fakeUrl,
+        expiresAt: DateTime.now()
+            .add(const Duration(minutes: 15))
+            .toIso8601String(),
+      );
+    }).toList();
+    return fakeUrls;
+  }
+
+  @override
+  Future<void> completePostCreation({
+    required String content,
+    required List<String> fileKeyList,
+    required double latitude,
+    required double longitude,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // [수정] fileKeyList를 가짜 전체 URL 목록으로 변환합니다.
+    final fakeFullUrls = fileKeyList
+        .map((key) => 'https://s3.fake-region.amazonaws.com/fake-bucket/$key')
+        .toList();
+
+    final newGrain = IssueGrain(
+      postId: 'grain_${DateTime.now().millisecondsSinceEpoch}',
+      content: content,
+      photoUrls: fakeFullUrls, // [수정] 변환된 URL 목록을 photoUrls에 저장
+      latitude: latitude,
+      longitude: longitude,
+      author: mockCurrentUser,
+      createdAt: DateTime.now(),
       viewCount: 0,
       likeCount: 0,
       dislikeCount: 0,
       commentCount: 0,
     );
 
-    // [4] 가짜 데이터베이스(리스트)의 맨 앞에 새로운 게시글을 추가합니다.
     _db.insert(0, newGrain);
-
-    print('✅ [FakeRepo] 새 알갱이 생성됨: ${newGrain.postId}');
-
-    // [5] 생성된 객체를 반환합니다.
-    return newGrain;
+    print('✅ [FakeRepo] 새 알갱이 생성 완료 (파일 포함): ${newGrain.postId}');
   }
+
+  // --- 🔽 아래 함수들은 기존과 동일합니다. 🔽 ---
 
   @override
   Future<List<IssueGrain>> getIssueGrainsInCloud(String cloudId) async {
     await Future.delayed(const Duration(milliseconds: 300));
-
-    // 1. mockCloudContents 맵에서 cloudId에 해당하는 postId 리스트를 찾습니다.
     final postIdsInCloud = mockCloudContents[cloudId];
-
-    // 2. 만약 해당하는 postId 리스트가 없으면, 빈 리스트를 반환합니다.
     if (postIdsInCloud == null) {
       return [];
     }
-
-    // 3. 전체 알갱이 목록(_db)에서, 필요한 postId를 가진 알갱이들만 필터링합니다.
     final result = _db
         .where((grain) => postIdsInCloud.contains(grain.postId))
         .toList();
-
     return result;
   }
 

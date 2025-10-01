@@ -15,6 +15,9 @@ _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
   photoUrls:
       (json['photoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
+  videoUrls:
+      (json['videoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
   likeCount: (json['like_count'] as num).toInt(),
   dislikeCount: (json['dislike_count'] as num).toInt(),
   commentCount: (json['comment_count'] as num).toInt(),
@@ -30,6 +33,7 @@ Map<String, dynamic> _$IssueGrainToJson(_IssueGrain instance) =>
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'photoUrls': instance.photoUrls,
+      'videoUrls': instance.videoUrls,
       'like_count': instance.likeCount,
       'dislike_count': instance.dislikeCount,
       'comment_count': instance.commentCount,

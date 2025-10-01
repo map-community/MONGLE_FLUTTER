@@ -13,6 +13,7 @@ abstract class IssueGrain with _$IssueGrain {
     required double latitude,
     required double longitude,
     @Default([]) List<String> photoUrls, // 이미지 URL 목록
+    @Default([]) List<String> videoUrls,
     @JsonKey(name: 'like_count') required int likeCount,
     @JsonKey(name: 'dislike_count') required int dislikeCount,
     @JsonKey(name: 'comment_count') required int commentCount,
