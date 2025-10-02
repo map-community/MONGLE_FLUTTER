@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_input_field.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_section.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
@@ -29,6 +30,8 @@ class MapScreen extends ConsumerWidget {
 
     final canPop = sheetState.mode == SheetMode.minimized;
 
+    final isFabVisible = sheetState.mode == SheetMode.minimized;
+
     // [핵심 2] Scaffold를 PopScope로 감싸기
     return PopScope(
       // 바텀시트가 최소화 상태일 때만 뒤로가기로 화면을 나갈 수 있음
@@ -55,7 +58,7 @@ class MapScreen extends ConsumerWidget {
         // Stack 위젯으로 지도와 바텀시트를 겹치게 함
         body: Stack(
           children: [
-            // 지도 UI (화면 전체를 차지)
+            // 1. 지도
             mapState.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (message) => Center(child: Text(message)),
@@ -67,7 +70,27 @@ class MapScreen extends ConsumerWidget {
               },
             ),
 
-            // 바텀시트 UI
+            // 2. FAB (지도 바로 위에 그려짐)
+            Positioned(
+              right: 16,
+              // 바텀시트 최소 높이(peekFraction) 바로 위에 고정
+              bottom: (screenHeight * peekFraction) + 16,
+              child: AnimatedOpacity(
+                opacity: isFabVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: IgnorePointer(
+                  ignoring: !isFabVisible,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      context.push('/write');
+                    },
+                    child: const Icon(Icons.edit),
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. 바텀시트 (FAB 위에 그려짐)
             MultiStageBottomSheet(
               strategyProvider: mapSheetStrategyProvider,
               minSnapSize: peekFraction,
@@ -97,7 +120,7 @@ class MapScreen extends ConsumerWidget {
               },
             ),
 
-            // 전체 보기 모드일 때만 댓글 입력창을 맨 위에 띄웁니다.
+            // 4. 댓글 입력창 (가장 위에 그려짐)
             if (sheetState.mode == SheetMode.full)
               Align(
                 alignment: Alignment.bottomCenter,
