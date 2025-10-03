@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:mongle_flutter/core/constants/api_constants.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart'; // Dio Provider를 사용하기 위해 import
+import 'package:mongle_flutter/core/errors/exceptions.dart';
+import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
+import 'dart:convert'; // 👈 디코딩을 위해 dart:convert 라이브러리를 import 합니다.
 
 /// 'IssueGrainRepository' 인터페이스의 실제 구현 클래스입니다.
 /// Dio를 사용하여 실제 백엔드 API 서버와 통신하는 로직을 담당합니다.
@@ -10,14 +13,39 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
   // 서버와 통신하기 위한 Dio 인스턴스.
   // 외부에서 생성된 것을 전달받아 사용합니다(Dependency Injection).
   final Dio _dio;
+  final TokenStorageService _tokenStorage; // 👈 _tokenStorage 필드 추가
 
   // 생성자: 이 클래스가 생성될 때 반드시 Dio 인스턴스를 전달받아야 합니다.
-  IssueGrainRepositoryImpl(this._dio);
+  IssueGrainRepositoryImpl(this._dio, this._tokenStorage);
 
-  // TODO: [임시] 인증 기능 구현 전까지 사용할 하드코딩된 사용자 ID
-  static const String _tempMemberId = "0N4N405YBEWHW";
   // ✅ [임시 수정] 백엔드 title 필드(@NotBlank) 대응을 위한 임시 제목
   static const String _tempTitle = "임시 제목";
+
+  // 👇 [추가] JWT 토큰에서 memberId(sub)를 추출하는 임시 비공개 함수
+  Future<String?> _getMemberIdFromToken() async {
+    // 1. 저장소에서 AccessToken을 가져옵니다.
+    final token = await _tokenStorage.getAccessToken();
+    if (token == null) return null;
+
+    try {
+      // 2. 토큰을 '.' 기준으로 세 부분으로 나눕니다.
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      // 3. 두 번째 부분(Payload)을 디코딩합니다.
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload); // Base64Url 포맷에 맞게 패딩 처리
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final payloadMap = json.decode(decoded) as Map<String, dynamic>;
+
+      // 4. 디코딩된 JSON에서 'sub' 값을 찾아 반환합니다.
+      return payloadMap['sub'] as String?;
+    } catch (e) {
+      // 디코딩 중 에러 발생 시 null을 반환합니다.
+      print('임시 토큰 디코딩 에러: $e');
+      return null;
+    }
+  }
 
   // --- 글쓰기 관련 함수 (실제 API 호출) ---
 
@@ -28,6 +56,11 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     required double longitude,
   }) async {
     try {
+      final memberId = await _getMemberIdFromToken();
+      if (memberId == null) {
+        throw ApiException('사용자 인증 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+      }
+
       // POST /api/v1/posts 엔드포인트에 데이터를 전송합니다.
       await _dio.post(
         ApiConstants.posts,
@@ -37,7 +70,7 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
           'latitude': latitude,
           'longitude': longitude,
           // [핵심] 이슈 티켓에 따라 임시 authorId를 body에 포함합니다.
-          'authorId': _tempMemberId,
+          'authorId': memberId,
         },
       );
     } catch (e) {
@@ -76,6 +109,11 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     required double longitude,
   }) async {
     try {
+      final memberId = await _getMemberIdFromToken();
+      if (memberId == null) {
+        throw ApiException('사용자 인증 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+      }
+
       // POST /api/v1/posts/complete 엔드포인트에 데이터를 전송합니다.
       await _dio.post(
         ApiConstants.posts,
@@ -86,7 +124,7 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
           'latitude': latitude,
           'longitude': longitude,
           // [핵심] 이슈 티켓에 따라 임시 authorId를 body에 포함합니다.
-          'authorId': _tempMemberId,
+          'authorId': memberId,
         },
       );
     } catch (e) {

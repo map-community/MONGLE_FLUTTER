@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
+import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
@@ -19,7 +20,8 @@ import 'package:mongle_flutter/features/community/providers/report_providers.dar
 final issueGrainRepositoryProvider = Provider<IssueGrainRepository>((ref) {
   // return FakeIssueGrainRepositoryImpl();
   final dio = ref.watch(dioProvider);
-  return IssueGrainRepositoryImpl(dio);
+  final tokenStorage = ref.watch(tokenStorageServiceProvider);
+  return IssueGrainRepositoryImpl(dio, tokenStorage);
 });
 
 // ========================================================================
