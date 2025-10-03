@@ -7,15 +7,15 @@ part of 'comment.dart';
 // **************************************************************************
 
 _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
-  commentId: json['comment_id'] as String,
+  commentId: json['commentId'] as String,
   content: json['content'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
-  likeCount: (json['like_count'] as num?)?.toInt() ?? 0,
-  dislikeCount: (json['dislike_count'] as num?)?.toInt() ?? 0,
-  createdAt: DateTime.parse(json['created_at'] as String),
-  updatedAt: json['updated_at'] == null
+  likeCount: (json['likeCount'] as num?)?.toInt() ?? 0,
+  dislikeCount: (json['dislikeCount'] as num?)?.toInt() ?? 0,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: json['updatedAt'] == null
       ? null
-      : DateTime.parse(json['updated_at'] as String),
+      : DateTime.parse(json['updatedAt'] as String),
   isDeleted: json['isDeleted'] as bool? ?? false,
   isAuthor: json['isAuthor'] as bool? ?? false,
   replies:
@@ -26,13 +26,13 @@ _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
 );
 
 Map<String, dynamic> _$CommentToJson(_Comment instance) => <String, dynamic>{
-  'comment_id': instance.commentId,
+  'commentId': instance.commentId,
   'content': instance.content,
   'author': instance.author,
-  'like_count': instance.likeCount,
-  'dislike_count': instance.dislikeCount,
-  'created_at': instance.createdAt.toIso8601String(),
-  'updated_at': instance.updatedAt?.toIso8601String(),
+  'likeCount': instance.likeCount,
+  'dislikeCount': instance.dislikeCount,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt?.toIso8601String(),
   'isDeleted': instance.isDeleted,
   'isAuthor': instance.isAuthor,
   'replies': instance.replies,

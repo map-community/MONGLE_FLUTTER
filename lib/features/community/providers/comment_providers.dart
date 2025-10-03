@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/dio/dio_provider.dart';
+import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/community/data/repositories/comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
@@ -10,7 +13,10 @@ import 'package:mongle_flutter/features/community/providers/report_providers.dar
 
 // --- Data Layer Provider ---
 final commentRepositoryProvider = Provider<CommentRepository>((ref) {
-  return FakeCommentRepositoryImpl();
+  // return FakeCommentRepositoryImpl();
+  final dio = ref.watch(dioProvider);
+  final tokenStorage = ref.watch(tokenStorageServiceProvider);
+  return CommentRepositoryImpl(dio, tokenStorage);
 });
 
 // --- State Management Layer Provider  ---
@@ -218,11 +224,7 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     );
 
     try {
-      await _repository.addComment(
-        postId: _postId,
-        content: content,
-        author: mockCurrentUser,
-      );
+      await _repository.addComment(postId: _postId, content: content);
       // ✨ 2. 성공 후 목록을 새로고침하면, isSubmitting은 자동으로 기본값(false)으로 돌아옵니다.
       await _fetchFirstPage();
     } catch (e) {
@@ -261,7 +263,6 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
       await _repository.addReply(
         parentCommentId: parentCommentId,
         content: content,
-        author: mockCurrentUser,
       );
       // ✨ 2. 성공 시 목록 새로고침
       await _fetchFirstPage();

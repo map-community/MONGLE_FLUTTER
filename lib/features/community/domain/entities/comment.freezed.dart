@@ -15,9 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Comment {
 
-@JsonKey(name: 'comment_id') String get commentId; String get content;// Author 객체를 직접 포함합니다.
+ String get commentId; String get content;// Author 객체를 직접 포함합니다.
 // json_serializable이 author.dart의 fromJson을 자동으로 호출해줍니다.
- Author get author;@JsonKey(name: 'like_count') int get likeCount;@JsonKey(name: 'dislike_count') int get dislikeCount;@JsonKey(name: 'created_at') DateTime get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt; bool get isDeleted; bool get isAuthor; List<Comment> get replies;
+ Author get author; int get likeCount; int get dislikeCount; DateTime get createdAt; DateTime? get updatedAt; bool get isDeleted; bool get isAuthor; List<Comment> get replies;
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -50,7 +50,7 @@ abstract mixin class $CommentCopyWith<$Res>  {
   factory $CommentCopyWith(Comment value, $Res Function(Comment) _then) = _$CommentCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'comment_id') String commentId, String content, Author author,@JsonKey(name: 'like_count') int likeCount,@JsonKey(name: 'dislike_count') int dislikeCount,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt, bool isDeleted, bool isAuthor, List<Comment> replies
+ String commentId, String content, Author author, int likeCount, int dislikeCount, DateTime createdAt, DateTime? updatedAt, bool isDeleted, bool isAuthor, List<Comment> replies
 });
 
 
@@ -173,7 +173,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'comment_id')  String commentId,  String content,  Author author, @JsonKey(name: 'like_count')  int likeCount, @JsonKey(name: 'dislike_count')  int dislikeCount, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt,  bool isDeleted,  bool isAuthor,  List<Comment> replies)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isDeleted,  bool isAuthor,  List<Comment> replies)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Comment() when $default != null:
 return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isDeleted,_that.isAuthor,_that.replies);case _:
@@ -194,7 +194,7 @@ return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'comment_id')  String commentId,  String content,  Author author, @JsonKey(name: 'like_count')  int likeCount, @JsonKey(name: 'dislike_count')  int dislikeCount, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt,  bool isDeleted,  bool isAuthor,  List<Comment> replies)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isDeleted,  bool isAuthor,  List<Comment> replies)  $default,) {final _that = this;
 switch (_that) {
 case _Comment():
 return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isDeleted,_that.isAuthor,_that.replies);case _:
@@ -214,7 +214,7 @@ return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'comment_id')  String commentId,  String content,  Author author, @JsonKey(name: 'like_count')  int likeCount, @JsonKey(name: 'dislike_count')  int dislikeCount, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt,  bool isDeleted,  bool isAuthor,  List<Comment> replies)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isDeleted,  bool isAuthor,  List<Comment> replies)?  $default,) {final _that = this;
 switch (_that) {
 case _Comment() when $default != null:
 return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isDeleted,_that.isAuthor,_that.replies);case _:
@@ -229,18 +229,18 @@ return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that
 @JsonSerializable()
 
 class _Comment implements Comment {
-  const _Comment({@JsonKey(name: 'comment_id') required this.commentId, required this.content, required this.author, @JsonKey(name: 'like_count') this.likeCount = 0, @JsonKey(name: 'dislike_count') this.dislikeCount = 0, @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, this.isDeleted = false, this.isAuthor = false, final  List<Comment> replies = const []}): _replies = replies;
+  const _Comment({required this.commentId, required this.content, required this.author, this.likeCount = 0, this.dislikeCount = 0, required this.createdAt, this.updatedAt, this.isDeleted = false, this.isAuthor = false, final  List<Comment> replies = const []}): _replies = replies;
   factory _Comment.fromJson(Map<String, dynamic> json) => _$CommentFromJson(json);
 
-@override@JsonKey(name: 'comment_id') final  String commentId;
+@override final  String commentId;
 @override final  String content;
 // Author 객체를 직접 포함합니다.
 // json_serializable이 author.dart의 fromJson을 자동으로 호출해줍니다.
 @override final  Author author;
-@override@JsonKey(name: 'like_count') final  int likeCount;
-@override@JsonKey(name: 'dislike_count') final  int dislikeCount;
-@override@JsonKey(name: 'created_at') final  DateTime createdAt;
-@override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
+@override@JsonKey() final  int likeCount;
+@override@JsonKey() final  int dislikeCount;
+@override final  DateTime createdAt;
+@override final  DateTime? updatedAt;
 @override@JsonKey() final  bool isDeleted;
 @override@JsonKey() final  bool isAuthor;
  final  List<Comment> _replies;
@@ -284,7 +284,7 @@ abstract mixin class _$CommentCopyWith<$Res> implements $CommentCopyWith<$Res> {
   factory _$CommentCopyWith(_Comment value, $Res Function(_Comment) _then) = __$CommentCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'comment_id') String commentId, String content, Author author,@JsonKey(name: 'like_count') int likeCount,@JsonKey(name: 'dislike_count') int dislikeCount,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt, bool isDeleted, bool isAuthor, List<Comment> replies
+ String commentId, String content, Author author, int likeCount, int dislikeCount, DateTime createdAt, DateTime? updatedAt, bool isDeleted, bool isAuthor, List<Comment> replies
 });
 
 
