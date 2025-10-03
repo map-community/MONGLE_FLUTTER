@@ -15,7 +15,7 @@ PaginatedComments _paginatedCommentsFromJson(Map<String, dynamic> json) {
 abstract class PaginatedComments with _$PaginatedComments {
   const factory PaginatedComments({
     // ✨ 2. 'values' 키를 'comments' 필드에 매핑하라는 규칙을 알려줍니다.
-    @JsonKey(name: 'values') @Default([]) List<Comment> comments,
+    @Default([]) List<Comment> comments,
 
     String? nextCursor,
 

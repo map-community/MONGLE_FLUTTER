@@ -8,7 +8,7 @@ abstract class Author with _$Author {
   const factory Author({
     required String? id,
     required String nickname,
-    @JsonKey(name: 'profile_image_url') String? profileImageUrl,
+    String? profileImageUrl,
   }) = _Author;
 
   factory Author.fromJson(Map<String, dynamic> json) => _$AuthorFromJson(json);

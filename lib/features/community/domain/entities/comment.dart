@@ -7,18 +7,18 @@ part 'comment.g.dart';
 @freezed
 abstract class Comment with _$Comment {
   const factory Comment({
-    @JsonKey(name: 'comment_id') required String commentId,
+    required String commentId,
     required String content,
 
     // Author 객체를 직접 포함합니다.
     // json_serializable이 author.dart의 fromJson을 자동으로 호출해줍니다.
     required Author author,
 
-    @JsonKey(name: 'like_count') @Default(0) int likeCount,
-    @JsonKey(name: 'dislike_count') @Default(0) int dislikeCount,
+    @Default(0) int likeCount,
+    @Default(0) int dislikeCount,
 
-    @JsonKey(name: 'created_at') required DateTime createdAt,
-    @JsonKey(name: 'updated_at') DateTime? updatedAt,
+    required DateTime createdAt,
+    DateTime? updatedAt,
 
     @Default(false) bool isDeleted,
     @Default(false) bool isAuthor,

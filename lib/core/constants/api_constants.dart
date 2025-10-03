@@ -11,5 +11,12 @@ class ApiConstants {
 
   static String postById(String postId) => '/posts/$postId';
 
+  static String getComments(String postId) => '/posts/$postId/comments';
+  static String getReplies(String parentCommentId) =>
+      '/comments/$parentCommentId/replies';
+  static String addComment(String postId) => '/posts/$postId/comments';
+  static String addReply(String parentCommentId) =>
+      '/comments/$parentCommentId/replies';
+
   static const String mapObjects = '/map/objects';
 }

@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 mixin _$PaginatedComments {
 
 // ✨ 2. 'values' 키를 'comments' 필드에 매핑하라는 규칙을 알려줍니다.
-@JsonKey(name: 'values') List<Comment> get comments; String? get nextCursor; bool get hasNext;// 현재 답글을 다는 대상 댓글 정보를 저장합니다. 백엔드에서 받는 정보가 아니라, 앱 내에서 상태로 관리하는 용도입니다.
+ List<Comment> get comments; String? get nextCursor; bool get hasNext;// 현재 답글을 다는 대상 댓글 정보를 저장합니다. 백엔드에서 받는 정보가 아니라, 앱 내에서 상태로 관리하는 용도입니다.
  Comment? get replyingTo;// 댓글/대댓글 전송이 진행 중인지 여부를 나타내는 UI 상태
  bool get isSubmitting;
 /// Create a copy of PaginatedComments
@@ -51,7 +51,7 @@ abstract mixin class $PaginatedCommentsCopyWith<$Res>  {
   factory $PaginatedCommentsCopyWith(PaginatedComments value, $Res Function(PaginatedComments) _then) = _$PaginatedCommentsCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'values') List<Comment> comments, String? nextCursor, bool hasNext, Comment? replyingTo, bool isSubmitting
+ List<Comment> comments, String? nextCursor, bool hasNext, Comment? replyingTo, bool isSubmitting
 });
 
 
@@ -172,7 +172,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo,  bool isSubmitting)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo,  bool isSubmitting)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaginatedComments() when $default != null:
 return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo,_that.isSubmitting);case _:
@@ -193,7 +193,7 @@ return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo,  bool isSubmitting)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo,  bool isSubmitting)  $default,) {final _that = this;
 switch (_that) {
 case _PaginatedComments():
 return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo,_that.isSubmitting);case _:
@@ -213,7 +213,7 @@ return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'values')  List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo,  bool isSubmitting)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<Comment> comments,  String? nextCursor,  bool hasNext,  Comment? replyingTo,  bool isSubmitting)?  $default,) {final _that = this;
 switch (_that) {
 case _PaginatedComments() when $default != null:
 return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo,_that.isSubmitting);case _:
@@ -228,13 +228,13 @@ return $default(_that.comments,_that.nextCursor,_that.hasNext,_that.replyingTo,_
 @JsonSerializable()
 
 class _PaginatedComments implements PaginatedComments {
-  const _PaginatedComments({@JsonKey(name: 'values') final  List<Comment> comments = const [], this.nextCursor, this.hasNext = true, this.replyingTo, this.isSubmitting = false}): _comments = comments;
+  const _PaginatedComments({final  List<Comment> comments = const [], this.nextCursor, this.hasNext = true, this.replyingTo, this.isSubmitting = false}): _comments = comments;
   factory _PaginatedComments.fromJson(Map<String, dynamic> json) => _$PaginatedCommentsFromJson(json);
 
 // ✨ 2. 'values' 키를 'comments' 필드에 매핑하라는 규칙을 알려줍니다.
  final  List<Comment> _comments;
 // ✨ 2. 'values' 키를 'comments' 필드에 매핑하라는 규칙을 알려줍니다.
-@override@JsonKey(name: 'values') List<Comment> get comments {
+@override@JsonKey() List<Comment> get comments {
   if (_comments is EqualUnmodifiableListView) return _comments;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_comments);
@@ -280,7 +280,7 @@ abstract mixin class _$PaginatedCommentsCopyWith<$Res> implements $PaginatedComm
   factory _$PaginatedCommentsCopyWith(_PaginatedComments value, $Res Function(_PaginatedComments) _then) = __$PaginatedCommentsCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'values') List<Comment> comments, String? nextCursor, bool hasNext, Comment? replyingTo, bool isSubmitting
+ List<Comment> comments, String? nextCursor, bool hasNext, Comment? replyingTo, bool isSubmitting
 });
 
 
