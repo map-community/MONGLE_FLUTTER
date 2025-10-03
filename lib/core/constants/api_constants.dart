@@ -8,4 +8,6 @@ class ApiConstants {
 
   static const String posts = '/posts';
   static const String postFileUploadUrls = '/post-files/upload-urls';
+
+  static const String mapObjects = '/map/objects';
 }
