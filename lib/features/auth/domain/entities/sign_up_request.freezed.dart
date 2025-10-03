@@ -11,6 +11,7 @@ part of 'sign_up_request.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$SignUpRequest {
 
@@ -21,6 +22,8 @@ mixin _$SignUpRequest {
 @pragma('vm:prefer-inline')
 $SignUpRequestCopyWith<SignUpRequest> get copyWith => _$SignUpRequestCopyWithImpl<SignUpRequest>(this as SignUpRequest, _$identity);
 
+  /// Serializes this SignUpRequest to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -28,7 +31,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is SignUpRequest&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.profileImageKey, profileImageKey) || other.profileImageKey == profileImageKey));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,email,password,nickname,profileImageKey);
 
@@ -210,7 +213,7 @@ return $default(_that.email,_that.password,_that.nickname,_that.profileImageKey)
 @JsonSerializable()
 class _SignUpRequest implements SignUpRequest {
   const _SignUpRequest({required this.email, required this.password, required this.nickname, this.profileImageKey});
-  
+  factory _SignUpRequest.fromJson(Map<String, dynamic> json) => _$SignUpRequestFromJson(json);
 
 @override final  String email;
 @override final  String password;
@@ -223,14 +226,17 @@ class _SignUpRequest implements SignUpRequest {
 @pragma('vm:prefer-inline')
 _$SignUpRequestCopyWith<_SignUpRequest> get copyWith => __$SignUpRequestCopyWithImpl<_SignUpRequest>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$SignUpRequestToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _SignUpRequest&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.profileImageKey, profileImageKey) || other.profileImageKey == profileImageKey));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,email,password,nickname,profileImageKey);
 

@@ -11,6 +11,7 @@ part of 'login_request.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$LoginRequest {
 
@@ -21,6 +22,8 @@ mixin _$LoginRequest {
 @pragma('vm:prefer-inline')
 $LoginRequestCopyWith<LoginRequest> get copyWith => _$LoginRequestCopyWithImpl<LoginRequest>(this as LoginRequest, _$identity);
 
+  /// Serializes this LoginRequest to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -28,7 +31,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is LoginRequest&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,email,password);
 
@@ -208,7 +211,7 @@ return $default(_that.email,_that.password);case _:
 @JsonSerializable()
 class _LoginRequest implements LoginRequest {
   const _LoginRequest({required this.email, required this.password});
-  
+  factory _LoginRequest.fromJson(Map<String, dynamic> json) => _$LoginRequestFromJson(json);
 
 @override final  String email;
 @override final  String password;
@@ -219,14 +222,17 @@ class _LoginRequest implements LoginRequest {
 @pragma('vm:prefer-inline')
 _$LoginRequestCopyWith<_LoginRequest> get copyWith => __$LoginRequestCopyWithImpl<_LoginRequest>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$LoginRequestToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoginRequest&&(identical(other.email, email) || other.email == email)&&(identical(other.password, password) || other.password == password));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,email,password);
 

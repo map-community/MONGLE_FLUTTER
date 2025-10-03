@@ -14,5 +14,6 @@ abstract class LoginRequest with _$LoginRequest {
     required String password,
   }) = _LoginRequest;
 
-  // 이 모델은 서버로 '보내기만' 할 것이므로 fromJson은 필요 없습니다.
+  factory LoginRequest.fromJson(Map<String, dynamic> json) =>
+      _$LoginRequestFromJson(json);
 }
