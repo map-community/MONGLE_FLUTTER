@@ -217,14 +217,18 @@ class _CommentItemState extends ConsumerState<CommentItem> {
             TextButton(
               child: const Text('차단', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                ref.read(blockedUsersProvider.notifier).blockUser(author.id);
-                Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${author.nickname}님을 차단했습니다.'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                // ✅ [수정] author.id가 null이 아닌지 확인하는 안전장치 추가
+                final authorId = author.id;
+                if (authorId != null) {
+                  ref.read(blockedUsersProvider.notifier).blockUser(authorId);
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${author.nickname}님을 차단했습니다.'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
               },
             ),
           ],
