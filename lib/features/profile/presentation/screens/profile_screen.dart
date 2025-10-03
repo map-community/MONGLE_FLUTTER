@@ -36,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
                 title: const Text('로그인 / 회원가입'),
                 subtitle: const Text('로그인하고 몽글의 모든 기능을 사용해보세요!'),
                 onTap: () {
-                  context.go('/login');
+                  context.push('/login');
                 },
               );
             },

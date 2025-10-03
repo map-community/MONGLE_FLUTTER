@@ -54,4 +54,29 @@ class AuthRepositoryImpl implements AuthRepository {
     // 우선 클라이언트의 토큰만 삭제하여 로그아웃 상태로 만듭니다.
     await _tokenStorage.clearTokens();
   }
+
+  @override
+  Future<TokenInfo> reissueToken() async {
+    // 1. 저장소에서 리프레시 토큰을 가져옵니다.
+    final refreshToken = await _tokenStorage.getRefreshToken();
+    if (refreshToken == null) {
+      throw Exception('No refresh token available.'); // 리프레시 토큰이 없으면 에러 발생
+    }
+
+    // 2. 재발급 API 호출 시에는 인터셉터를 타지 않는 별도의 Dio 인스턴스를 사용할 수 있습니다.
+    //    (무한 루프 방지를 위해) 여기서는 간단하게 기존 dio를 사용합니다.
+    final response = await _dio.post(
+      ApiConstants.reissue,
+      data: {'refreshToken': refreshToken},
+    );
+
+    // 3. 서버로부터 새로운 토큰 정보를 받아옵니다.
+    final newTokenInfo = TokenInfo.fromJson(response.data);
+
+    // 4. 새로 받은 토큰들을 다시 안전하게 저장합니다.
+    await _tokenStorage.saveTokens(newTokenInfo);
+
+    // 5. 새로운 토큰 정보를 반환합니다.
+    return newTokenInfo;
+  }
 }

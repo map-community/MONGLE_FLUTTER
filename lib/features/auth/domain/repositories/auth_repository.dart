@@ -14,4 +14,7 @@ abstract class AuthRepository {
 
   // 로그아웃을 요청하는 기능
   Future<void> logout();
+
+  // 리프레시 토큰으로 새로운 토큰들을 발급받는 기능
+  Future<TokenInfo> reissueToken();
 }

@@ -19,7 +19,7 @@ final dioProvider = Provider<Dio>((ref) {
 
   // 우리가 만든 ApiInterceptor를 dio에 추가합니다.
   // 이제 이 dio 인스턴스를 통해 나가는 모든 요청/응답은 ApiInterceptor를 거치게 됩니다.
-  dio.interceptors.add(ApiInterceptor());
+  dio.interceptors.add(ApiInterceptor(ref));
 
   // (추가) 개발 중 로그를 확인하기 위해 LogInterceptor를 추가하면 편리합니다.
   dio.interceptors.add(
