@@ -3,10 +3,8 @@
 import 'package:mongle_flutter/features/community/data/repositories/mock_cloud_contents_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_issue_grain_data.dart';
-import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
-import 'package:mongle_flutter/features/community/providers/write_grain_providers.dart'; // IssuedUrlInfo 사용을 위해 import
 
 class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
   final List<IssueGrain> _db = mockGrainsDatabase;

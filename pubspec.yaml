@@ -42,7 +42,6 @@ dependencies:
   json_annotation:
   geolocator:
   firebase_core:
-  firebase_auth:
   flutter_dotenv: ^6.0.0
   permission_handler: ^12.0.1
   timeago: ^3.7.1
@@ -51,6 +50,7 @@ dependencies:
   korean_profanity_filter: ^1.0.0
   flutter_markdown: ^0.7.7+1
   image_picker: ^1.2.0
+  flutter_secure_storage: ^9.2.4
 
 dev_dependencies:
   flutter_test:
