@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_issue_grain_repository_impl.dart';
+import 'package:mongle_flutter/features/community/data/repositories/issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
@@ -15,7 +17,9 @@ import 'package:mongle_flutter/features/community/providers/report_providers.dar
 /// UI(Presentation) 계층에서는 이 Provider를 통해 데이터에 접근하며,
 /// 나중에 Fake에서 Real(실제 API 통신)으로 교체할 때 이 부분만 수정하면 됩니다.
 final issueGrainRepositoryProvider = Provider<IssueGrainRepository>((ref) {
-  return FakeIssueGrainRepositoryImpl();
+  // return FakeIssueGrainRepositoryImpl();
+  final dio = ref.watch(dioProvider);
+  return IssueGrainRepositoryImpl(dio);
 });
 
 // ========================================================================

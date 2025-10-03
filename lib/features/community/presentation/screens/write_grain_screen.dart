@@ -1,14 +1,15 @@
 // lib/features/community/presentation/screens/write_grain_screen.dart
 
-import 'dart:io'; // Image.file을 사용하기 위해 import 합니다.
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/community/providers/write_grain_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 
+// TextEditingController를 사용하므로 StatefulWidget + Consumer 조합인 ConsumerStatefulWidget을 사용합니다.
 class WriteGrainScreen extends ConsumerStatefulWidget {
   const WriteGrainScreen({super.key});
 
@@ -27,13 +28,18 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ref.watch: State가 변경될 때마다 UI를 다시 그리게 함 (버튼 활성화/비활성화 등)
     final writeState = ref.watch(writeGrainProvider);
+    // ref.read: Notifier의 메서드를 호출할 때 사용 (UI를 다시 그리지 않음)
     final notifier = ref.read(writeGrainProvider.notifier);
 
-    ref.listen(writeGrainProvider, (_, next) {
-      if (next.errorMessage != null) {
-        // 에러 메시지가 표시된 후, 다시 null로 초기화하여 중복 표시를 방지합니다.
-        // 이 부분은 좀 더 정교한 상태 관리로 개선될 수 있습니다.
+    // ✅ [핵심] 로그인/회원가입 화면과 동일한 에러 처리 패턴
+    // ref.listen: UI를 다시 그리지 않고, SnackBar 표시, 화면 이동 등 특정 '동작'을 수행할 때 사용
+    ref.listen(writeGrainProvider, (previous, next) {
+      // errorMessage 상태에 새로운 메시지가 들어왔는지 확인
+      if (next.errorMessage != null &&
+          previous?.errorMessage != next.errorMessage) {
+        // SnackBar를 사용해 사용자에게 에러 메시지를 보여줍니다.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
@@ -48,15 +54,23 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
         title: const Text('알갱이 만들기'),
         actions: [
           TextButton(
+            // isSubmitting 상태일 때 버튼을 비활성화하여 중복 제출 방지
             onPressed: writeState.isSubmitting
                 ? null
                 : () async {
+                    // 키보드를 내리는 동작
+                    FocusScope.of(context).unfocus();
+
                     final success = await notifier.submitPost(
                       content: _textController.text,
                     );
 
+                    // context.mounted는 위젯이 화면에 아직 붙어있는지 확인 (안전장치)
                     if (success && context.mounted) {
+                      // 이전 화면(지도, 목록)의 데이터를 갱신하도록 신호를 보냄
                       ref.invalidate(mapViewModelProvider);
+                      ref.invalidate(issueGrainsInCloudProvider);
+                      // 화면을 닫음
                       context.pop();
                     }
                   },
@@ -64,24 +78,32 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildMediaBar(writeState, notifier),
+      // AbsorbPointer: isSubmitting 중일 때 화면 터치를 막아 오작동 방지
       body: AbsorbPointer(
         absorbing: writeState.isSubmitting,
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextField(
-                controller: _textController,
-                decoration: const InputDecoration(
-                  hintText: '지금 무슨 일이 일어나고 있나요?',
-                  border: InputBorder.none,
+            Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: TextField(
+                      controller: _textController,
+                      decoration: const InputDecoration(
+                        hintText: '지금 무슨 일이 일어나고 있나요?',
+                        border: InputBorder.none,
+                      ),
+                      maxLines: null, // 여러 줄 입력 가능
+                      keyboardType: TextInputType.multiline,
+                    ),
+                  ),
                 ),
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                onTapOutside: (_) => FocusScope.of(context).unfocus(),
-              ),
+                // 미디어(사진) 선택 및 썸네일 표시 바
+                _buildMediaBar(writeState, notifier),
+              ],
             ),
+            // isSubmitting 상태일 때 로딩 인디케이터 표시
             if (writeState.isSubmitting)
               const Center(child: CircularProgressIndicator()),
           ],
@@ -90,6 +112,7 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
     );
   }
 
+  // 미디어 바 UI를 만드는 위젯
   Widget _buildMediaBar(
     WriteGrainState writeState,
     WriteGrainNotifier notifier,
@@ -103,8 +126,6 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
       ),
       child: SafeArea(
         top: false,
-        right: false,
-        left: false,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -119,15 +140,10 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
               Expanded(
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount:
-                      writeState.photos.length + writeState.videos.length,
+                  itemCount: writeState.photos.length,
                   itemBuilder: (context, index) {
-                    bool isPhoto = index < writeState.photos.length;
-                    XFile file = isPhoto
-                        ? writeState.photos[index]
-                        : writeState.videos[index - writeState.photos.length];
-
-                    return _buildThumbnailItem(file, isPhoto, notifier);
+                    final photo = writeState.photos[index];
+                    return _buildThumbnailItem(photo, notifier);
                   },
                 ),
               ),
@@ -138,11 +154,8 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
     );
   }
 
-  Widget _buildThumbnailItem(
-    XFile file,
-    bool isPhoto,
-    WriteGrainNotifier notifier,
-  ) {
+  // 썸네일 아이템 UI를 만드는 위젯
+  Widget _buildThumbnailItem(XFile file, WriteGrainNotifier notifier) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Stack(
@@ -157,26 +170,12 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          if (!isPhoto)
-            const Positioned.fill(
-              child: Center(
-                child: Icon(
-                  Icons.play_circle_outline,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
-            ),
           Positioned(
             top: -8,
             right: -8,
             child: GestureDetector(
               onTap: () {
-                if (isPhoto) {
-                  notifier.removePhoto(file);
-                } else {
-                  notifier.removeVideo(file);
-                }
+                notifier.removePhoto(file);
               },
               child: Container(
                 decoration: const BoxDecoration(

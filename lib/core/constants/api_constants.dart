@@ -7,4 +7,5 @@ class ApiConstants {
   static const String reissue = '/auth/reissue';
 
   static const String posts = '/posts';
+  static const String postFileUploadUrls = '/post-files/upload-urls';
 }
