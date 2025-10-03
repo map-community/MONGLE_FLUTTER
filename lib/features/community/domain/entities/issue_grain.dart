@@ -7,18 +7,19 @@ part 'issue_grain.g.dart';
 @freezed
 abstract class IssueGrain with _$IssueGrain {
   const factory IssueGrain({
-    @JsonKey(name: 'post_id') required String postId,
+    required String postId,
     required Author author, // 작성자 정보 (User 모델과 결합)
     required String content,
     required double latitude,
     required double longitude,
     @Default([]) List<String> photoUrls, // 이미지 URL 목록
     @Default([]) List<String> videoUrls,
-    @JsonKey(name: 'like_count') required int likeCount,
-    @JsonKey(name: 'dislike_count') required int dislikeCount,
-    @JsonKey(name: 'comment_count') required int commentCount,
-    @JsonKey(name: 'view_count') required int viewCount,
-    @JsonKey(name: 'created_at') required DateTime createdAt,
+    required int likeCount,
+    required int dislikeCount,
+    required int commentCount,
+    required int viewCount,
+    required DateTime createdAt,
+    DateTime? updatedAt,
   }) = _IssueGrain;
 
   factory IssueGrain.fromJson(Map<String, dynamic> json) =>

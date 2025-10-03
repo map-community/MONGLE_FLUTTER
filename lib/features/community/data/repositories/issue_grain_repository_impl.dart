@@ -106,8 +106,18 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
 
   @override
   Future<IssueGrain> getIssueGrainById(String id) async {
-    // TODO: 백엔드 API가 준비되면 실제 엔드포인트와 데이터 파싱 로직을 구현해야 합니다.
-    throw UnimplementedError('getIssueGrainById is not implemented yet');
+    try {
+      // 1. 1단계에서 만든 ApiConstants 함수를 사용해 GET 요청을 보냅니다.
+      final response = await _dio.get(ApiConstants.postById(id));
+
+      // 2. ApiInterceptor 덕분에 response.data는 순수한 JSON 객체입니다.
+      //    2단계에서 수정한 IssueGrain.fromJson을 통해 Dart 객체로 변환 후 반환합니다.
+      return IssueGrain.fromJson(response.data);
+    } catch (e) {
+      // 3. Dio에서 에러가 발생하면 (ApiInterceptor가 가공한 후)
+      //    그대로 다시 던져서 Notifier가 처리하도록 합니다.
+      rethrow;
+    }
   }
 
   @override
@@ -120,11 +130,5 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
   Future<void> dislikeIssueGrain(String id) async {
     // TODO: 백엔드 API가 준비되면 실제 엔드포인트와 로직을 구현해야 합니다.
     throw UnimplementedError('dislikeIssueGrain is not implemented yet');
-  }
-
-  @override
-  Future<void> incrementViewCount(String id) async {
-    // TODO: 백엔드 API가 준비되면 실제 엔드포인트와 로직을 구현해야 합니다.
-    throw UnimplementedError('incrementViewCount is not implemented yet');
   }
 }

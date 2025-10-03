@@ -7,7 +7,7 @@ part of 'issue_grain.dart';
 // **************************************************************************
 
 _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
-  postId: json['post_id'] as String,
+  postId: json['postId'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
   content: json['content'] as String,
   latitude: (json['latitude'] as num).toDouble(),
@@ -18,25 +18,29 @@ _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
   videoUrls:
       (json['videoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
-  likeCount: (json['like_count'] as num).toInt(),
-  dislikeCount: (json['dislike_count'] as num).toInt(),
-  commentCount: (json['comment_count'] as num).toInt(),
-  viewCount: (json['view_count'] as num).toInt(),
-  createdAt: DateTime.parse(json['created_at'] as String),
+  likeCount: (json['likeCount'] as num).toInt(),
+  dislikeCount: (json['dislikeCount'] as num).toInt(),
+  commentCount: (json['commentCount'] as num).toInt(),
+  viewCount: (json['viewCount'] as num).toInt(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
 );
 
 Map<String, dynamic> _$IssueGrainToJson(_IssueGrain instance) =>
     <String, dynamic>{
-      'post_id': instance.postId,
+      'postId': instance.postId,
       'author': instance.author,
       'content': instance.content,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'photoUrls': instance.photoUrls,
       'videoUrls': instance.videoUrls,
-      'like_count': instance.likeCount,
-      'dislike_count': instance.dislikeCount,
-      'comment_count': instance.commentCount,
-      'view_count': instance.viewCount,
-      'created_at': instance.createdAt.toIso8601String(),
+      'likeCount': instance.likeCount,
+      'dislikeCount': instance.dislikeCount,
+      'commentCount': instance.commentCount,
+      'viewCount': instance.viewCount,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
     };

@@ -83,6 +83,4 @@ abstract class IssueGrainRepository {
   /// 이슈 알갱이에 대한 싫어요를 요청합니다.
   Future<void> dislikeIssueGrain(String id);
 
-  /// 이슈 알갱이의 조회수를 증가시킵니다.
-  Future<void> incrementViewCount(String id);
 }

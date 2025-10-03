@@ -123,10 +123,4 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     print("API 요청: $id 게시물 싫어요");
     await Future.delayed(const Duration(milliseconds: 150));
   }
-
-  @override
-  Future<void> incrementViewCount(String id) async {
-    print("API 요청: $id 게시물 조회수 증가");
-    await Future.delayed(const Duration(milliseconds: 100));
-  }
 }

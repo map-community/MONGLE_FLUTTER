@@ -98,7 +98,6 @@ class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
       final grain = await _repository.getIssueGrainById(_postId);
       if (mounted) {
         state = AsyncValue.data(grain);
-        _repository.incrementViewCount(_postId);
       }
     } catch (e, s) {
       if (mounted) {
