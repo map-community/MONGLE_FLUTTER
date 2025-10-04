@@ -17,22 +17,35 @@ class CommentRepositoryImpl implements CommentRepository {
   // JWT 토큰에서 memberId(sub)를 추출하는 임시 비공개 함수
   Future<String> _getRequiredMemberId() async {
     final token = await _tokenStorage.getAccessToken();
+
+    // 1. 토큰이 없는 경우, 명확한 에러 메시지를 던집니다.
     if (token == null) {
-      throw ApiException('사용자 인증 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+      throw ApiException('로그인이 필요합니다. 다시 로그인해주세요.');
     }
+
     try {
       final parts = token.split('.');
+      if (parts.length != 3) {
+        // 2. 토큰 형식이 잘못된 경우의 에러 처리
+        throw ApiException('인증 정보가 올바르지 않습니다. (Malformed Token)');
+      }
+
       final payload = parts[1];
       final normalized = base64Url.normalize(payload);
       final decoded = utf8.decode(base64Url.decode(normalized));
       final payloadMap = json.decode(decoded) as Map<String, dynamic>;
       final memberId = payloadMap['sub'] as String?;
+
       if (memberId == null) {
-        throw ApiException('토큰에서 사용자 정보를 찾을 수 없습니다.');
+        // 3. 토큰 안에 'sub' 클레임이 없는 경우의 에러 처리
+        throw ApiException('인증 정보가 올바르지 않습니다. (No Subject)');
       }
+
       return memberId;
     } catch (e) {
-      throw ApiException('토큰 해석 중 오류가 발생했습니다.');
+      // 4. 그 외 모든 디코딩 관련 에러 처리
+      print('토큰 디코딩 실패: $e');
+      throw ApiException('인증 정보를 처리하는 중 오류가 발생했습니다.');
     }
   }
 
@@ -65,6 +78,7 @@ class CommentRepositoryImpl implements CommentRepository {
   }) async {
     try {
       final memberId = await _getRequiredMemberId();
+      print("addComment 테스트 로그" + memberId + " " + postId + " " + content);
       await _dio.post(
         ApiConstants.addComment(postId),
         queryParameters: {'memberId': memberId},

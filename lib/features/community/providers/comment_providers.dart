@@ -134,9 +134,13 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   /// 첫 페이지의 댓글을 불러옵니다.
   Future<void> _fetchFirstPage() async {
+    print('➡️ [_fetchFirstPage] Start fetching comments for postId: $_postId');
     final previousState = state.valueOrNull;
     try {
       final paginatedComments = await _repository.getComments(postId: _postId);
+      print(
+        '✅ [_fetchFirstPage] Successfully fetched data. Comment count: ${paginatedComments.comments.length}',
+      );
 
       // ✅ 분리된 필터링 메서드 호출
       final visibleComments = _filterVisibleComments(
@@ -154,6 +158,10 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
         );
       }
     } catch (e, s) {
+      print(
+        '🚨 [_fetchFirstPage] ERROR CAUGHT! \n--- ERROR: $e \n--- STACK TRACE: $s',
+      );
+
       if (mounted) {
         state = AsyncValue.error(e, s);
       }
@@ -205,16 +213,26 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
   }
 
   Future<void> addComment(String content) async {
+    print('------------------------------------');
+    print("댓글 addcomment실행" + _postId + " " + content);
+    print('------------------------------------');
     final previousState = state.valueOrNull;
+    print('------------------------------------');
+    print("0" + _postId + " " + content);
+    print('------------------------------------');
     if (previousState == null || previousState.isSubmitting) return;
-
+    print('------------------------------------');
+    print("1" + _postId + " " + content);
+    print('------------------------------------');
     final newComment = Comment(
       commentId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
       author: mockCurrentUser,
       createdAt: DateTime.now(),
     );
-
+    print('------------------------------------');
+    print("2" + _postId + " " + content);
+    print('------------------------------------');
     // ✨ 1. UI를 즉시 업데이트하면서, isSubmitting 상태를 true로 설정합니다.
     state = AsyncValue.data(
       previousState.copyWith(
@@ -224,10 +242,17 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     );
 
     try {
+      print('------------------------------------');
+      print("댓글 impl addComment 테스트 로그 try 문" + _postId + " " + content);
+      print('------------------------------------');
       await _repository.addComment(postId: _postId, content: content);
+
       // ✨ 2. 성공 후 목록을 새로고침하면, isSubmitting은 자동으로 기본값(false)으로 돌아옵니다.
       await _fetchFirstPage();
     } catch (e) {
+      print('------------------------------------');
+      print("댓글 impl addComment 테스트 로그 catch 문" + _postId + " " + content);
+      print('------------------------------------');
       // ✨ 3. 실패 시, 이전 상태로 되돌리면서 isSubmitting을 false로 풀어줍니다.
       if (mounted) {
         state = AsyncValue.data(previousState.copyWith(isSubmitting: false));
