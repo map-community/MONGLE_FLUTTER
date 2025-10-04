@@ -9,6 +9,7 @@ import 'package:mongle_flutter/features/community/domain/entities/paginated_comm
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/comment_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
+import 'package:mongle_flutter/features/community/providers/reply_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 
 // --- Data Layer Provider ---
@@ -268,36 +269,40 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     final previousState = state.valueOrNull;
     if (previousState == null || previousState.isSubmitting) return;
 
-    final newReply = Comment(
-      commentId: 'temp_reply_${DateTime.now().millisecondsSinceEpoch}',
-      content: content,
-      author: mockCurrentUser,
-      createdAt: DateTime.now(),
-    );
+    // 1. 전송 시작을 알리기 위해 isSubmitting 상태를 true로 설정
+    state = AsyncValue.data(previousState.copyWith(isSubmitting: true));
 
-    final updatedComments = previousState.comments.map((comment) {
-      if (comment.commentId == parentCommentId) {
-        return comment.copyWith(replies: [...comment.replies, newReply]);
-      }
-      return comment;
-    }).toList();
-
-    // ✨ 1. UI를 업데이트하면서 isSubmitting을 true로 설정합니다.
-    state = AsyncValue.data(
-      previousState.copyWith(comments: updatedComments, isSubmitting: true),
+    // 2. [UI 즉시 업데이트]
+    // 첫 대댓글인 경우, 대댓글 영역이 보이도록 부모 댓글의 hasReplies만 true로 변경
+    final parentComment = previousState.comments.firstWhere(
+      (c) => c.commentId == parentCommentId,
     );
+    if (!parentComment.hasReplies) {
+      final updatedComments = previousState.comments.map((comment) {
+        if (comment.commentId == parentCommentId) {
+          return comment.copyWith(hasReplies: true);
+        }
+        return comment;
+      }).toList();
+      // hasReplies가 true로 변경된 상태를 UI에 우선 반영
+      state = AsyncValue.data(state.value!.copyWith(comments: updatedComments));
+    }
 
     try {
+      // 3. 서버에 실제 대댓글 등록 요청
       await _repository.addReply(
         parentCommentId: parentCommentId,
         content: content,
       );
-      // ✨ 2. 성공 시 목록 새로고침
-      await _fetchFirstPage();
-    } catch (e) {
-      // ✨ 3. 실패 시 isSubmitting을 false로 복원
+
+      // 4. [핵심] 대댓글 목록 Provider를 무효화하여 새로고침하도록 지시
+      // 이제 _RepliesSection이 화면에 확실히 존재하므로, 이 신호를 받아 동작하게 됨
+      _ref.invalidate(repliesProvider(parentCommentId));
+    } finally {
+      // 5. 성공/실패 여부와 관계없이 전송 상태(isSubmitting)를 false로 복원
       if (mounted) {
-        state = AsyncValue.data(previousState.copyWith(isSubmitting: false));
+        // hasReplies가 true로 변경된 현재 상태는 그대로 유지하면서 전송 상태만 변경
+        state = AsyncValue.data(state.value!.copyWith(isSubmitting: false));
       }
     }
   }
