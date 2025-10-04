@@ -7,17 +7,18 @@ part of 'comment.dart';
 // **************************************************************************
 
 _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
-  commentId: json['comment_id'] as String,
+  commentId: _readCommentId(json, 'commentId') as String,
   content: json['content'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
-  likeCount: (json['like_count'] as num?)?.toInt() ?? 0,
-  dislikeCount: (json['dislike_count'] as num?)?.toInt() ?? 0,
-  createdAt: DateTime.parse(json['created_at'] as String),
-  updatedAt: json['updated_at'] == null
+  likeCount: (json['likeCount'] as num?)?.toInt() ?? 0,
+  dislikeCount: (json['dislikeCount'] as num?)?.toInt() ?? 0,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: json['updatedAt'] == null
       ? null
-      : DateTime.parse(json['updated_at'] as String),
-  isDeleted: json['isDeleted'] as bool? ?? false,
+      : DateTime.parse(json['updatedAt'] as String),
   isAuthor: json['isAuthor'] as bool? ?? false,
+  isDeleted: json['isDeleted'] as bool? ?? false,
+  hasReplies: json['hasReplies'] as bool? ?? false,
   replies:
       (json['replies'] as List<dynamic>?)
           ?.map((e) => Comment.fromJson(e as Map<String, dynamic>))
@@ -26,14 +27,15 @@ _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
 );
 
 Map<String, dynamic> _$CommentToJson(_Comment instance) => <String, dynamic>{
-  'comment_id': instance.commentId,
+  'commentId': instance.commentId,
   'content': instance.content,
   'author': instance.author,
-  'like_count': instance.likeCount,
-  'dislike_count': instance.dislikeCount,
-  'created_at': instance.createdAt.toIso8601String(),
-  'updated_at': instance.updatedAt?.toIso8601String(),
-  'isDeleted': instance.isDeleted,
+  'likeCount': instance.likeCount,
+  'dislikeCount': instance.dislikeCount,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt?.toIso8601String(),
   'isAuthor': instance.isAuthor,
+  'isDeleted': instance.isDeleted,
+  'hasReplies': instance.hasReplies,
   'replies': instance.replies,
 };

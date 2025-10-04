@@ -12,7 +12,7 @@ final _maliciousUser = Author(
 
 final mockCurrentUser = Author(
   id: 'user_daegu_789',
-  nickname: '대구토박이',
+  nickname: '임시사용자',
   profileImageUrl: 'https://i.pravatar.cc/150?u=user2',
 );
 

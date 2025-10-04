@@ -6,6 +6,7 @@ import 'package:mongle_flutter/features/community/domain/entities/report_models.
 import 'package:mongle_flutter/features/community/domain/repositories/report_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
+import 'package:mongle_flutter/features/community/providers/reply_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -65,7 +66,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                 ),
               ],
             ),
-
             // 4. 액션 툴바도 독립적으로 배치됩니다.
             Row(
               children: [

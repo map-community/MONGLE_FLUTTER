@@ -12,7 +12,10 @@ class GrainDetailScreen extends ConsumerStatefulWidget {
   const GrainDetailScreen({super.key, required this.grainId});
 
   @override
-  ConsumerState<GrainDetailScreen> createState() => _GrainDetailScreenState();
+  ConsumerState<GrainDetailScreen> createState() {
+    debugPrint("🏗️ createState() 호출됨 - grainId: $grainId");
+    return _GrainDetailScreenState();
+  }
 }
 
 // ✨ 2. State 대신 ConsumerState를 상속
@@ -21,19 +24,31 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
 
   @override
   void initState() {
+    debugPrint("✨ initState() 시작 - grainId: ${widget.grainId}");
+    debugPrint("✨ 현재 시간: ${DateTime.now()}");
+
     super.initState();
     _scrollController.addListener(() {
+      final currentPixels = _scrollController.position.pixels;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final triggerPoint = maxScroll - 200;
+
+      print('현재 스크롤: $currentPixels, 최대 스크롤: $maxScroll, 호출 지점: $triggerPoint');
       // 스크롤이 맨 아래 근처에 도달하면 다음 페이지 로딩
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
+        print('---------fetch next page 실행!!!------------');
         // ✨ 3. widget.grainId 사용
         ref.read(commentProvider(widget.grainId).notifier).fetchNextPage();
       }
+      debugPrint("✨ initState() 완료");
     });
   }
 
   @override
   void dispose() {
+    print("--- 💀 GrainDetailScreen State가 파괴되었습니다! ---"); // <-- 추가
+
     _scrollController.dispose();
     super.dispose();
   }

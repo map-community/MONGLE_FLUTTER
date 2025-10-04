@@ -43,47 +43,99 @@ class FakeCommentRepositoryImpl implements CommentRepository {
 
   // addComment와 addReply는 UI 테스트를 위해 나중에 구현하겠습니다.
   @override
-  Future<Comment> addComment({
+  Future<void> addComment({
     required String postId,
     required String content,
-    required Author author,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final newComment = Comment(
       commentId: 'new_comment_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
-      author: mockCurrentUser, // ✨ mockCurrentUser를 사용합니다.
+      // author 파라미터 대신 mockCurrentUser를 사용합니다.
+      author: mockCurrentUser,
       createdAt: DateTime.now(),
     );
     _db[postId]?.insert(0, newComment); // 목록 맨 위에 추가
-    return newComment;
+    // 반환값이 없으므로 return 문을 삭제합니다.
   }
 
   @override
-  Future<Comment> addReply({
+  Future<void> addReply({
     required String parentCommentId,
     required String content,
-    required Author author,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final newReply = Comment(
       commentId: 'new_reply_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
-      author: mockCurrentUser, // ✨ mockCurrentUser를 사용합니다.
+      // author 파라미터 대신 mockCurrentUser를 사용합니다.
+      author: mockCurrentUser,
       createdAt: DateTime.now(),
     );
 
-    // 모든 게시글의 댓글을 순회하며 부모 댓글을 찾습니다.
     for (var comments in _db.values) {
       for (var i = 0; i < comments.length; i++) {
         if (comments[i].commentId == parentCommentId) {
           final parentComment = comments[i];
           final updatedReplies = [...parentComment.replies, newReply];
           comments[i] = parentComment.copyWith(replies: updatedReplies);
-          return newReply;
+          // 반환값이 없으므로 return 문을 삭제합니다.
+          return;
         }
       }
     }
     throw Exception('Parent comment not found');
+  }
+
+  // 👇 이 메서드를 추가해주세요.
+  @override
+  Future<PaginatedComments> getReplies({
+    required String parentCommentId,
+    int size = 3, // 정책에 맞게 기본값을 3으로 설정
+    String? cursor,
+  }) async {
+    // 실제 API 호출처럼 딜레이를 줍니다.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // 1. DB를 모두 뒤져서 부모 댓글을 찾고, 해당 댓글의 대댓글 목록을 가져옵니다.
+    List<Comment> allReplies = [];
+    for (var commentsInPost in _db.values) {
+      for (var parentComment in commentsInPost) {
+        if (parentComment.commentId == parentCommentId) {
+          allReplies = parentComment.replies;
+          break;
+        }
+      }
+      if (allReplies.isNotEmpty) break;
+    }
+
+    // 대댓글이 없으면 빈 결과를 반환합니다.
+    if (allReplies.isEmpty) {
+      return const PaginatedComments(
+        comments: [],
+        hasNext: false,
+        nextCursor: null,
+      );
+    }
+
+    // 2. 커서를 기반으로 페이지네이션 로직을 수행합니다.
+    final startIndex = cursor != null ? int.tryParse(cursor) ?? 0 : 0;
+    final endIndex = startIndex + size;
+
+    final repliesForPage = allReplies.sublist(
+      startIndex,
+      endIndex > allReplies.length ? allReplies.length : endIndex,
+    );
+
+    // 3. 다음 페이지 존재 여부와 다음 커서 값을 계산합니다.
+    final hasNext = endIndex < allReplies.length;
+    final nextCursor = hasNext ? endIndex.toString() : null;
+
+    // 4. 페이지네이션된 결과를 PaginatedComments 객체에 담아 반환합니다.
+    return PaginatedComments(
+      comments: repliesForPage,
+      hasNext: hasNext,
+      nextCursor: nextCursor,
+    );
   }
 }

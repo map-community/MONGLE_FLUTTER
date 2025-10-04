@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/dio/dio_provider.dart';
+import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/community/data/repositories/comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
@@ -6,11 +9,15 @@ import 'package:mongle_flutter/features/community/domain/entities/paginated_comm
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/comment_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
+import 'package:mongle_flutter/features/community/providers/reply_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 
 // --- Data Layer Provider ---
 final commentRepositoryProvider = Provider<CommentRepository>((ref) {
-  return FakeCommentRepositoryImpl();
+  // return FakeCommentRepositoryImpl();
+  final dio = ref.watch(dioProvider);
+  final tokenStorage = ref.watch(tokenStorageServiceProvider);
+  return CommentRepositoryImpl(dio, tokenStorage);
 });
 
 // --- State Management Layer Provider  ---
@@ -128,9 +135,13 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   /// 첫 페이지의 댓글을 불러옵니다.
   Future<void> _fetchFirstPage() async {
+    print('➡️ [_fetchFirstPage] Start fetching comments for postId: $_postId');
     final previousState = state.valueOrNull;
     try {
       final paginatedComments = await _repository.getComments(postId: _postId);
+      print(
+        '✅ [_fetchFirstPage] Successfully fetched data. Comment count: ${paginatedComments.comments.length}',
+      );
 
       // ✅ 분리된 필터링 메서드 호출
       final visibleComments = _filterVisibleComments(
@@ -148,6 +159,10 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
         );
       }
     } catch (e, s) {
+      print(
+        '🚨 [_fetchFirstPage] ERROR CAUGHT! \n--- ERROR: $e \n--- STACK TRACE: $s',
+      );
+
       if (mounted) {
         state = AsyncValue.error(e, s);
       }
@@ -156,6 +171,9 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   /// 다음 페이지의 댓글을 불러옵니다 (무한 스크롤).
   Future<void> fetchNextPage() async {
+    print(
+      '➡️ [fetchNextPage] Attempting to fetch next page for postId: $_postId',
+    );
     // 현재 상태가 데이터 로딩 중이거나, 다음 페이지가 없거나, 다른 제출(전송) 작업 중이면 아무것도 하지 않습니다.
     if (!state.hasValue || !state.value!.hasNext || state.value!.isSubmitting) {
       return;
@@ -199,16 +217,26 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
   }
 
   Future<void> addComment(String content) async {
+    print('------------------------------------');
+    print("댓글 addcomment실행" + _postId + " " + content);
+    print('------------------------------------');
     final previousState = state.valueOrNull;
+    print('------------------------------------');
+    print("0" + _postId + " " + content);
+    print('------------------------------------');
     if (previousState == null || previousState.isSubmitting) return;
-
+    print('------------------------------------');
+    print("1" + _postId + " " + content);
+    print('------------------------------------');
     final newComment = Comment(
       commentId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
       author: mockCurrentUser,
       createdAt: DateTime.now(),
     );
-
+    print('------------------------------------');
+    print("2" + _postId + " " + content);
+    print('------------------------------------');
     // ✨ 1. UI를 즉시 업데이트하면서, isSubmitting 상태를 true로 설정합니다.
     state = AsyncValue.data(
       previousState.copyWith(
@@ -218,14 +246,17 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     );
 
     try {
-      await _repository.addComment(
-        postId: _postId,
-        content: content,
-        author: mockCurrentUser,
-      );
+      print('------------------------------------');
+      print("댓글 impl addComment 테스트 로그 try 문" + _postId + " " + content);
+      print('------------------------------------');
+      await _repository.addComment(postId: _postId, content: content);
+
       // ✨ 2. 성공 후 목록을 새로고침하면, isSubmitting은 자동으로 기본값(false)으로 돌아옵니다.
       await _fetchFirstPage();
     } catch (e) {
+      print('------------------------------------');
+      print("댓글 impl addComment 테스트 로그 catch 문" + _postId + " " + content);
+      print('------------------------------------');
       // ✨ 3. 실패 시, 이전 상태로 되돌리면서 isSubmitting을 false로 풀어줍니다.
       if (mounted) {
         state = AsyncValue.data(previousState.copyWith(isSubmitting: false));
@@ -238,37 +269,40 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     final previousState = state.valueOrNull;
     if (previousState == null || previousState.isSubmitting) return;
 
-    final newReply = Comment(
-      commentId: 'temp_reply_${DateTime.now().millisecondsSinceEpoch}',
-      content: content,
-      author: mockCurrentUser,
-      createdAt: DateTime.now(),
-    );
+    // 1. 전송 시작을 알리기 위해 isSubmitting 상태를 true로 설정
+    state = AsyncValue.data(previousState.copyWith(isSubmitting: true));
 
-    final updatedComments = previousState.comments.map((comment) {
-      if (comment.commentId == parentCommentId) {
-        return comment.copyWith(replies: [...comment.replies, newReply]);
-      }
-      return comment;
-    }).toList();
-
-    // ✨ 1. UI를 업데이트하면서 isSubmitting을 true로 설정합니다.
-    state = AsyncValue.data(
-      previousState.copyWith(comments: updatedComments, isSubmitting: true),
+    // 2. [UI 즉시 업데이트]
+    // 첫 대댓글인 경우, 대댓글 영역이 보이도록 부모 댓글의 hasReplies만 true로 변경
+    final parentComment = previousState.comments.firstWhere(
+      (c) => c.commentId == parentCommentId,
     );
+    if (!parentComment.hasReplies) {
+      final updatedComments = previousState.comments.map((comment) {
+        if (comment.commentId == parentCommentId) {
+          return comment.copyWith(hasReplies: true);
+        }
+        return comment;
+      }).toList();
+      // hasReplies가 true로 변경된 상태를 UI에 우선 반영
+      state = AsyncValue.data(state.value!.copyWith(comments: updatedComments));
+    }
 
     try {
+      // 3. 서버에 실제 대댓글 등록 요청
       await _repository.addReply(
         parentCommentId: parentCommentId,
         content: content,
-        author: mockCurrentUser,
       );
-      // ✨ 2. 성공 시 목록 새로고침
-      await _fetchFirstPage();
-    } catch (e) {
-      // ✨ 3. 실패 시 isSubmitting을 false로 복원
+
+      // 4. [핵심] 대댓글 목록 Provider를 무효화하여 새로고침하도록 지시
+      // 이제 _RepliesSection이 화면에 확실히 존재하므로, 이 신호를 받아 동작하게 됨
+      _ref.invalidate(repliesProvider(parentCommentId));
+    } finally {
+      // 5. 성공/실패 여부와 관계없이 전송 상태(isSubmitting)를 false로 복원
       if (mounted) {
-        state = AsyncValue.data(previousState.copyWith(isSubmitting: false));
+        // hasReplies가 true로 변경된 현재 상태는 그대로 유지하면서 전송 상태만 변경
+        state = AsyncValue.data(state.value!.copyWith(isSubmitting: false));
       }
     }
   }

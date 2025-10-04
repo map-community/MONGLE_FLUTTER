@@ -9,7 +9,7 @@ part of 'paginated_comments.dart';
 _PaginatedComments _$PaginatedCommentsFromJson(Map<String, dynamic> json) =>
     _PaginatedComments(
       comments:
-          (json['values'] as List<dynamic>?)
+          (json['comments'] as List<dynamic>?)
               ?.map((e) => Comment.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -23,7 +23,7 @@ _PaginatedComments _$PaginatedCommentsFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PaginatedCommentsToJson(_PaginatedComments instance) =>
     <String, dynamic>{
-      'values': instance.comments,
+      'comments': instance.comments,
       'nextCursor': instance.nextCursor,
       'hasNext': instance.hasNext,
       'replyingTo': instance.replyingTo,

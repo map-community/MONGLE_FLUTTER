@@ -14,16 +14,18 @@ abstract class CommentRepository {
   });
 
   /// 특정 게시글(postId)에 새로운 댓글을 추가합니다.
-  Future<Comment> addComment({
-    required String postId,
-    required String content,
-    required Author author,
-  });
+  Future<void> addComment({required String postId, required String content});
 
   /// 특정 댓글(parentCommentId)에 새로운 대댓글을 추가합니다.
-  Future<Comment> addReply({
+  Future<void> addReply({
     required String parentCommentId,
     required String content,
-    required Author author,
+  });
+
+  /// 특정 댓글의 대댓글을 조회합니다.
+  Future<PaginatedComments> getReplies({
+    required String parentCommentId,
+    int size,
+    String? cursor,
   });
 }
