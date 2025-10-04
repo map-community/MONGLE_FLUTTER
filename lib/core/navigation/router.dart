@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/common/widgets/main_shell.dart';
@@ -80,11 +81,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/write',
-        pageBuilder: (context, state) => _buildSlideTransitionPage(
-          context: context,
-          state: state,
-          child: const WriteGrainScreen(),
-        ),
+        pageBuilder: (context, state) {
+          // extra로 전달된 데이터를 확인하고 타입 캐스팅합니다.
+          final location = state.extra as NLatLng?;
+
+          return _buildSlideTransitionPage(
+            context: context,
+            state: state,
+            // WriteGrainScreen 생성자에 location을 전달합니다.
+            child: WriteGrainScreen(location: location),
+          );
+        },
       ),
       GoRoute(
         path: '/cloud/:cloudId',

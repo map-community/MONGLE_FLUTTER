@@ -3,6 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mongle_flutter/core/providers/config_provider.dart';
+import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/map/presentation/manager/map_overlay_manager.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
@@ -47,6 +50,9 @@ class _MapViewState extends ConsumerState<MapView> {
         },
       );
     });
+
+    final developerIds = ref.watch(developerIdsProvider);
+    final currentMemberId = ref.watch(currentMemberIdProvider);
 
     return NaverMap(
       options: NaverMapViewOptions(
@@ -95,6 +101,39 @@ class _MapViewState extends ConsumerState<MapView> {
             ref.read(mapSheetStrategyProvider.notifier).minimize();
           }
         }
+      },
+
+      // 개발자용 기능: 지도를 길게 누르면 해당 위치에 글쓰기
+      onMapLongTapped: (point, latLng) {
+        // currentMemberId는 FutureProvider이므로, .when을 사용해 비동기 상태를 처리합니다.
+        currentMemberId.whenData((id) {
+          // id가 null이 아니고, developerIds 목록에 포함되어 있을 때만 기능 활성화
+          if (id != null && developerIds.contains(id)) {
+            showDialog(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('📍 임의 위치에 글쓰기'),
+                content: Text(
+                  '이 위치에 글을 작성하시겠습니까?\n\nLat: ${latLng.latitude.toStringAsFixed(5)}\nLng: ${latLng.longitude.toStringAsFixed(5)}',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('취소'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      // 다음 단계에서 구현할 내용: 좌표와 함께 글쓰기 화면으로 이동
+                      context.push('/write', extra: latLng);
+                    },
+                    child: const Text('작성하기'),
+                  ),
+                ],
+              ),
+            );
+          }
+        });
       },
     );
   }

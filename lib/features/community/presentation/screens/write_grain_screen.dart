@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,7 +12,10 @@ import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmode
 
 // TextEditingController를 사용하므로 StatefulWidget + Consumer 조합인 ConsumerStatefulWidget을 사용합니다.
 class WriteGrainScreen extends ConsumerStatefulWidget {
-  const WriteGrainScreen({super.key});
+  // 일반적인 글쓰기(FAB 클릭) 시에는 이 값이 null이 됩니다.
+  final NLatLng? location;
+
+  const WriteGrainScreen({super.key, this.location});
 
   @override
   ConsumerState<WriteGrainScreen> createState() => _WriteGrainScreenState();
@@ -61,8 +65,12 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                     // 키보드를 내리는 동작
                     FocusScope.of(context).unfocus();
 
+                    // submitPost 호출 시 widget.location을 전달합니다.
+                    // 개발자 기능으로 진입했다면 location에 좌표값이 들어있을 것이고,
+                    // 일반 FAB로 진입했다면 null이 전달될 것입니다.
                     final success = await notifier.submitPost(
                       content: _textController.text,
+                      designatedLocation: widget.location,
                     );
 
                     // context.mounted는 위젯이 화면에 아직 붙어있는지 확인 (안전장치)

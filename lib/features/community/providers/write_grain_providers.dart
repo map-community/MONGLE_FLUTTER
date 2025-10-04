@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mime/mime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -175,7 +176,10 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
   }
 
   /// '게시' 버튼을 눌렀을 때 실행되는 메인 제출 로직입니다.
-  Future<bool> submitPost({required String content}) async {
+  Future<bool> submitPost({
+    required String content,
+    NLatLng? designatedLocation,
+  }) async {
     // --- 1. 유효성 검사 (내용, 비속어, 파일) ---
     if (content.trim().isEmpty &&
         state.photos.isEmpty &&
@@ -205,7 +209,18 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     state = state.copyWith(isSubmitting: true, errorMessage: null);
     try {
       final repository = _ref.read(issueGrainRepositoryProvider);
-      final position = await Geolocator.getCurrentPosition();
+
+      // 개발자 임의 위치 글쓰기 기능을 위해 추가된 위치 결정 로직
+      final NLatLng position;
+      if (designatedLocation != null) {
+        // 1. 파라미터로 위치가 전달되면, 그 위치를 사용합니다.
+        position = designatedLocation;
+      } else {
+        // 2. 파라미터가 없으면(null이면), 기존처럼 현재 GPS 위치를 가져옵니다.
+        final gpsPosition = await Geolocator.getCurrentPosition();
+        position = NLatLng(gpsPosition.latitude, gpsPosition.longitude);
+      }
+
       final allFiles = [...state.photos, ...state.videos];
 
       if (allFiles.isEmpty) {
