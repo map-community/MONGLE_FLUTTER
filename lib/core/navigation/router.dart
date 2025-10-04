@@ -45,7 +45,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refreshListenable,
 
     redirect: (BuildContext context, GoRouterState state) {
+      debugPrint("🔐 Router redirect 호출됨");
+      debugPrint("🔐 현재 경로: ${state.matchedLocation}");
+
       final authState = ref.read(authProvider);
+      debugPrint("🔐 Auth 상태: $authState");
+
       final isAuthRoute =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup';
@@ -108,6 +113,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'grain/:grainId',
             pageBuilder: (context, state) {
               final grainId = state.pathParameters['grainId']!;
+
+              debugPrint("🔄 Router pageBuilder 호출됨");
+              debugPrint("🔄 grainId: $grainId");
+              debugPrint("🔄 전체 pathParameters: ${state.pathParameters}");
+
               return _buildSlideTransitionPage(
                 context: context,
                 state: state,

@@ -48,7 +48,11 @@ class CloudScreen extends ConsumerWidget {
                   displayMode: IssueGrainDisplayMode.boardPreview,
                   onTap: () {
                     //    URL 경로를 동적으로 생성하여 전달합니다.
+                    debugPrint(
+                      "🚀 CloudScreen Navigation 시작 - grainId: ${post.postId}",
+                    );
                     context.push('/cloud/$cloudId/grain/${post.postId}');
+                    debugPrint("🚀 CloudScreen Navigation 호출 완료");
                   },
                 );
               },
