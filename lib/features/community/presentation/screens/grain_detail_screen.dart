@@ -23,9 +23,15 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(() {
+      final currentPixels = _scrollController.position.pixels;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final triggerPoint = maxScroll - 500;
+
+      print('현재 스크롤: $currentPixels, 최대 스크롤: $maxScroll, 호출 지점: $triggerPoint');
       // 스크롤이 맨 아래 근처에 도달하면 다음 페이지 로딩
       if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
+          _scrollController.position.maxScrollExtent - 500) {
+        print('---------fetch next page 실행!!!------------');
         // ✨ 3. widget.grainId 사용
         ref.read(commentProvider(widget.grainId).notifier).fetchNextPage();
       }

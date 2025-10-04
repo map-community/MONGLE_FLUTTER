@@ -170,6 +170,9 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
   /// 다음 페이지의 댓글을 불러옵니다 (무한 스크롤).
   Future<void> fetchNextPage() async {
+    print(
+      '➡️ [fetchNextPage] Attempting to fetch next page for postId: $_postId',
+    );
     // 현재 상태가 데이터 로딩 중이거나, 다음 페이지가 없거나, 다른 제출(전송) 작업 중이면 아무것도 하지 않습니다.
     if (!state.hasValue || !state.value!.hasNext || state.value!.isSubmitting) {
       return;
