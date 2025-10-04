@@ -53,26 +53,10 @@ class CommentSection extends ConsumerWidget {
             final isHighlighted =
                 replyingToComment?.commentId == comment.commentId;
 
-            return Column(
-              children: [
-                CommentItem(
-                  postId: postId,
-                  comment: comment,
-                  isHighlighted: isHighlighted,
-                ),
-                ...comment.replies.map(
-                  (reply) => CommentItem(
-                    postId: postId,
-                    comment: reply,
-                    isReply: true,
-                    isHighlighted:
-                        replyingToComment?.commentId == reply.commentId,
-                  ),
-                ),
-
-                // ✨ [핵심 수정] indent와 endIndent 속성을 제거합니다.
-                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
-              ],
+            return CommentItem(
+              postId: postId,
+              comment: comment,
+              isHighlighted: isHighlighted,
             );
           },
         );

@@ -21,4 +21,11 @@ abstract class CommentRepository {
     required String parentCommentId,
     required String content,
   });
+
+  /// 특정 댓글의 대댓글을 조회합니다.
+  Future<PaginatedComments> getReplies({
+    required String parentCommentId,
+    int size,
+    String? cursor,
+  });
 }

@@ -105,4 +105,23 @@ class CommentRepositoryImpl implements CommentRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<PaginatedComments> getReplies({
+    required String parentCommentId,
+    int size = 15, // 기본값 설정
+    String? cursor,
+  }) async {
+    try {
+      final memberId = await _getRequiredMemberId();
+      final response = await _dio.get(
+        ApiConstants.getReplies(parentCommentId),
+        queryParameters: {'cursor': cursor, 'size': size, 'memberId': memberId},
+      );
+      // ApiInterceptor가 data 필드를 추출해주므로 바로 fromJson 호출
+      return PaginatedComments.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
