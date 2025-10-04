@@ -93,17 +93,36 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
 
   // --- 🔽 아래 함수들은 기존과 동일합니다. 🔽 ---
 
-  @override
-  Future<List<IssueGrain>> getIssueGrainsInCloud(String cloudId) async {
+  // ✅ [추가] 두 메서드의 공통 로직을 처리하는 비공개 헬퍼 메서드
+  Future<List<IssueGrain>> _getGrainsInCloud(String cloudId) async {
+    // 실제 API 호출처럼 약간의 딜레이를 줍니다.
     await Future.delayed(const Duration(milliseconds: 300));
+
+    // 목업 데이터에서 cloudId에 해당하는 게시물 ID 목록을 찾습니다.
     final postIdsInCloud = mockCloudContents[cloudId];
     if (postIdsInCloud == null) {
-      return [];
+      return []; // 해당 ID의 구름이 없으면 빈 리스트 반환
     }
+
+    // 전체 목업 게시물 DB에서 해당 ID를 가진 게시물만 필터링하여 반환합니다.
     final result = _db
         .where((grain) => postIdsInCloud.contains(grain.postId))
         .toList();
     return result;
+  }
+
+  // ✅ [구현] 새로운 계약에 맞춘 정적 구름 조회 메서드
+  @override
+  Future<List<IssueGrain>> getGrainsInStaticCloud(String placeId) async {
+    // 실제 로직은 비공개 헬퍼 메서드에 위임합니다.
+    return _getGrainsInCloud(placeId);
+  }
+
+  // ✅ [구현] 새로운 계약에 맞춘 동적 구름 조회 메서드
+  @override
+  Future<List<IssueGrain>> getGrainsInDynamicCloud(String cloudId) async {
+    // 실제 로직은 비공개 헬퍼 메서드에 위임합니다.
+    return _getGrainsInCloud(cloudId);
   }
 
   @override

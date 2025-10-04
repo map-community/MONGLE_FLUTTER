@@ -13,9 +13,20 @@ class CloudScreen extends ConsumerWidget {
   @override
   // 3. build 메서드에 WidgetRef ref 파라미터가 추가됩니다.
   Widget build(BuildContext context, WidgetRef ref) {
-    // 4. 'ddip'의 사례처럼, cloudId를 .family Provider에 전달하여 데이터를 요청합니다.
-    // ref.watch는 데이터가 변경될 때마다 이 위젯을 자동으로 다시 그리도록 합니다.
-    final postsInCloudAsync = ref.watch(issueGrainsInCloudProvider(cloudId));
+    // ✅ [추가] GoRouter의 현재 상태 정보에서 쿼리 파라미터를 가져옵니다.
+    final typeString =
+        GoRouterState.of(context).uri.queryParameters['type'] ?? 'dynamic';
+    final cloudType = typeString == 'static'
+        ? CloudType.static
+        : CloudType.dynamic;
+
+    // ✅ [추가] Provider에 전달할 파라미터 객체를 생성합니다.
+    final providerParam = CloudProviderParam(id: cloudId, type: cloudType);
+
+    // ✅ [수정] 기존 cloudId 대신 새로 만든 providerParam 객체를 전달합니다.
+    final postsInCloudAsync = ref.watch(
+      issueGrainsInCloudProvider(providerParam),
+    );
 
     return Scaffold(
       appBar: AppBar(

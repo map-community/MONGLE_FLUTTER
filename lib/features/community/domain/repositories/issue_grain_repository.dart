@@ -71,8 +71,11 @@ abstract class IssueGrainRepository {
 
   // --- 글 읽기 및 상호작용 관련 함수 (기존과 동일) ---
 
-  /// 특정 구름(Cloud)에 속한 모든 이슈 알갱이 목록을 가져옵니다.
-  Future<List<IssueGrain>> getIssueGrainsInCloud(String cloudId);
+  ///  정적 구름의 게시물 목록을 가져오는 메서드
+  Future<List<IssueGrain>> getGrainsInStaticCloud(String placeId);
+
+  /// 동적 구름의 게시물 목록을 가져오는 메서드
+  Future<List<IssueGrain>> getGrainsInDynamicCloud(String cloudId);
 
   /// 고유 ID를 통해 단일 이슈 알갱이 정보를 가져옵니다.
   Future<IssueGrain> getIssueGrainById(String id);
@@ -82,5 +85,4 @@ abstract class IssueGrainRepository {
 
   /// 이슈 알갱이에 대한 싫어요를 요청합니다.
   Future<void> dislikeIssueGrain(String id);
-
 }

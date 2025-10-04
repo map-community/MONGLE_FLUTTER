@@ -8,6 +8,21 @@ import 'package:mongle_flutter/features/community/domain/entities/report_models.
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
+import 'package:equatable/equatable.dart'; // 값 기반 비교를 위해 equatable 패키지를 사용합니다.
+
+// ✅ [추가] 구름의 종류를 명확하게 표현하는 enum
+enum CloudType { static, dynamic }
+
+// ✅ [추가] Provider.family에 전달할 파라미터 클래스
+class CloudProviderParam extends Equatable {
+  final String id;
+  final CloudType type;
+
+  const CloudProviderParam({required this.id, required this.type});
+
+  @override
+  List<Object?> get props => [id, type]; // id와 type이 모두 같아야 같은 객체로 취급
+}
 
 // ========================================================================
 // 1. Data Layer Provider
@@ -33,7 +48,7 @@ final issueGrainRepositoryProvider = Provider<IssueGrainRepository>((ref) {
 /// '읽기' 전용으로, 목록을 한번에 불러오는 경우에 사용합니다.
 /// .family: 외부에서 파라미터(cloudId)를 전달받을 수 있게 해줍니다.
 final issueGrainsInCloudProvider = FutureProvider.autoDispose
-    .family<List<IssueGrain>, String>((ref, cloudId) async {
+    .family<List<IssueGrain>, CloudProviderParam>((ref, param) async {
       // async 추가
       // [상태 감시] ref.watch를 사용해 차단된 사용자 목록을 구독합니다.
       // 이 Provider는 이제 blockedUsersProvider의 상태가 바뀔 때마다 자동으로 재실행됩니다.
@@ -41,7 +56,17 @@ final issueGrainsInCloudProvider = FutureProvider.autoDispose
       final reportedContents = ref.watch(reportedContentProvider);
 
       final repository = ref.watch(issueGrainRepositoryProvider);
-      final allGrains = await repository.getIssueGrainsInCloud(cloudId);
+      final List<IssueGrain> allGrains;
+
+      // ✅ [수정] 더 이상 문자열을 분석할 필요 없이, param.type으로 명확하게 분기합니다.
+      switch (param.type) {
+        case CloudType.static:
+          allGrains = await repository.getGrainsInStaticCloud(param.id);
+          break;
+        case CloudType.dynamic:
+          allGrains = await repository.getGrainsInDynamicCloud(param.id);
+          break;
+      }
 
       // [필터링 로직]
       // 차단된 사용자가 작성한 게시물을 제외하고 새로운 리스트를 만듭니다.
