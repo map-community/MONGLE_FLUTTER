@@ -7,7 +7,7 @@ part of 'comment.dart';
 // **************************************************************************
 
 _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
-  commentId: json['commentId'] as String,
+  commentId: _readCommentId(json, 'commentId') as String,
   content: json['content'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
   likeCount: (json['likeCount'] as num?)?.toInt() ?? 0,
@@ -16,8 +16,9 @@ _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
-  isDeleted: json['isDeleted'] as bool? ?? false,
   isAuthor: json['isAuthor'] as bool? ?? false,
+  isDeleted: json['isDeleted'] as bool? ?? false,
+  hasReplies: json['hasReplies'] as bool? ?? false,
   replies:
       (json['replies'] as List<dynamic>?)
           ?.map((e) => Comment.fromJson(e as Map<String, dynamic>))
@@ -33,7 +34,8 @@ Map<String, dynamic> _$CommentToJson(_Comment instance) => <String, dynamic>{
   'dislikeCount': instance.dislikeCount,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt?.toIso8601String(),
-  'isDeleted': instance.isDeleted,
   'isAuthor': instance.isAuthor,
+  'isDeleted': instance.isDeleted,
+  'hasReplies': instance.hasReplies,
   'replies': instance.replies,
 };
