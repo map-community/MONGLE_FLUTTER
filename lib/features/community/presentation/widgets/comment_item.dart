@@ -66,10 +66,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                 ),
               ],
             ),
-
-            if (widget.comment.hasReplies && !widget.isReply)
-              _buildRepliesSection(),
-
             // 4. 액션 툴바도 독립적으로 배치됩니다.
             Row(
               children: [
@@ -80,69 +76,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           ],
         ),
       ),
-    );
-  }
-
-  // 👇 [신규] 대댓글 섹션을 그리는 위젯 메서드를 새로 추가합니다.
-  Widget _buildRepliesSection() {
-    // 새로 만든 repliesProvider를 사용하여 이 댓글의 대댓글 상태를 감시합니다.
-    final repliesState = ref.watch(repliesProvider(widget.comment.commentId));
-
-    return repliesState.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
-        child: SizedBox(
-          height: 24,
-          width: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      error: (e, s) {
-        print('대댓글 로딩 에러: $e');
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('대댓글을 불러올 수 없습니다.'),
-        );
-      },
-      data: (data) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 불러온 대댓글 목록을 CommentItem 위젯을 재사용하여 그립니다.
-            ...data.replies.map(
-              (reply) => CommentItem(
-                postId: widget.postId,
-                comment: reply,
-                isReply: true, // isReply 플래그를 true로 전달
-              ),
-            ),
-            // 더 불러올 대댓글이 있으면 '더보기' 버튼을 표시합니다.
-            if (data.hasNext)
-              TextButton(
-                style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                onPressed: data.isLoadingMore
-                    ? null // 로딩 중에는 버튼 비활성화
-                    : () {
-                        // 버튼을 누르면 다음 페이지를 불러오는 함수를 호출합니다.
-                        ref
-                            .read(
-                              repliesProvider(
-                                widget.comment.commentId,
-                              ).notifier,
-                            )
-                            .fetchMoreReplies();
-                      },
-                child: data.isLoadingMore
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('대댓글 더보기'),
-              ),
-          ],
-        );
-      },
     );
   }
 
