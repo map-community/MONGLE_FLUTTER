@@ -2,8 +2,11 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
+import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
+import 'package:mongle_flutter/features/community/domain/repositories/reaction_repository.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
 
 part 'reply_providers.freezed.dart';
@@ -38,10 +41,11 @@ abstract class RepliesState with _$RepliesState {
 class RepliesNotifier extends StateNotifier<AsyncValue<RepliesState>> {
   final Ref _ref;
   final String _parentCommentId;
+  final ReactionRepository _reactionRepository;
 
   RepliesNotifier(this._ref, this._parentCommentId)
-    : super(const AsyncValue.loading()) {
-    // Notifier가 생성되자마자 초기 대댓글 3개를 불러옵니다.
+    : _reactionRepository = _ref.read(reactionRepositoryProvider),
+      super(const AsyncValue.loading()) {
     _fetchInitialReplies();
   }
 
@@ -114,6 +118,95 @@ class RepliesNotifier extends StateNotifier<AsyncValue<RepliesState>> {
         print('대댓글 더보기 실패: $e');
       }
     }
+  }
+
+  Future<void> like(String replyId) async {
+    await _updateReaction(replyId, ReactionType.LIKE);
+  }
+
+  Future<void> dislike(String replyId) async {
+    await _updateReaction(replyId, ReactionType.DISLIKE);
+  }
+
+  Future<void> _updateReaction(
+    String replyId,
+    ReactionType reactionType,
+  ) async {
+    if (state.valueOrNull == null) return;
+
+    final oldState = state.value!;
+
+    final newReplies = oldState.replies.map((reply) {
+      if (reply.commentId == replyId) {
+        return _calculateOptimisticState(reply, reactionType);
+      }
+      return reply;
+    }).toList();
+
+    state = AsyncValue.data(oldState.copyWith(replies: newReplies));
+
+    try {
+      final currentReply = oldState.replies.firstWhere(
+        (r) => r.commentId == replyId,
+      );
+      final typeToSend = currentReply.myReaction == reactionType
+          ? reactionType
+          : reactionType;
+
+      final serverResponse = await _reactionRepository.updateReaction(
+        targetType: 'comments',
+        targetId: replyId,
+        reactionType: typeToSend,
+      );
+
+      if (mounted) {
+        final finalReplies = state.value!.replies.map((reply) {
+          if (reply.commentId == replyId) {
+            return reply.copyWith(
+              likeCount: serverResponse.likeCount,
+              dislikeCount: serverResponse.dislikeCount,
+            );
+          }
+          return reply;
+        }).toList();
+        state = AsyncValue.data(state.value!.copyWith(replies: finalReplies));
+      }
+    } catch (e) {
+      if (mounted) {
+        state = AsyncValue.data(oldState);
+      }
+      print("Reply Reaction update failed: $e");
+    }
+  }
+
+  Comment _calculateOptimisticState(
+    Comment currentReply,
+    ReactionType newReaction,
+  ) {
+    int newLikeCount = currentReply.likeCount;
+    int newDislikeCount = currentReply.dislikeCount;
+    ReactionType? finalReaction;
+
+    final currentReaction = currentReply.myReaction;
+
+    if (currentReaction == newReaction) {
+      if (newReaction == ReactionType.LIKE) newLikeCount--;
+      if (newReaction == ReactionType.DISLIKE) newDislikeCount--;
+      finalReaction = null;
+    } else {
+      if (currentReaction == ReactionType.LIKE) newLikeCount--;
+      if (currentReaction == ReactionType.DISLIKE) newDislikeCount--;
+
+      if (newReaction == ReactionType.LIKE) newLikeCount++;
+      if (newReaction == ReactionType.DISLIKE) newDislikeCount++;
+      finalReaction = newReaction;
+    }
+
+    return currentReply.copyWith(
+      likeCount: newLikeCount,
+      dislikeCount: newDislikeCount,
+      myReaction: finalReaction,
+    );
   }
 }
 

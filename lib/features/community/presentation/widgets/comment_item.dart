@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
+import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/report_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
@@ -15,6 +16,7 @@ class CommentItem extends ConsumerStatefulWidget {
   final Comment comment;
   final bool isReply;
   final bool isHighlighted;
+  final String? parentCommentId;
 
   const CommentItem({
     super.key,
@@ -22,6 +24,7 @@ class CommentItem extends ConsumerStatefulWidget {
     required this.comment,
     this.isReply = false,
     this.isHighlighted = false,
+    this.parentCommentId,
   });
 
   @override
@@ -70,7 +73,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
             Row(
               children: [
                 if (widget.isReply) const SizedBox(width: 50),
-                Expanded(child: _buildActionBar(context)),
+                Expanded(child: _buildActionBar(context, ref)),
               ],
             ),
           ],
@@ -123,25 +126,60 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     );
   }
 
-  Widget _buildActionBar(BuildContext context) {
+  Widget _buildActionBar(BuildContext context, WidgetRef ref) {
+    final myReaction = widget.comment.myReaction;
+
     return Row(
       children: [
         _buildActionButton(
-          icon: Icons.thumb_up_outlined,
+          icon: myReaction == ReactionType.LIKE
+              ? Icons.thumb_up
+              : Icons.thumb_up_outlined,
           count: widget.comment.likeCount,
-          onTap: () {},
+          color: myReaction == ReactionType.LIKE
+              ? Theme.of(context).primaryColor
+              : Colors.grey.shade700,
+          onTap: () {
+            if (widget.isReply) {
+              // 대댓글의 경우 RepliesNotifier를 호출
+              ref
+                  .read(repliesProvider(widget.parentCommentId!).notifier)
+                  .like(widget.comment.commentId);
+            } else {
+              // 일반 댓글의 경우 CommentNotifier를 호출
+              ref
+                  .read(commentProvider(widget.postId).notifier)
+                  .like(widget.comment.commentId);
+            }
+          },
         ),
         const SizedBox(width: 8),
         _buildActionButton(
-          icon: Icons.thumb_down_outlined,
+          icon: myReaction == ReactionType.DISLIKE
+              ? Icons.thumb_down
+              : Icons.thumb_down_outlined,
           count: widget.comment.dislikeCount,
-          onTap: () {},
+          color: myReaction == ReactionType.DISLIKE
+              ? Colors.grey.shade800
+              : Colors.grey.shade700,
+          onTap: () {
+            if (widget.isReply) {
+              ref
+                  .read(repliesProvider(widget.parentCommentId!).notifier)
+                  .dislike(widget.comment.commentId);
+            } else {
+              ref
+                  .read(commentProvider(widget.postId).notifier)
+                  .dislike(widget.comment.commentId);
+            }
+          },
         ),
         const SizedBox(width: 8),
         if (!widget.isReply) ...[
           _buildActionButton(
             icon: Icons.reply_outlined,
             text: '답글',
+            color: Colors.grey.shade700,
             onTap: () {
               Scrollable.ensureVisible(
                 context,
@@ -163,6 +201,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     required IconData icon,
     int? count,
     String? text,
+    required Color color, // color를 필수로 받도록 변경
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -172,13 +211,13 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: Colors.grey.shade700),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 4),
             if (count != null)
               Text(
                 count.toString(),
                 style: TextStyle(
-                  color: Colors.grey.shade800,
+                  color: color,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -187,7 +226,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               Text(
                 text,
                 style: TextStyle(
-                  color: Colors.grey.shade800,
+                  color: color,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),

@@ -18,5 +18,8 @@ class ApiConstants {
   static String addReply(String parentCommentId) =>
       '/comments/$parentCommentId/replies';
 
+  static String reaction(String targetType, String targetId) =>
+      '/$targetType/$targetId/reaction';
+
   static const String mapObjects = '/map/objects';
 }

@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mongle_flutter/features/community/domain/entities/author.dart'; // 가상의 유저 모델
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
+import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart'; // 가상의 유저 모델
 
 part 'issue_grain.freezed.dart';
 part 'issue_grain.g.dart';
@@ -20,6 +21,7 @@ abstract class IssueGrain with _$IssueGrain {
     required int viewCount,
     required DateTime createdAt,
     DateTime? updatedAt,
+    @Default(null) ReactionType? myReaction,
   }) = _IssueGrain;
 
   factory IssueGrain.fromJson(Map<String, dynamic> json) =>

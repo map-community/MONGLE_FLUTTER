@@ -2,11 +2,29 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/core/errors/exceptions.dart';
+import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/auth/data/repositories/auth_repository_impl.dart';
 
 class ApiInterceptor extends Interceptor {
   final Ref ref;
   ApiInterceptor(this.ref);
+
+  @override
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    // 1. 저장된 액세스 토큰을 가져옵니다.
+    final token = await ref.read(tokenStorageServiceProvider).getAccessToken();
+
+    // 2. 토큰이 있다면, 요청 헤더에 'Authorization'을 추가합니다.
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+
+    // 3. 수정된 옵션으로 요청을 계속 진행합니다.
+    return handler.next(options);
+  }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
@@ -93,7 +111,7 @@ class ApiInterceptor extends Interceptor {
           errorMessage = '요청이 취소되었습니다.';
           break;
         default:
-          errorMessage = '네트워크 연결을 확인해주세요.';
+          errorMessage = '서버가 응답하지 않습니다.';
           break;
       }
     }

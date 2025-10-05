@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Comment {
 
-@JsonKey(readValue: _readCommentId) String get commentId; String get content; Author get author; int get likeCount; int get dislikeCount; DateTime get createdAt; DateTime? get updatedAt; bool get isAuthor; bool get isDeleted; bool get hasReplies; List<Comment> get replies;
+@JsonKey(readValue: _readCommentId) String get commentId; String get content; Author get author; int get likeCount; int get dislikeCount; DateTime get createdAt; DateTime? get updatedAt; bool get isAuthor; bool get isDeleted; bool get hasReplies; List<Comment> get replies;// '나의 반응' 상태를 저장할 필드입니다.
+// 서버 응답에 이 필드가 포함될 것입니다.
+ ReactionType? get myReaction;
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +30,16 @@ $CommentCopyWith<Comment> get copyWith => _$CommentCopyWithImpl<Comment>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Comment&&(identical(other.commentId, commentId) || other.commentId == commentId)&&(identical(other.content, content) || other.content == content)&&(identical(other.author, author) || other.author == author)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.isAuthor, isAuthor) || other.isAuthor == isAuthor)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.hasReplies, hasReplies) || other.hasReplies == hasReplies)&&const DeepCollectionEquality().equals(other.replies, replies));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Comment&&(identical(other.commentId, commentId) || other.commentId == commentId)&&(identical(other.content, content) || other.content == content)&&(identical(other.author, author) || other.author == author)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.isAuthor, isAuthor) || other.isAuthor == isAuthor)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.hasReplies, hasReplies) || other.hasReplies == hasReplies)&&const DeepCollectionEquality().equals(other.replies, replies)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,commentId,content,author,likeCount,dislikeCount,createdAt,updatedAt,isAuthor,isDeleted,hasReplies,const DeepCollectionEquality().hash(replies));
+int get hashCode => Object.hash(runtimeType,commentId,content,author,likeCount,dislikeCount,createdAt,updatedAt,isAuthor,isDeleted,hasReplies,const DeepCollectionEquality().hash(replies),myReaction);
 
 @override
 String toString() {
-  return 'Comment(commentId: $commentId, content: $content, author: $author, likeCount: $likeCount, dislikeCount: $dislikeCount, createdAt: $createdAt, updatedAt: $updatedAt, isAuthor: $isAuthor, isDeleted: $isDeleted, hasReplies: $hasReplies, replies: $replies)';
+  return 'Comment(commentId: $commentId, content: $content, author: $author, likeCount: $likeCount, dislikeCount: $dislikeCount, createdAt: $createdAt, updatedAt: $updatedAt, isAuthor: $isAuthor, isDeleted: $isDeleted, hasReplies: $hasReplies, replies: $replies, myReaction: $myReaction)';
 }
 
 
@@ -48,7 +50,7 @@ abstract mixin class $CommentCopyWith<$Res>  {
   factory $CommentCopyWith(Comment value, $Res Function(Comment) _then) = _$CommentCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(readValue: _readCommentId) String commentId, String content, Author author, int likeCount, int dislikeCount, DateTime createdAt, DateTime? updatedAt, bool isAuthor, bool isDeleted, bool hasReplies, List<Comment> replies
+@JsonKey(readValue: _readCommentId) String commentId, String content, Author author, int likeCount, int dislikeCount, DateTime createdAt, DateTime? updatedAt, bool isAuthor, bool isDeleted, bool hasReplies, List<Comment> replies, ReactionType? myReaction
 });
 
 
@@ -65,7 +67,7 @@ class _$CommentCopyWithImpl<$Res>
 
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? commentId = null,Object? content = null,Object? author = null,Object? likeCount = null,Object? dislikeCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? isAuthor = null,Object? isDeleted = null,Object? hasReplies = null,Object? replies = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? commentId = null,Object? content = null,Object? author = null,Object? likeCount = null,Object? dislikeCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? isAuthor = null,Object? isDeleted = null,Object? hasReplies = null,Object? replies = null,Object? myReaction = freezed,}) {
   return _then(_self.copyWith(
 commentId: null == commentId ? _self.commentId : commentId // ignore: cast_nullable_to_non_nullable
 as String,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -78,7 +80,8 @@ as DateTime?,isAuthor: null == isAuthor ? _self.isAuthor : isAuthor // ignore: c
 as bool,isDeleted: null == isDeleted ? _self.isDeleted : isDeleted // ignore: cast_nullable_to_non_nullable
 as bool,hasReplies: null == hasReplies ? _self.hasReplies : hasReplies // ignore: cast_nullable_to_non_nullable
 as bool,replies: null == replies ? _self.replies : replies // ignore: cast_nullable_to_non_nullable
-as List<Comment>,
+as List<Comment>,myReaction: freezed == myReaction ? _self.myReaction : myReaction // ignore: cast_nullable_to_non_nullable
+as ReactionType?,
   ));
 }
 /// Create a copy of Comment
@@ -172,10 +175,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(readValue: _readCommentId)  String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isAuthor,  bool isDeleted,  bool hasReplies,  List<Comment> replies)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(readValue: _readCommentId)  String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isAuthor,  bool isDeleted,  bool hasReplies,  List<Comment> replies,  ReactionType? myReaction)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Comment() when $default != null:
-return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isAuthor,_that.isDeleted,_that.hasReplies,_that.replies);case _:
+return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isAuthor,_that.isDeleted,_that.hasReplies,_that.replies,_that.myReaction);case _:
   return orElse();
 
 }
@@ -193,10 +196,10 @@ return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(readValue: _readCommentId)  String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isAuthor,  bool isDeleted,  bool hasReplies,  List<Comment> replies)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(readValue: _readCommentId)  String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isAuthor,  bool isDeleted,  bool hasReplies,  List<Comment> replies,  ReactionType? myReaction)  $default,) {final _that = this;
 switch (_that) {
 case _Comment():
-return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isAuthor,_that.isDeleted,_that.hasReplies,_that.replies);case _:
+return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isAuthor,_that.isDeleted,_that.hasReplies,_that.replies,_that.myReaction);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +216,10 @@ return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(readValue: _readCommentId)  String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isAuthor,  bool isDeleted,  bool hasReplies,  List<Comment> replies)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(readValue: _readCommentId)  String commentId,  String content,  Author author,  int likeCount,  int dislikeCount,  DateTime createdAt,  DateTime? updatedAt,  bool isAuthor,  bool isDeleted,  bool hasReplies,  List<Comment> replies,  ReactionType? myReaction)?  $default,) {final _that = this;
 switch (_that) {
 case _Comment() when $default != null:
-return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isAuthor,_that.isDeleted,_that.hasReplies,_that.replies);case _:
+return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that.dislikeCount,_that.createdAt,_that.updatedAt,_that.isAuthor,_that.isDeleted,_that.hasReplies,_that.replies,_that.myReaction);case _:
   return null;
 
 }
@@ -228,7 +231,7 @@ return $default(_that.commentId,_that.content,_that.author,_that.likeCount,_that
 @JsonSerializable()
 
 class _Comment implements Comment {
-  const _Comment({@JsonKey(readValue: _readCommentId) required this.commentId, required this.content, required this.author, this.likeCount = 0, this.dislikeCount = 0, required this.createdAt, this.updatedAt, this.isAuthor = false, this.isDeleted = false, this.hasReplies = false, final  List<Comment> replies = const []}): _replies = replies;
+  const _Comment({@JsonKey(readValue: _readCommentId) required this.commentId, required this.content, required this.author, this.likeCount = 0, this.dislikeCount = 0, required this.createdAt, this.updatedAt, this.isAuthor = false, this.isDeleted = false, this.hasReplies = false, final  List<Comment> replies = const [], this.myReaction}): _replies = replies;
   factory _Comment.fromJson(Map<String, dynamic> json) => _$CommentFromJson(json);
 
 @override@JsonKey(readValue: _readCommentId) final  String commentId;
@@ -248,6 +251,9 @@ class _Comment implements Comment {
   return EqualUnmodifiableListView(_replies);
 }
 
+// '나의 반응' 상태를 저장할 필드입니다.
+// 서버 응답에 이 필드가 포함될 것입니다.
+@override final  ReactionType? myReaction;
 
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
@@ -262,16 +268,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Comment&&(identical(other.commentId, commentId) || other.commentId == commentId)&&(identical(other.content, content) || other.content == content)&&(identical(other.author, author) || other.author == author)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.isAuthor, isAuthor) || other.isAuthor == isAuthor)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.hasReplies, hasReplies) || other.hasReplies == hasReplies)&&const DeepCollectionEquality().equals(other._replies, _replies));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Comment&&(identical(other.commentId, commentId) || other.commentId == commentId)&&(identical(other.content, content) || other.content == content)&&(identical(other.author, author) || other.author == author)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.isAuthor, isAuthor) || other.isAuthor == isAuthor)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.hasReplies, hasReplies) || other.hasReplies == hasReplies)&&const DeepCollectionEquality().equals(other._replies, _replies)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,commentId,content,author,likeCount,dislikeCount,createdAt,updatedAt,isAuthor,isDeleted,hasReplies,const DeepCollectionEquality().hash(_replies));
+int get hashCode => Object.hash(runtimeType,commentId,content,author,likeCount,dislikeCount,createdAt,updatedAt,isAuthor,isDeleted,hasReplies,const DeepCollectionEquality().hash(_replies),myReaction);
 
 @override
 String toString() {
-  return 'Comment(commentId: $commentId, content: $content, author: $author, likeCount: $likeCount, dislikeCount: $dislikeCount, createdAt: $createdAt, updatedAt: $updatedAt, isAuthor: $isAuthor, isDeleted: $isDeleted, hasReplies: $hasReplies, replies: $replies)';
+  return 'Comment(commentId: $commentId, content: $content, author: $author, likeCount: $likeCount, dislikeCount: $dislikeCount, createdAt: $createdAt, updatedAt: $updatedAt, isAuthor: $isAuthor, isDeleted: $isDeleted, hasReplies: $hasReplies, replies: $replies, myReaction: $myReaction)';
 }
 
 
@@ -282,7 +288,7 @@ abstract mixin class _$CommentCopyWith<$Res> implements $CommentCopyWith<$Res> {
   factory _$CommentCopyWith(_Comment value, $Res Function(_Comment) _then) = __$CommentCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(readValue: _readCommentId) String commentId, String content, Author author, int likeCount, int dislikeCount, DateTime createdAt, DateTime? updatedAt, bool isAuthor, bool isDeleted, bool hasReplies, List<Comment> replies
+@JsonKey(readValue: _readCommentId) String commentId, String content, Author author, int likeCount, int dislikeCount, DateTime createdAt, DateTime? updatedAt, bool isAuthor, bool isDeleted, bool hasReplies, List<Comment> replies, ReactionType? myReaction
 });
 
 
@@ -299,7 +305,7 @@ class __$CommentCopyWithImpl<$Res>
 
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? commentId = null,Object? content = null,Object? author = null,Object? likeCount = null,Object? dislikeCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? isAuthor = null,Object? isDeleted = null,Object? hasReplies = null,Object? replies = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? commentId = null,Object? content = null,Object? author = null,Object? likeCount = null,Object? dislikeCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? isAuthor = null,Object? isDeleted = null,Object? hasReplies = null,Object? replies = null,Object? myReaction = freezed,}) {
   return _then(_Comment(
 commentId: null == commentId ? _self.commentId : commentId // ignore: cast_nullable_to_non_nullable
 as String,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -312,7 +318,8 @@ as DateTime?,isAuthor: null == isAuthor ? _self.isAuthor : isAuthor // ignore: c
 as bool,isDeleted: null == isDeleted ? _self.isDeleted : isDeleted // ignore: cast_nullable_to_non_nullable
 as bool,hasReplies: null == hasReplies ? _self.hasReplies : hasReplies // ignore: cast_nullable_to_non_nullable
 as bool,replies: null == replies ? _self._replies : replies // ignore: cast_nullable_to_non_nullable
-as List<Comment>,
+as List<Comment>,myReaction: freezed == myReaction ? _self.myReaction : myReaction // ignore: cast_nullable_to_non_nullable
+as ReactionType?,
   ));
 }
 
