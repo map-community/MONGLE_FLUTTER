@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/constants/api_constants.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/core/errors/exceptions.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:mongle_flutter/features/auth/domain/entities/token_info.dart';
 
 class ApiInterceptor extends Interceptor {
   final Ref ref;
@@ -54,29 +56,51 @@ class ApiInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final responseData = err.response?.data;
-
-    // 1. 401 에러인지 먼저 확인
     if (err.response?.statusCode == 401) {
-      // 2. 응답 본문이 있고, 우리가 정의한 에러 형식인지 확인
       if (responseData is Map<String, dynamic> &&
           responseData.containsKey('code')) {
         final errorCode = responseData['code'];
-
-        // 3. 오직 '만료된 토큰(AUTH-011)' 에러일 때만 재발급을 시도합니다.
         if (errorCode == 'AUTH-011' &&
-            err.requestOptions.path != '/auth/reissue') {
+            err.requestOptions.path != ApiConstants.reissue) {
+          // '/auth/reissue' 대신 상수 사용
           try {
-            final newTokens = await ref
-                .read(authRepositoryProvider)
-                .reissueToken();
+            // 👇 [핵심 수정] authRepository를 호출하는 대신, 재발급 로직을 인터셉터 내에서 직접 수행
+            final tokenStorage = ref.read(tokenStorageServiceProvider);
+            final refreshToken = await tokenStorage.getRefreshToken();
+            if (refreshToken == null) {
+              throw Exception('No refresh token');
+            }
+
+            // 1. 토큰 재발급 전용으로 사용할 새로운 '깨끗한' Dio 인스턴스를 생성
+            final refreshDio = Dio(
+              BaseOptions(baseUrl: ref.read(dioProvider).options.baseUrl),
+            );
+
+            // 2. 새로 생성한 dio 인스턴스로 API 호출 (이 요청은 인터셉터를 타지 않음)
+            final refreshResponse = await refreshDio.post(
+              ApiConstants.reissue,
+              data: {'refreshToken': refreshToken},
+            );
+
+            // 3. 새로운 토큰 정보 저장
+            final newTokenInfo = TokenInfo.fromJson(
+              refreshResponse.data['data'],
+            );
+            await tokenStorage.saveTokens(newTokenInfo);
+
+            // 4. 원래의 요청에 새로운 액세스 토큰을 담아 재시도
             final originalRequest = err.requestOptions;
             originalRequest.headers['Authorization'] =
-                'Bearer ${newTokens.accessToken}';
+                'Bearer ${newTokenInfo.accessToken}';
+
+            // 5. 원래의 dioProvider를 사용하여 원래 요청을 재시도
             final response = await ref.read(dioProvider).fetch(originalRequest);
             return handler.resolve(response);
           } on DioException catch (reissueErr) {
             // 리프레시 토큰마저 만료되어 재발급에 실패한 경우
             final finalException = ApiException("세션이 만료되었습니다. 다시 로그인해주세요.");
+            // 여기서 로그아웃 처리 로직을 호출할 수도 있습니다.
+            // ref.read(authProvider.notifier).logout();
             return handler.reject(
               DioException(
                 requestOptions: reissueErr.requestOptions,
