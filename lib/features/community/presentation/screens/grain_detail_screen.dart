@@ -78,7 +78,7 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
               slivers: [
                 SliverToBoxAdapter(
                   child: IssueGrainItem(
-                    postId: grain.postId,
+                    grain: grain,
                     displayMode: IssueGrainDisplayMode.fullView,
                     // ✨ 4. fullView 모드에서는 더 이상 CommentSection을 직접 포함하지 않음
                   ),
