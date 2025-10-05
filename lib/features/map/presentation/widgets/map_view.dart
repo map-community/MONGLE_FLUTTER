@@ -80,7 +80,8 @@ class _MapViewState extends ConsumerState<MapView> {
           onCameraIdle();
         });
       },
-      onCameraIdle: onCameraIdle, // 카메라 이동이 멈추면 데이터 요청
+      onCameraIdle: onCameraIdle,
+      // 카메라 이동이 멈추면 데이터 요청
       // 1. 사용자가 지도를 탭했을 때 호출됩니다.
       onMapTapped: (point, latLng) {
         // '지도에 상호작용이 발생했다'는 신호를 보냅니다.
@@ -142,10 +143,22 @@ class _MapViewState extends ConsumerState<MapView> {
   void onCameraIdle() async {
     if (_mapController == null) return;
 
-    // [디버깅 로그 1] 데이터 요청이 시작되는지 확인
-    print("➡️ [MapView] onCameraIdle: 데이터 요청 시작.");
+    // 현재 카메라 위치 정보를 가져옵니다.
+    final cameraPosition = await _mapController!.getCameraPosition();
+    final currentZoom = cameraPosition.zoom;
+    print("📸 현재 지도 줌 레벨: $currentZoom");
 
-    final bounds = await _mapController!.getContentBounds();
-    ref.read(mapViewModelProvider.notifier).fetchMapObjects(bounds);
+    // 👇👇👇 줌 레벨 체크 로직 추가 👇👇👇
+    if (currentZoom > 13) {
+      // 줌 레벨이 13보다 클 때만 API를 요청합니다.
+      print("➡️ [MapView] onCameraIdle: 줌 레벨이 13보다 크므로 데이터 요청을 시작합니다.");
+      final bounds = await _mapController!.getContentBounds();
+      ref.read(mapViewModelProvider.notifier).fetchMapObjects(bounds);
+    } else {
+      // 줌 레벨이 13 이하일 때는 로그만 남기고 아무 작업도 하지 않습니다.
+      print("ℹ️ 줌 레벨이 13 이하이므로 새로운 API 요청을 보내지 않습니다.");
+      // 이 경우에는 오버레이를 지우거나 상태를 변경하는 코드가 없으므로,
+      // 기존에 표시되던 마커들은 그대로 유지됩니다.
+    }
   }
 }

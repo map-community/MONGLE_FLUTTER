@@ -44,7 +44,6 @@ class MapViewModel extends StateNotifier<MapState> {
   final MapRepository _mapRepository;
 
   MapViewModel(this._ref)
-    // 생성 시점에 ref를 통해 MapRepository의 구현체(지금은 Fake)를 주입받습니다.
     : _mapRepository = _ref.read(mapRepositoryProvider),
       // ViewModel이 처음 생성될 때의 초기 상태는 '로딩 중' 입니다.
       super(const MapState.loading()) {
@@ -61,17 +60,21 @@ class MapViewModel extends StateNotifier<MapState> {
       // 2. 권한이 허용되었다면, 현재 GPS 위치를 가져옵니다.
       try {
         final position = await Geolocator.getCurrentPosition();
+        const knuPosition = NLatLng(35.890, 128.612);
         // 3. 위치 정보를 성공적으로 가져오면, 상태를 'data'로 변경합니다.
         //    이때 지도 객체(mapObjects)는 아직 없으므로 null 입니다.
         state = MapState.data(
-          initialPosition: NLatLng(position.latitude, position.longitude),
+          // initialPosition: NLatLng(position.latitude, position.longitude),
+          initialPosition: knuPosition,
         );
 
         // [수정] ViewModel이 초기화될 때 첫 데이터 로드를 수행합니다.
         // Fake Repository는 bounds를 사용하지 않으므로 임시 값을 전달합니다.
         final initialBounds = NLatLngBounds(
-          southWest: NLatLng(position.latitude, position.longitude),
-          northEast: NLatLng(position.latitude, position.longitude),
+          // southWest: NLatLng(position.latitude, position.longitude),
+          // northEast: NLatLng(position.latitude, position.longitude),
+          southWest: knuPosition,
+          northEast: knuPosition,
         );
         await fetchMapObjects(initialBounds);
       } catch (e) {
@@ -143,14 +146,14 @@ class MapViewModel extends StateNotifier<MapState> {
 /// ## mapViewModelProvider: ViewModel 공급자
 ///
 /// UI 위젯이 MapViewModel의 인스턴스에 접근할 수 있도록 해주는 전역 Provider입니다.
-/// autoDispose는 지도 화면이 위젯 트리에서 제거될 때 ViewModel을 자동으로 파기하여 메모리를 절약해줍니다.
-final mapViewModelProvider =
-    StateNotifierProvider.autoDispose<MapViewModel, MapState>((ref) {
-      // ✅ 4. [상태 감시] blockedUsersProvider를 watch 합니다.
-      // 이로써 차단 목록이 변경될 때마다 MapViewModel이 재실행되고,
-      // 지도 객체를 다시 불러와 필터링하게 됩니다.
-      ref.watch(blockedUsersProvider);
-      ref.watch(reportedContentProvider);
+final mapViewModelProvider = StateNotifierProvider<MapViewModel, MapState>((
+  ref,
+) {
+  // ✅ 4. [상태 감시] blockedUsersProvider를 watch 합니다.
+  // 이로써 차단 목록이 변경될 때마다 MapViewModel이 재실행되고,
+  // 지도 객체를 다시 불러와 필터링하게 됩니다.
+  ref.watch(blockedUsersProvider);
+  ref.watch(reportedContentProvider);
 
-      return MapViewModel(ref);
-    });
+  return MapViewModel(ref);
+});
