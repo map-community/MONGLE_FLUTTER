@@ -18,8 +18,8 @@ _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
   videoUrls:
       (json['videoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
-  likeCount: (json['likeCount'] as num).toInt(),
-  dislikeCount: (json['dislikeCount'] as num).toInt(),
+  likeCount: (_readLikeCount(json, 'likeCount') as num).toInt(),
+  dislikeCount: (_readDislikeCount(json, 'dislikeCount') as num).toInt(),
   commentCount: (json['commentCount'] as num).toInt(),
   viewCount: (json['viewCount'] as num).toInt(),
   createdAt: DateTime.parse(json['createdAt'] as String),

@@ -5,6 +5,11 @@ import 'package:mongle_flutter/features/community/domain/entities/reaction_model
 part 'issue_grain.freezed.dart';
 part 'issue_grain.g.dart';
 
+Object? _readLikeCount(Map json, String key) =>
+    json['likeCount'] ?? json['upvotes'];
+Object? _readDislikeCount(Map json, String key) =>
+    json['dislikeCount'] ?? json['downvotes'];
+
 @freezed
 abstract class IssueGrain with _$IssueGrain {
   const factory IssueGrain({
@@ -15,8 +20,8 @@ abstract class IssueGrain with _$IssueGrain {
     required double longitude,
     @Default([]) List<String> photoUrls, // 이미지 URL 목록
     @Default([]) List<String> videoUrls,
-    required int likeCount,
-    required int dislikeCount,
+    @JsonKey(readValue: _readLikeCount) required int likeCount,
+    @JsonKey(readValue: _readDislikeCount) required int dislikeCount,
     required int commentCount,
     required int viewCount,
     required DateTime createdAt,
