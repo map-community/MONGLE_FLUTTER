@@ -3,9 +3,12 @@ import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/issue_grain_repository_impl.dart';
+import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
+import 'package:mongle_flutter/features/community/domain/repositories/reaction_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:equatable/equatable.dart'; // 값 기반 비교를 위해 equatable 패키지를 사용합니다.
@@ -100,8 +103,13 @@ final issueGrainsInCloudProvider = FutureProvider.autoDispose
 /// .family: 외부에서 파라미터(postId)를 전달받아, 각 게시글마다 독립적인 상태를 관리하게 해줍니다.
 final issueGrainProvider = StateNotifierProvider.autoDispose
     .family<IssueGrainNotifier, AsyncValue<IssueGrain>, String>((ref, postId) {
-      final repository = ref.watch(issueGrainRepositoryProvider);
-      return IssueGrainNotifier(repository, postId);
+      final issueGrainRepository = ref.watch(issueGrainRepositoryProvider);
+      final reactionRepository = ref.watch(reactionRepositoryProvider);
+      return IssueGrainNotifier(
+        issueGrainRepository,
+        reactionRepository,
+        postId,
+      );
     });
 
 // ========================================================================
@@ -112,18 +120,25 @@ final issueGrainProvider = StateNotifierProvider.autoDispose
 ///
 /// UI는 이 Notifier에 정의된 메서드(like, dislike 등)를 호출하여 상태 변경을 요청합니다.
 class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
-  final IssueGrainRepository _repository;
+  final IssueGrainRepository _issueGrainRepository;
+  final ReactionRepository _reactionRepository;
   final String _postId;
 
-  IssueGrainNotifier(this._repository, this._postId)
-    : super(const AsyncValue.loading()) {
+  IssueGrainNotifier(
+    this._issueGrainRepository,
+    this._reactionRepository,
+    this._postId,
+  ) : super(const AsyncValue.loading()) {
     _fetchIssueGrain();
   }
 
+  /// 게시글의 초기 데이터를 서버로부터 가져옵니다.
+  /// 이제 서버가 myReaction을 주기 때문에 이 함수가 호출되면 초기 버튼 상태가 정확하게 설정됩니다.
   Future<void> _fetchIssueGrain() async {
     try {
-      final grain = await _repository.getIssueGrainById(_postId);
+      final grain = await _issueGrainRepository.getIssueGrainById(_postId);
       if (mounted) {
+        // 위젯이 화면에 아직 있는지 확인
         state = AsyncValue.data(grain);
       }
     } catch (e, s) {
@@ -133,39 +148,90 @@ class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
     }
   }
 
-  // '좋아요' 기능을 처리하는 외부 공개 함수
+  /// '좋아요' 버튼을 눌렀을 때의 로직
   Future<void> like() async {
-    // Optimistic UI 적용: 서버 응답을 기다리지 않고 UI를 즉시 업데이트
-    state.whenData((grain) {
-      state = AsyncValue.data(grain.copyWith(likeCount: grain.likeCount + 1));
-    });
+    // 현재 '좋아요' 상태가 아니었다면 'LIKE'로, 이미 '좋아요' 상태였다면 취소의 의미로 'LIKE'를 다시 보냅니다.
+    await _updateReaction(ReactionType.LIKE);
+  }
+
+  /// '싫어요' 버튼을 눌렀을 때의 로직
+  Future<void> dislike() async {
+    // 현재 '싫어요' 상태가 아니었다면 'DISLIKE'로, 이미 '싫어요' 상태였다면 취소의 의미로 'DISLIKE'를 다시 보냅니다.
+    await _updateReaction(ReactionType.DISLIKE);
+  }
+
+  /// 공통 반응 업데이트 로직 (낙관적 UI 적용)
+  Future<void> _updateReaction(ReactionType reactionType) async {
+    // 현재 상태가 데이터가 아니면 (로딩/에러) 아무것도 하지 않습니다.
+    if (state.valueOrNull == null) return;
+
+    // 1. [상태 저장] API 요청 실패 시 되돌아갈 현재 상태를 백업합니다.
+    final oldState = state.value!;
+
+    // 2. [낙관적 업데이트] 서버 응답을 기다리지 않고 UI 상태를 즉시 변경합니다.
+    state = AsyncValue.data(_calculateOptimisticState(oldState, reactionType));
 
     try {
-      await _repository.likeIssueGrain(_postId);
-      // 성공 시에는 별도 처리 없음 (이미 UI는 긍정적으로 업데이트됨)
-      // 실제 API라면 여기서 반환된 최신 데이터로 state를 한번 더 갱신해줄 수 있습니다.
+      // 3. [API 호출] 백그라운드에서 서버에 실제 요청을 보냅니다.
+      final serverResponse = await _reactionRepository.updateReaction(
+        targetType: 'posts', // 게시글이므로 'posts'
+        targetId: _postId,
+        reactionType: reactionType,
+      );
+
+      // 4. [상태 동기화] API 호출 성공 시, 서버가 보내준 최종 카운트로 상태를 업데이트하여 동기화합니다.
+      // myReaction 상태는 이미 낙관적으로 변경되었으므로, 카운트만 동기화합니다.
+      if (mounted) {
+        state = AsyncValue.data(
+          state.value!.copyWith(
+            likeCount: serverResponse.likeCount,
+            dislikeCount: serverResponse.dislikeCount,
+          ),
+        );
+      }
     } catch (e) {
-      // API 호출 실패 시, 이전 상태로 UI를 되돌림 (Rollback)
-      state.whenData((grain) {
-        state = AsyncValue.data(grain.copyWith(likeCount: grain.likeCount - 1));
-      });
+      // 5. [롤백] API 호출 실패 시, 1번에서 백업해둔 원래 상태로 UI를 되돌립니다.
+      if (mounted) {
+        state = AsyncValue.data(oldState);
+      }
+      // (선택) 사용자에게 에러 스낵바를 보여줄 수도 있습니다.
+      print("Reaction update failed: $e");
     }
   }
 
-  Future<void> dislike() async {
-    state.whenData((grain) {
-      state = AsyncValue.data(
-        grain.copyWith(dislikeCount: grain.dislikeCount + 1),
-      );
-    });
-    try {
-      await _repository.dislikeIssueGrain(_postId);
-    } catch (e) {
-      state.whenData((grain) {
-        state = AsyncValue.data(
-          grain.copyWith(dislikeCount: grain.dislikeCount - 1),
-        );
-      });
+  /// 낙관적 UI 상태를 계산하는 헬퍼 함수 (내부 로직)
+  IssueGrain _calculateOptimisticState(
+    IssueGrain currentState,
+    ReactionType newReaction,
+  ) {
+    int newLikeCount = currentState.likeCount;
+    int newDislikeCount = currentState.dislikeCount;
+    ReactionType? finalReaction;
+
+    final currentReaction = currentState.myReaction;
+
+    // A. 현재 반응과 누른 버튼이 같은 경우 (토글 -> 취소)
+    if (currentReaction == newReaction) {
+      if (newReaction == ReactionType.LIKE) newLikeCount--;
+      if (newReaction == ReactionType.DISLIKE) newDislikeCount--;
+      finalReaction = null;
     }
+    // B. 현재 반응과 누른 버튼이 다른 경우 (변경 또는 새로 누름)
+    else {
+      // B-1. 기존 반응이 있었다면 먼저 카운트를 되돌린다.
+      if (currentReaction == ReactionType.LIKE) newLikeCount--;
+      if (currentReaction == ReactionType.DISLIKE) newDislikeCount--;
+
+      // B-2. 새로운 반응의 카운트를 올린다.
+      if (newReaction == ReactionType.LIKE) newLikeCount++;
+      if (newReaction == ReactionType.DISLIKE) newDislikeCount++;
+      finalReaction = newReaction;
+    }
+
+    return currentState.copyWith(
+      likeCount: newLikeCount,
+      dislikeCount: newDislikeCount,
+      myReaction: finalReaction,
+    );
   }
 }

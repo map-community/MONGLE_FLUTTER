@@ -17,7 +17,7 @@ mixin _$IssueGrain {
 
  String get postId; Author get author;// 작성자 정보 (User 모델과 결합)
  String get content; double get latitude; double get longitude; List<String> get photoUrls;// 이미지 URL 목록
- List<String> get videoUrls; int get likeCount; int get dislikeCount; int get commentCount; int get viewCount; DateTime get createdAt; DateTime? get updatedAt;
+ List<String> get videoUrls; int get likeCount; int get dislikeCount; int get commentCount; int get viewCount; DateTime get createdAt; DateTime? get updatedAt;@JsonKey(includeFromJson: false, includeToJson: false) ReactionType? get myReaction;
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +30,16 @@ $IssueGrainCopyWith<IssueGrain> get copyWith => _$IssueGrainCopyWithImpl<IssueGr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IssueGrain&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&const DeepCollectionEquality().equals(other.photoUrls, photoUrls)&&const DeepCollectionEquality().equals(other.videoUrls, videoUrls)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.viewCount, viewCount) || other.viewCount == viewCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IssueGrain&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&const DeepCollectionEquality().equals(other.photoUrls, photoUrls)&&const DeepCollectionEquality().equals(other.videoUrls, videoUrls)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.viewCount, viewCount) || other.viewCount == viewCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,postId,author,content,latitude,longitude,const DeepCollectionEquality().hash(photoUrls),const DeepCollectionEquality().hash(videoUrls),likeCount,dislikeCount,commentCount,viewCount,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,postId,author,content,latitude,longitude,const DeepCollectionEquality().hash(photoUrls),const DeepCollectionEquality().hash(videoUrls),likeCount,dislikeCount,commentCount,viewCount,createdAt,updatedAt,myReaction);
 
 @override
 String toString() {
-  return 'IssueGrain(postId: $postId, author: $author, content: $content, latitude: $latitude, longitude: $longitude, photoUrls: $photoUrls, videoUrls: $videoUrls, likeCount: $likeCount, dislikeCount: $dislikeCount, commentCount: $commentCount, viewCount: $viewCount, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'IssueGrain(postId: $postId, author: $author, content: $content, latitude: $latitude, longitude: $longitude, photoUrls: $photoUrls, videoUrls: $videoUrls, likeCount: $likeCount, dislikeCount: $dislikeCount, commentCount: $commentCount, viewCount: $viewCount, createdAt: $createdAt, updatedAt: $updatedAt, myReaction: $myReaction)';
 }
 
 
@@ -50,7 +50,7 @@ abstract mixin class $IssueGrainCopyWith<$Res>  {
   factory $IssueGrainCopyWith(IssueGrain value, $Res Function(IssueGrain) _then) = _$IssueGrainCopyWithImpl;
 @useResult
 $Res call({
- String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt
+ String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt,@JsonKey(includeFromJson: false, includeToJson: false) ReactionType? myReaction
 });
 
 
@@ -67,7 +67,7 @@ class _$IssueGrainCopyWithImpl<$Res>
 
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = null,Object? longitude = null,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = null,Object? longitude = null,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? myReaction = freezed,}) {
   return _then(_self.copyWith(
 postId: null == postId ? _self.postId : postId // ignore: cast_nullable_to_non_nullable
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
@@ -82,7 +82,8 @@ as int,commentCount: null == commentCount ? _self.commentCount : commentCount //
 as int,viewCount: null == viewCount ? _self.viewCount : viewCount // ignore: cast_nullable_to_non_nullable
 as int,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,myReaction: freezed == myReaction ? _self.myReaction : myReaction // ignore: cast_nullable_to_non_nullable
+as ReactionType?,
   ));
 }
 /// Create a copy of IssueGrain
@@ -176,10 +177,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt, @JsonKey(includeFromJson: false, includeToJson: false)  ReactionType? myReaction)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IssueGrain() when $default != null:
-return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
   return orElse();
 
 }
@@ -197,10 +198,10 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt, @JsonKey(includeFromJson: false, includeToJson: false)  ReactionType? myReaction)  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrain():
-return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -217,10 +218,10 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt, @JsonKey(includeFromJson: false, includeToJson: false)  ReactionType? myReaction)?  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrain() when $default != null:
-return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
   return null;
 
 }
@@ -232,7 +233,7 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 @JsonSerializable()
 
 class _IssueGrain implements IssueGrain {
-  const _IssueGrain({required this.postId, required this.author, required this.content, required this.latitude, required this.longitude, final  List<String> photoUrls = const [], final  List<String> videoUrls = const [], required this.likeCount, required this.dislikeCount, required this.commentCount, required this.viewCount, required this.createdAt, this.updatedAt}): _photoUrls = photoUrls,_videoUrls = videoUrls;
+  const _IssueGrain({required this.postId, required this.author, required this.content, required this.latitude, required this.longitude, final  List<String> photoUrls = const [], final  List<String> videoUrls = const [], required this.likeCount, required this.dislikeCount, required this.commentCount, required this.viewCount, required this.createdAt, this.updatedAt, @JsonKey(includeFromJson: false, includeToJson: false) this.myReaction = null}): _photoUrls = photoUrls,_videoUrls = videoUrls;
   factory _IssueGrain.fromJson(Map<String, dynamic> json) => _$IssueGrainFromJson(json);
 
 @override final  String postId;
@@ -263,6 +264,7 @@ class _IssueGrain implements IssueGrain {
 @override final  int viewCount;
 @override final  DateTime createdAt;
 @override final  DateTime? updatedAt;
+@override@JsonKey(includeFromJson: false, includeToJson: false) final  ReactionType? myReaction;
 
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
@@ -277,16 +279,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IssueGrain&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&const DeepCollectionEquality().equals(other._photoUrls, _photoUrls)&&const DeepCollectionEquality().equals(other._videoUrls, _videoUrls)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.viewCount, viewCount) || other.viewCount == viewCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IssueGrain&&(identical(other.postId, postId) || other.postId == postId)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&const DeepCollectionEquality().equals(other._photoUrls, _photoUrls)&&const DeepCollectionEquality().equals(other._videoUrls, _videoUrls)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.viewCount, viewCount) || other.viewCount == viewCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,postId,author,content,latitude,longitude,const DeepCollectionEquality().hash(_photoUrls),const DeepCollectionEquality().hash(_videoUrls),likeCount,dislikeCount,commentCount,viewCount,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,postId,author,content,latitude,longitude,const DeepCollectionEquality().hash(_photoUrls),const DeepCollectionEquality().hash(_videoUrls),likeCount,dislikeCount,commentCount,viewCount,createdAt,updatedAt,myReaction);
 
 @override
 String toString() {
-  return 'IssueGrain(postId: $postId, author: $author, content: $content, latitude: $latitude, longitude: $longitude, photoUrls: $photoUrls, videoUrls: $videoUrls, likeCount: $likeCount, dislikeCount: $dislikeCount, commentCount: $commentCount, viewCount: $viewCount, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'IssueGrain(postId: $postId, author: $author, content: $content, latitude: $latitude, longitude: $longitude, photoUrls: $photoUrls, videoUrls: $videoUrls, likeCount: $likeCount, dislikeCount: $dislikeCount, commentCount: $commentCount, viewCount: $viewCount, createdAt: $createdAt, updatedAt: $updatedAt, myReaction: $myReaction)';
 }
 
 
@@ -297,7 +299,7 @@ abstract mixin class _$IssueGrainCopyWith<$Res> implements $IssueGrainCopyWith<$
   factory _$IssueGrainCopyWith(_IssueGrain value, $Res Function(_IssueGrain) _then) = __$IssueGrainCopyWithImpl;
 @override @useResult
 $Res call({
- String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt
+ String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt,@JsonKey(includeFromJson: false, includeToJson: false) ReactionType? myReaction
 });
 
 
@@ -314,7 +316,7 @@ class __$IssueGrainCopyWithImpl<$Res>
 
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = null,Object? longitude = null,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = null,Object? longitude = null,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? myReaction = freezed,}) {
   return _then(_IssueGrain(
 postId: null == postId ? _self.postId : postId // ignore: cast_nullable_to_non_nullable
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
@@ -329,7 +331,8 @@ as int,commentCount: null == commentCount ? _self.commentCount : commentCount //
 as int,viewCount: null == viewCount ? _self.viewCount : viewCount // ignore: cast_nullable_to_non_nullable
 as int,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,myReaction: freezed == myReaction ? _self.myReaction : myReaction // ignore: cast_nullable_to_non_nullable
+as ReactionType?,
   ));
 }
 
