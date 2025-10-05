@@ -26,6 +26,8 @@ _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
+  myReaction:
+      $enumDecodeNullable(_$ReactionTypeEnumMap, json['myReaction']) ?? null,
 );
 
 Map<String, dynamic> _$IssueGrainToJson(_IssueGrain instance) =>
@@ -43,4 +45,10 @@ Map<String, dynamic> _$IssueGrainToJson(_IssueGrain instance) =>
       'viewCount': instance.viewCount,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
+      'myReaction': _$ReactionTypeEnumMap[instance.myReaction],
     };
+
+const _$ReactionTypeEnumMap = {
+  ReactionType.LIKE: 'LIKE',
+  ReactionType.DISLIKE: 'DISLIKE',
+};

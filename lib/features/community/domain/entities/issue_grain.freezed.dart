@@ -17,7 +17,7 @@ mixin _$IssueGrain {
 
  String get postId; Author get author;// 작성자 정보 (User 모델과 결합)
  String get content; double get latitude; double get longitude; List<String> get photoUrls;// 이미지 URL 목록
- List<String> get videoUrls; int get likeCount; int get dislikeCount; int get commentCount; int get viewCount; DateTime get createdAt; DateTime? get updatedAt;@JsonKey(includeFromJson: false, includeToJson: false) ReactionType? get myReaction;
+ List<String> get videoUrls; int get likeCount; int get dislikeCount; int get commentCount; int get viewCount; DateTime get createdAt; DateTime? get updatedAt; ReactionType? get myReaction;
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -50,7 +50,7 @@ abstract mixin class $IssueGrainCopyWith<$Res>  {
   factory $IssueGrainCopyWith(IssueGrain value, $Res Function(IssueGrain) _then) = _$IssueGrainCopyWithImpl;
 @useResult
 $Res call({
- String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt,@JsonKey(includeFromJson: false, includeToJson: false) ReactionType? myReaction
+ String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt, ReactionType? myReaction
 });
 
 
@@ -177,7 +177,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt, @JsonKey(includeFromJson: false, includeToJson: false)  ReactionType? myReaction)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IssueGrain() when $default != null:
 return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
@@ -198,7 +198,7 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt, @JsonKey(includeFromJson: false, includeToJson: false)  ReactionType? myReaction)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrain():
 return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
@@ -218,7 +218,7 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt, @JsonKey(includeFromJson: false, includeToJson: false)  ReactionType? myReaction)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)?  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrain() when $default != null:
 return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
@@ -233,7 +233,7 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 @JsonSerializable()
 
 class _IssueGrain implements IssueGrain {
-  const _IssueGrain({required this.postId, required this.author, required this.content, required this.latitude, required this.longitude, final  List<String> photoUrls = const [], final  List<String> videoUrls = const [], required this.likeCount, required this.dislikeCount, required this.commentCount, required this.viewCount, required this.createdAt, this.updatedAt, @JsonKey(includeFromJson: false, includeToJson: false) this.myReaction = null}): _photoUrls = photoUrls,_videoUrls = videoUrls;
+  const _IssueGrain({required this.postId, required this.author, required this.content, required this.latitude, required this.longitude, final  List<String> photoUrls = const [], final  List<String> videoUrls = const [], required this.likeCount, required this.dislikeCount, required this.commentCount, required this.viewCount, required this.createdAt, this.updatedAt, this.myReaction = null}): _photoUrls = photoUrls,_videoUrls = videoUrls;
   factory _IssueGrain.fromJson(Map<String, dynamic> json) => _$IssueGrainFromJson(json);
 
 @override final  String postId;
@@ -264,7 +264,7 @@ class _IssueGrain implements IssueGrain {
 @override final  int viewCount;
 @override final  DateTime createdAt;
 @override final  DateTime? updatedAt;
-@override@JsonKey(includeFromJson: false, includeToJson: false) final  ReactionType? myReaction;
+@override@JsonKey() final  ReactionType? myReaction;
 
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
@@ -299,7 +299,7 @@ abstract mixin class _$IssueGrainCopyWith<$Res> implements $IssueGrainCopyWith<$
   factory _$IssueGrainCopyWith(_IssueGrain value, $Res Function(_IssueGrain) _then) = __$IssueGrainCopyWithImpl;
 @override @useResult
 $Res call({
- String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt,@JsonKey(includeFromJson: false, includeToJson: false) ReactionType? myReaction
+ String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt, ReactionType? myReaction
 });
 
 

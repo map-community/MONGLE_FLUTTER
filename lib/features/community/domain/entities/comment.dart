@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
+import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
 
 part 'comment.freezed.dart';
 part 'comment.g.dart';
@@ -22,6 +23,9 @@ abstract class Comment with _$Comment {
     @Default(false) bool isDeleted,
     @Default(false) bool hasReplies,
     @Default([]) List<Comment> replies,
+    // '나의 반응' 상태를 저장할 필드입니다.
+    // 서버 응답에 이 필드가 포함될 것입니다.
+    ReactionType? myReaction,
   }) = _Comment;
 
   // Entity가 직접 fromJson 팩토리 메서드를 가집니다.

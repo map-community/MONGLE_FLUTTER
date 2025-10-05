@@ -24,6 +24,7 @@ _Comment _$CommentFromJson(Map<String, dynamic> json) => _Comment(
           ?.map((e) => Comment.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  myReaction: $enumDecodeNullable(_$ReactionTypeEnumMap, json['myReaction']),
 );
 
 Map<String, dynamic> _$CommentToJson(_Comment instance) => <String, dynamic>{
@@ -38,4 +39,10 @@ Map<String, dynamic> _$CommentToJson(_Comment instance) => <String, dynamic>{
   'isDeleted': instance.isDeleted,
   'hasReplies': instance.hasReplies,
   'replies': instance.replies,
+  'myReaction': _$ReactionTypeEnumMap[instance.myReaction],
+};
+
+const _$ReactionTypeEnumMap = {
+  ReactionType.LIKE: 'LIKE',
+  ReactionType.DISLIKE: 'DISLIKE',
 };

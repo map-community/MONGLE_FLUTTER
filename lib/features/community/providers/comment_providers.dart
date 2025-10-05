@@ -4,10 +4,13 @@ import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_ser
 import 'package:mongle_flutter/features/community/data/repositories/comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
+import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
+import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/comment_repository.dart';
+import 'package:mongle_flutter/features/community/domain/repositories/reaction_repository.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/reply_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
@@ -36,22 +39,30 @@ final commentProvider = StateNotifierProvider.autoDispose
       ref.watch(blockedUsersProvider);
       ref.watch(reportedContentProvider);
 
-      final repository = ref.watch(commentRepositoryProvider);
-      // 3. CommentNotifier를 생성할 때 ref 자체를 전달해줍니다.
-      return CommentNotifier(repository: repository, postId: postId, ref: ref);
+      final commentRepository = ref.watch(commentRepositoryProvider);
+      final reactionRepository = ref.watch(reactionRepositoryProvider);
+      return CommentNotifier(
+        commentRepository: commentRepository,
+        reactionRepository: reactionRepository,
+        postId: postId,
+        ref: ref,
+      );
     });
 
 /// 특정 게시글의 댓글 상태와 비즈니스 로직을 관리하는 클래스입니다.
 class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
-  final CommentRepository _repository;
+  final CommentRepository _commentRepository;
+  final ReactionRepository _reactionRepository;
   final String _postId;
   final Ref _ref;
 
   CommentNotifier({
-    required CommentRepository repository,
+    required CommentRepository commentRepository,
+    required ReactionRepository reactionRepository,
     required String postId,
     required Ref ref,
-  }) : _repository = repository,
+  }) : _commentRepository = commentRepository,
+       _reactionRepository = reactionRepository,
        _postId = postId,
        _ref = ref,
        super(const AsyncValue.loading()) {
@@ -138,7 +149,9 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
     print('➡️ [_fetchFirstPage] Start fetching comments for postId: $_postId');
     final previousState = state.valueOrNull;
     try {
-      final paginatedComments = await _repository.getComments(postId: _postId);
+      final paginatedComments = await _commentRepository.getComments(
+        postId: _postId,
+      );
       print(
         '✅ [_fetchFirstPage] Successfully fetched data. Comment count: ${paginatedComments.comments.length}',
       );
@@ -185,7 +198,7 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
     try {
       // Repository를 통해 다음 페이지 댓글 데이터를 가져옵니다.
-      final nextPageData = await _repository.getComments(
+      final nextPageData = await _commentRepository.getComments(
         postId: _postId,
         cursor: currentState.nextCursor,
       );
@@ -249,7 +262,7 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
       print('------------------------------------');
       print("댓글 impl addComment 테스트 로그 try 문" + _postId + " " + content);
       print('------------------------------------');
-      await _repository.addComment(postId: _postId, content: content);
+      await _commentRepository.addComment(postId: _postId, content: content);
 
       // ✨ 2. 성공 후 목록을 새로고침하면, isSubmitting은 자동으로 기본값(false)으로 돌아옵니다.
       await _fetchFirstPage();
@@ -290,7 +303,7 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
 
     try {
       // 3. 서버에 실제 대댓글 등록 요청
-      await _repository.addReply(
+      await _commentRepository.addReply(
         parentCommentId: parentCommentId,
         content: content,
       );
@@ -305,5 +318,106 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
         state = AsyncValue.data(state.value!.copyWith(isSubmitting: false));
       }
     }
+  }
+
+  /// '좋아요' 액션을 처리합니다.
+  Future<void> like(String commentId) async {
+    await _updateReaction(commentId, ReactionType.LIKE);
+  }
+
+  /// '싫어요' 액션을 처리합니다.
+  Future<void> dislike(String commentId) async {
+    await _updateReaction(commentId, ReactionType.DISLIKE);
+  }
+
+  /// 공통 반응 업데이트 로직 (낙관적 UI 적용)
+  Future<void> _updateReaction(
+    String commentId,
+    ReactionType reactionType,
+  ) async {
+    if (state.valueOrNull == null) return;
+
+    final oldState = state.value!;
+
+    // [핵심] 상태 리스트에서 ID가 일치하는 특정 댓글을 찾아 상태를 업데이트합니다.
+    final newComments = oldState.comments.map((comment) {
+      if (comment.commentId == commentId) {
+        // IssueGrainNotifier의 로직과 동일한 계산 로직을 적용합니다.
+        return _calculateOptimisticState(comment, reactionType);
+      }
+      return comment;
+    }).toList();
+
+    // [낙관적 업데이트] 계산된 새로운 댓글 목록으로 UI 상태를 즉시 변경합니다.
+    state = AsyncValue.data(oldState.copyWith(comments: newComments));
+
+    try {
+      // API 호출
+      final currentComment = oldState.comments.firstWhere(
+        (c) => c.commentId == commentId,
+      );
+      final typeToSend = currentComment.myReaction == reactionType
+          ? reactionType
+          : reactionType; // 서버 토글 로직 활용
+
+      final serverResponse = await _reactionRepository.updateReaction(
+        targetType: 'comments', // targetType을 'comments'로 지정
+        targetId: commentId,
+        reactionType: typeToSend,
+      );
+
+      // [상태 동기화] 서버의 최종 카운트로 다시 한번 업데이트
+      if (mounted) {
+        final finalComments = state.value!.comments.map((comment) {
+          if (comment.commentId == commentId) {
+            return comment.copyWith(
+              likeCount: serverResponse.likeCount,
+              dislikeCount: serverResponse.dislikeCount,
+            );
+          }
+          return comment;
+        }).toList();
+        state = AsyncValue.data(state.value!.copyWith(comments: finalComments));
+      }
+    } catch (e) {
+      // [롤백] 실패 시 백업해둔 원래 상태로 UI를 되돌립니다.
+      if (mounted) {
+        state = AsyncValue.data(oldState);
+      }
+      print("Comment Reaction update failed: $e");
+    }
+  }
+
+  /// 단일 댓글 객체에 대한 낙관적 상태를 계산하는 헬퍼 함수
+  Comment _calculateOptimisticState(
+    Comment currentComment,
+    ReactionType newReaction,
+  ) {
+    int newLikeCount = currentComment.likeCount;
+    int newDislikeCount = currentComment.dislikeCount;
+    ReactionType? finalReaction;
+
+    final currentReaction = currentComment.myReaction;
+
+    if (currentReaction == newReaction) {
+      // 토글 (취소)
+      if (newReaction == ReactionType.LIKE) newLikeCount--;
+      if (newReaction == ReactionType.DISLIKE) newDislikeCount--;
+      finalReaction = null;
+    } else {
+      // 변경 또는 새로 선택
+      if (currentReaction == ReactionType.LIKE) newLikeCount--;
+      if (currentReaction == ReactionType.DISLIKE) newDislikeCount--;
+
+      if (newReaction == ReactionType.LIKE) newLikeCount++;
+      if (newReaction == ReactionType.DISLIKE) newDislikeCount++;
+      finalReaction = newReaction;
+    }
+
+    return currentComment.copyWith(
+      likeCount: newLikeCount,
+      dislikeCount: newDislikeCount,
+      myReaction: finalReaction,
+    );
   }
 }
