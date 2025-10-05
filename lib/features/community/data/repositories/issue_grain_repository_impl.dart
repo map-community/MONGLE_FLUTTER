@@ -4,6 +4,7 @@ import 'package:mongle_flutter/core/dio/dio_provider.dart'; // Dio Provider를 �
 import 'package:mongle_flutter/core/errors/exceptions.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/domain/entities/paginated_posts.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
 import 'dart:convert'; // 👈 디코딩을 위해 dart:convert 라이브러리를 import 합니다.
 
@@ -88,47 +89,47 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     }
   }
 
-  // --- 글 읽기 및 상호작용 관련 함수 (아직 구현하지 않음) ---
-  // 이 부분들은 지금 당장 필요 없으므로, 나중에 구현할 수 있도록 비워둡니다.
-
-  // ✅ [추가] API 호출 로직을 공통으로 처리할 비공개 헬퍼 메서드
-  Future<List<IssueGrain>> _getGrainsInCloud(
+  // --- 글 읽기 및 상호작용 관련 함수  ---
+  Future<PaginatedPosts> _getGrainsInCloud(
     Map<String, dynamic> queryParameters,
   ) async {
     try {
-      // ApiConstants.posts('/posts') 경로에 쿼리 파라미터를 추가하여 GET 요청을 보냅니다.
       final response = await _dio.get(
         ApiConstants.posts,
         queryParameters: queryParameters,
       );
-
-      // 백엔드 응답은 { "code": ..., "message": ..., "data": { "posts": [...] } } 구조입니다.
-      // ApiInterceptor가 "data" 필드를 추출해주므로, 우리는 "posts" 키로 실제 목록에 접근할 수 있습니다.
-      final postList = response.data['posts'] as List;
-
-      // 서버에서 받은 JSON 데이터 목록(postList)을 Dart 객체(IssueGrain) 목록으로 변환합니다.
-      return postList.map((postJson) => IssueGrain.fromJson(postJson)).toList();
+      // ✅ [수정] 응답 전체를 PaginatedPosts.fromJson으로 파싱합니다.
+      return PaginatedPosts.fromJson(response.data);
     } catch (e) {
-      // 에러 발생 시 로그를 남기고, 에러를 다시 던져 상위 계층(Provider)에서 처리하도록 합니다.
       print('Error fetching grains in cloud: $e');
       rethrow;
     }
   }
 
-  // ✅ [구현] 정적 구름 게시물 조회 (계약서에 따라)
   @override
-  Future<List<IssueGrain>> getGrainsInStaticCloud(String placeId) {
-    // 백엔드 명세에 맞는 쿼리 파라미터 `placeId`를 설정합니다.
-    final params = {'placeId': placeId};
+  Future<PaginatedPosts> getGrainsInStaticCloud({
+    required String placeId,
+    String? cursor,
+  }) {
+    // 백엔드 명세에 맞는 쿼리 파라미터를 설정합니다.
+    final params = {
+      'placeId': placeId,
+      'cursor': cursor, // cursor 파라미터 추가
+    };
     // 공통 헬퍼 메서드를 호출하여 작업을 위임합니다.
     return _getGrainsInCloud(params);
   }
 
-  // ✅ [구현] 동적 구름 게시물 조회 (계약서에 따라)
   @override
-  Future<List<IssueGrain>> getGrainsInDynamicCloud(String cloudId) {
-    // 백엔드 명세에 맞는 쿼리 파라미터 `cloudId`를 설정합니다.
-    final params = {'cloudId': cloudId};
+  Future<PaginatedPosts> getGrainsInDynamicCloud({
+    required String cloudId,
+    String? cursor,
+  }) {
+    // 백엔드 명세에 맞는 쿼리 파라미터를 설정합니다.
+    final params = {
+      'cloudId': cloudId,
+      'cursor': cursor, // cursor 파라미터 추가
+    };
     // 공통 헬퍼 메서드를 호출하여 작업을 위임합니다.
     return _getGrainsInCloud(params);
   }

@@ -16,8 +16,8 @@ abstract class IssueGrain with _$IssueGrain {
     required String postId,
     required Author author, // 작성자 정보 (User 모델과 결합)
     required String content,
-    required double latitude,
-    required double longitude,
+    required double? latitude,
+    required double? longitude,
     @Default([]) List<String> photoUrls, // 이미지 URL 목록
     @Default([]) List<String> videoUrls,
     @JsonKey(readValue: _readLikeCount) required int likeCount,

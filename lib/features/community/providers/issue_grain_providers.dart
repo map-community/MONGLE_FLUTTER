@@ -46,6 +46,9 @@ final issueGrainRepositoryProvider = Provider<IssueGrainRepository>((ref) {
 // 2. Presentation Layer Providers
 // ========================================================================
 
+// ✅ [수정] 이 Provider는 이제 새로운 `cloudPostsProvider`로 대체되었으므로 주석 처리하거나 삭제합니다.
+//    컴파일 오류를 해결하기 위해 주석 처리합니다.
+/*
 /// [목록용] '구름 ID'를 받아 해당 구름에 속한 이슈 알갱이 리스트를 제공하는 Provider
 ///
 /// '읽기' 전용으로, 목록을 한번에 불러오는 경우에 사용합니다.
@@ -96,6 +99,7 @@ final issueGrainsInCloudProvider = FutureProvider.autoDispose
 
       return visibleGrains;
     });
+*/
 
 /// [단일용] '알갱이 ID'를 받아 단일 이슈 알갱이의 '상태'를 관리하고, 관련 '동작'을 제공하는 Provider
 ///

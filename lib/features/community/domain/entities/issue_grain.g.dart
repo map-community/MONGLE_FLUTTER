@@ -10,8 +10,8 @@ _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
   postId: json['postId'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
   content: json['content'] as String,
-  latitude: (json['latitude'] as num).toDouble(),
-  longitude: (json['longitude'] as num).toDouble(),
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
   photoUrls:
       (json['photoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],

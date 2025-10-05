@@ -16,11 +16,15 @@ class FakeMapRepositoryImpl implements MapRepository {
 
     // [3. 수정] IssueGrain 목록을 IssueGrainDto 목록으로 변환합니다.
     final grainDtos = currentGrains
+        // DTO로 변환하기 전에, latitude 또는 longitude가 null인 데이터를 필터링합니다.
+        .where((grain) => grain.latitude != null && grain.longitude != null)
         .map(
           (grain) => IssueGrainDto(
             postId: grain.postId,
-            latitude: grain.latitude,
-            longitude: grain.longitude,
+            // 이 시점에서는 latitude와 longitude가 null이 아님이 보장되므로,
+            // '!' 연산자를 사용하여 non-null 타입으로 안전하게 변환할 수 있습니다.
+            latitude: grain.latitude!,
+            longitude: grain.longitude!,
             author: grain.author,
           ),
         )

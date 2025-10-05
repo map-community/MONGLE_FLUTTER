@@ -77,8 +77,8 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                     if (success && context.mounted) {
                       // 이전 화면(지도, 목록)의 데이터를 갱신하도록 신호를 보냄
                       ref.invalidate(mapViewModelProvider);
-                      ref.invalidate(issueGrainsInCloudProvider);
-                      // 화면을 닫음
+                      // CloudScreen의 목록은 사용자가 화면으로 돌아갔을 때
+                      // autoDispose에 의해 자동으로 새로고침될 것이므로 invalidate 호출을 제거합니다.
                       context.pop();
                     }
                   },
