@@ -1,6 +1,8 @@
 // lib/features/community/repositories/issue_grain_repository.dart
 
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/domain/entities/paginated_posts.dart';
 import 'package:mongle_flutter/features/community/providers/write_grain_providers.dart';
 
 // -----------------------------------------------------------------------------
@@ -72,10 +74,19 @@ abstract class IssueGrainRepository {
   // --- 글 읽기 및 상호작용 관련 함수 (기존과 동일) ---
 
   ///  정적 구름의 게시물 목록을 가져오는 메서드
-  Future<List<IssueGrain>> getGrainsInStaticCloud(String placeId);
+  Future<PaginatedPosts> getGrainsInStaticCloud({
+    required String placeId,
+    String? cursor,
+  });
 
   /// 동적 구름의 게시물 목록을 가져오는 메서드
-  Future<List<IssueGrain>> getGrainsInDynamicCloud(String cloudId);
+  Future<PaginatedPosts> getGrainsInDynamicCloud({
+    required String cloudId,
+    String? cursor,
+  });
+
+  /// 지도 상의 특정 영역 내에 있는 알갱이 게시물들을 가져옵니다.
+  Future<PaginatedPosts> getNearbyGrains(NLatLngBounds bounds);
 
   /// 고유 ID를 통해 단일 이슈 알갱이 정보를 가져옵니다.
   Future<IssueGrain> getIssueGrainById(String id);

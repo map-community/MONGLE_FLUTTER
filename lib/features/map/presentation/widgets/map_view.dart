@@ -38,12 +38,8 @@ class _MapViewState extends ConsumerState<MapView> {
     ref.listen<MapState>(mapViewModelProvider, (previous, next) {
       // ViewModel의 상태가 'data'로 변경될 때만 오버레이를 업데이트합니다.
       next.whenOrNull(
-        data: (_, mapObjects) {
-          // [디버깅 로그 3] ViewModel의 데이터가 View로 전달되었는지 확인
-          print(
-            "✅ [MapView] ref.listen: ViewModel 데이터 수신. Objects: ${mapObjects != null}",
-          );
-
+        data: (_, mapObjects, __) {
+          // 👈 세 번째 파라미터 `__` 추가
           if (_overlayManager != null && mapObjects != null) {
             _overlayManager!.updateOverlays(mapObjects);
           }

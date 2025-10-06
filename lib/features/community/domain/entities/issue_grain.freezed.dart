@@ -16,8 +16,8 @@ T _$identity<T>(T value) => value;
 mixin _$IssueGrain {
 
  String get postId; Author get author;// 작성자 정보 (User 모델과 결합)
- String get content; double get latitude; double get longitude; List<String> get photoUrls;// 이미지 URL 목록
- List<String> get videoUrls; int get likeCount; int get dislikeCount; int get commentCount; int get viewCount; DateTime get createdAt; DateTime? get updatedAt; ReactionType? get myReaction;
+ String get content; double? get latitude; double? get longitude; List<String> get photoUrls;// 이미지 URL 목록
+ List<String> get videoUrls;@JsonKey(readValue: _readLikeCount) int get likeCount;@JsonKey(readValue: _readDislikeCount) int get dislikeCount; int get commentCount; int get viewCount; DateTime get createdAt; DateTime? get updatedAt; ReactionType? get myReaction;
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -50,7 +50,7 @@ abstract mixin class $IssueGrainCopyWith<$Res>  {
   factory $IssueGrainCopyWith(IssueGrain value, $Res Function(IssueGrain) _then) = _$IssueGrainCopyWithImpl;
 @useResult
 $Res call({
- String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt, ReactionType? myReaction
+ String postId, Author author, String content, double? latitude, double? longitude, List<String> photoUrls, List<String> videoUrls,@JsonKey(readValue: _readLikeCount) int likeCount,@JsonKey(readValue: _readDislikeCount) int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt, ReactionType? myReaction
 });
 
 
@@ -67,14 +67,14 @@ class _$IssueGrainCopyWithImpl<$Res>
 
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = null,Object? longitude = null,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? myReaction = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = freezed,Object? longitude = freezed,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? myReaction = freezed,}) {
   return _then(_self.copyWith(
 postId: null == postId ? _self.postId : postId // ignore: cast_nullable_to_non_nullable
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as Author,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
-as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
-as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
-as double,photoUrls: null == photoUrls ? _self.photoUrls : photoUrls // ignore: cast_nullable_to_non_nullable
+as String,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
+as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
+as double?,photoUrls: null == photoUrls ? _self.photoUrls : photoUrls // ignore: cast_nullable_to_non_nullable
 as List<String>,videoUrls: null == videoUrls ? _self.videoUrls : videoUrls // ignore: cast_nullable_to_non_nullable
 as List<String>,likeCount: null == likeCount ? _self.likeCount : likeCount // ignore: cast_nullable_to_non_nullable
 as int,dislikeCount: null == dislikeCount ? _self.dislikeCount : dislikeCount // ignore: cast_nullable_to_non_nullable
@@ -177,7 +177,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double? latitude,  double? longitude,  List<String> photoUrls,  List<String> videoUrls, @JsonKey(readValue: _readLikeCount)  int likeCount, @JsonKey(readValue: _readDislikeCount)  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IssueGrain() when $default != null:
 return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
@@ -198,7 +198,7 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String postId,  Author author,  String content,  double? latitude,  double? longitude,  List<String> photoUrls,  List<String> videoUrls, @JsonKey(readValue: _readLikeCount)  int likeCount, @JsonKey(readValue: _readDislikeCount)  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrain():
 return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
@@ -218,7 +218,7 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  Author author,  String content,  double latitude,  double longitude,  List<String> photoUrls,  List<String> videoUrls,  int likeCount,  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String postId,  Author author,  String content,  double? latitude,  double? longitude,  List<String> photoUrls,  List<String> videoUrls, @JsonKey(readValue: _readLikeCount)  int likeCount, @JsonKey(readValue: _readDislikeCount)  int dislikeCount,  int commentCount,  int viewCount,  DateTime createdAt,  DateTime? updatedAt,  ReactionType? myReaction)?  $default,) {final _that = this;
 switch (_that) {
 case _IssueGrain() when $default != null:
 return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.longitude,_that.photoUrls,_that.videoUrls,_that.likeCount,_that.dislikeCount,_that.commentCount,_that.viewCount,_that.createdAt,_that.updatedAt,_that.myReaction);case _:
@@ -233,15 +233,15 @@ return $default(_that.postId,_that.author,_that.content,_that.latitude,_that.lon
 @JsonSerializable()
 
 class _IssueGrain implements IssueGrain {
-  const _IssueGrain({required this.postId, required this.author, required this.content, required this.latitude, required this.longitude, final  List<String> photoUrls = const [], final  List<String> videoUrls = const [], required this.likeCount, required this.dislikeCount, required this.commentCount, required this.viewCount, required this.createdAt, this.updatedAt, this.myReaction = null}): _photoUrls = photoUrls,_videoUrls = videoUrls;
+  const _IssueGrain({required this.postId, required this.author, required this.content, required this.latitude, required this.longitude, final  List<String> photoUrls = const [], final  List<String> videoUrls = const [], @JsonKey(readValue: _readLikeCount) required this.likeCount, @JsonKey(readValue: _readDislikeCount) required this.dislikeCount, required this.commentCount, required this.viewCount, required this.createdAt, this.updatedAt, this.myReaction = null}): _photoUrls = photoUrls,_videoUrls = videoUrls;
   factory _IssueGrain.fromJson(Map<String, dynamic> json) => _$IssueGrainFromJson(json);
 
 @override final  String postId;
 @override final  Author author;
 // 작성자 정보 (User 모델과 결합)
 @override final  String content;
-@override final  double latitude;
-@override final  double longitude;
+@override final  double? latitude;
+@override final  double? longitude;
  final  List<String> _photoUrls;
 @override@JsonKey() List<String> get photoUrls {
   if (_photoUrls is EqualUnmodifiableListView) return _photoUrls;
@@ -258,8 +258,8 @@ class _IssueGrain implements IssueGrain {
   return EqualUnmodifiableListView(_videoUrls);
 }
 
-@override final  int likeCount;
-@override final  int dislikeCount;
+@override@JsonKey(readValue: _readLikeCount) final  int likeCount;
+@override@JsonKey(readValue: _readDislikeCount) final  int dislikeCount;
 @override final  int commentCount;
 @override final  int viewCount;
 @override final  DateTime createdAt;
@@ -299,7 +299,7 @@ abstract mixin class _$IssueGrainCopyWith<$Res> implements $IssueGrainCopyWith<$
   factory _$IssueGrainCopyWith(_IssueGrain value, $Res Function(_IssueGrain) _then) = __$IssueGrainCopyWithImpl;
 @override @useResult
 $Res call({
- String postId, Author author, String content, double latitude, double longitude, List<String> photoUrls, List<String> videoUrls, int likeCount, int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt, ReactionType? myReaction
+ String postId, Author author, String content, double? latitude, double? longitude, List<String> photoUrls, List<String> videoUrls,@JsonKey(readValue: _readLikeCount) int likeCount,@JsonKey(readValue: _readDislikeCount) int dislikeCount, int commentCount, int viewCount, DateTime createdAt, DateTime? updatedAt, ReactionType? myReaction
 });
 
 
@@ -316,14 +316,14 @@ class __$IssueGrainCopyWithImpl<$Res>
 
 /// Create a copy of IssueGrain
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = null,Object? longitude = null,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? myReaction = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? postId = null,Object? author = null,Object? content = null,Object? latitude = freezed,Object? longitude = freezed,Object? photoUrls = null,Object? videoUrls = null,Object? likeCount = null,Object? dislikeCount = null,Object? commentCount = null,Object? viewCount = null,Object? createdAt = null,Object? updatedAt = freezed,Object? myReaction = freezed,}) {
   return _then(_IssueGrain(
 postId: null == postId ? _self.postId : postId // ignore: cast_nullable_to_non_nullable
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as Author,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
-as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
-as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
-as double,photoUrls: null == photoUrls ? _self._photoUrls : photoUrls // ignore: cast_nullable_to_non_nullable
+as String,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
+as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
+as double?,photoUrls: null == photoUrls ? _self._photoUrls : photoUrls // ignore: cast_nullable_to_non_nullable
 as List<String>,videoUrls: null == videoUrls ? _self._videoUrls : videoUrls // ignore: cast_nullable_to_non_nullable
 as List<String>,likeCount: null == likeCount ? _self.likeCount : likeCount // ignore: cast_nullable_to_non_nullable
 as int,dislikeCount: null == dislikeCount ? _self.dislikeCount : dislikeCount // ignore: cast_nullable_to_non_nullable

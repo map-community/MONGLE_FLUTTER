@@ -1,9 +1,11 @@
 // lib/features/community/data/repositories/fake_issue_grain_repository_impl.dart
 
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_cloud_contents_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_issue_grain_data.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
+import 'package:mongle_flutter/features/community/domain/entities/paginated_posts.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
 
 class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
@@ -91,38 +93,75 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     print('✅ [FakeRepo] 새 알갱이 생성 완료 (파일 포함): ${newGrain.postId}');
   }
 
-  // --- 🔽 아래 함수들은 기존과 동일합니다. 🔽 ---
+  // --- 🔽 아래 함수들은 수정됩니다. 🔽 ---
 
-  // ✅ [추가] 두 메서드의 공통 로직을 처리하는 비공개 헬퍼 메서드
-  Future<List<IssueGrain>> _getGrainsInCloud(String cloudId) async {
-    // 실제 API 호출처럼 약간의 딜레이를 줍니다.
+  // ✅ [수정] 가짜 페이지네이션 로직을 적용한 헬퍼 메서드
+  Future<PaginatedPosts> _getPaginatedGrainsInCloud(
+    String cloudId, {
+    String? cursor,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // 목업 데이터에서 cloudId에 해당하는 게시물 ID 목록을 찾습니다.
     final postIdsInCloud = mockCloudContents[cloudId];
     if (postIdsInCloud == null) {
-      return []; // 해당 ID의 구름이 없으면 빈 리스트 반환
+      return const PaginatedPosts(posts: [], hasNext: false, nextCursor: null);
     }
 
-    // 전체 목업 게시물 DB에서 해당 ID를 가진 게시물만 필터링하여 반환합니다.
-    final result = _db
+    final allGrains = _db
         .where((grain) => postIdsInCloud.contains(grain.postId))
         .toList();
-    return result;
+
+    // 가짜 구현에서는 페이지네이션 없이 모든 데이터를 한 번에 반환하고,
+    // hasNext를 false로 설정하여 더 이상 로드할 페이지가 없음을 알립니다.
+    return PaginatedPosts(posts: allGrains, hasNext: false, nextCursor: null);
   }
 
-  // ✅ [구현] 새로운 계약에 맞춘 정적 구름 조회 메서드
+  // ✅ [수정] 새로운 계약에 맞춘 정적 구름 조회 메서드
   @override
-  Future<List<IssueGrain>> getGrainsInStaticCloud(String placeId) async {
-    // 실제 로직은 비공개 헬퍼 메서드에 위임합니다.
-    return _getGrainsInCloud(placeId);
+  Future<PaginatedPosts> getGrainsInStaticCloud({
+    required String placeId,
+    String? cursor,
+  }) {
+    return _getPaginatedGrainsInCloud(placeId, cursor: cursor);
   }
 
-  // ✅ [구현] 새로운 계약에 맞춘 동적 구름 조회 메서드
+  // ✅ [수정] 새로운 계약에 맞춘 동적 구름 조회 메서드
   @override
-  Future<List<IssueGrain>> getGrainsInDynamicCloud(String cloudId) async {
-    // 실제 로직은 비공개 헬퍼 메서드에 위임합니다.
-    return _getGrainsInCloud(cloudId);
+  Future<PaginatedPosts> getGrainsInDynamicCloud({
+    required String cloudId,
+    String? cursor,
+  }) {
+    return _getPaginatedGrainsInCloud(cloudId, cursor: cursor);
+  }
+
+  Future<PaginatedPosts> getNearbyGrains(NLatLngBounds bounds) async {
+    // 1. 실제 API처럼 딜레이를 줍니다.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // 2. 메모리 DB에서 bounds에 포함되는 게시글만 필터링합니다.
+    final nearbyGrains = _db.where((grain) {
+      if (grain.latitude == null || grain.longitude == null) {
+        return false;
+      }
+      final position = NLatLng(grain.latitude!, grain.longitude!);
+
+      // 👇 [수정] contains 메서드 대신 직접 좌표를 비교하여 영역 포함 여부를 확인합니다.
+      final bool isLatitudeInside =
+          position.latitude >= bounds.southWest.latitude &&
+          position.latitude <= bounds.northEast.latitude;
+      final bool isLongitudeInside =
+          position.longitude >= bounds.southWest.longitude &&
+          position.longitude <= bounds.northEast.longitude;
+
+      return isLatitudeInside && isLongitudeInside;
+    }).toList();
+
+    // 3. 필터링된 결과를 PaginatedPosts 객체에 담아 반환합니다.
+    return PaginatedPosts(
+      posts: nearbyGrains,
+      hasNext: false,
+      nextCursor: null,
+    );
   }
 
   @override

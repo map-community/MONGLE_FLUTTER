@@ -10,16 +10,16 @@ _IssueGrain _$IssueGrainFromJson(Map<String, dynamic> json) => _IssueGrain(
   postId: json['postId'] as String,
   author: Author.fromJson(json['author'] as Map<String, dynamic>),
   content: json['content'] as String,
-  latitude: (json['latitude'] as num).toDouble(),
-  longitude: (json['longitude'] as num).toDouble(),
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
   photoUrls:
       (json['photoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
   videoUrls:
       (json['videoUrls'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
-  likeCount: (json['likeCount'] as num).toInt(),
-  dislikeCount: (json['dislikeCount'] as num).toInt(),
+  likeCount: (_readLikeCount(json, 'likeCount') as num).toInt(),
+  dislikeCount: (_readDislikeCount(json, 'dislikeCount') as num).toInt(),
   commentCount: (json['commentCount'] as num).toInt(),
   viewCount: (json['viewCount'] as num).toInt(),
   createdAt: DateTime.parse(json['createdAt'] as String),

@@ -4,43 +4,73 @@ import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/issue_grain_item.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 
-// 1. StatefulWidget이 아닌 ConsumerWidget을 상속받습니다.
-class CloudScreen extends ConsumerWidget {
-  // 2. GoRouter로부터 전달받을 cloudId를 위한 변수입니다.
+// [수정] ConsumerWidget을 ConsumerStatefulWidget으로 변경
+class CloudScreen extends ConsumerStatefulWidget {
   final String cloudId;
-  const CloudScreen({super.key, required this.cloudId});
+  final String? name;
+
+  const CloudScreen({super.key, required this.cloudId, this.name});
 
   @override
-  // 3. build 메서드에 WidgetRef ref 파라미터가 추가됩니다.
-  Widget build(BuildContext context, WidgetRef ref) {
-    // ✅ [추가] GoRouter의 현재 상태 정보에서 쿼리 파라미터를 가져옵니다.
+  ConsumerState<CloudScreen> createState() => _CloudScreenState();
+}
+
+class _CloudScreenState extends ConsumerState<CloudScreen> {
+  // [수정] 스크롤 컨트롤러 추가
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // [수정] 스크롤 리스너 추가
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // [수정] 스크롤 리스너 함수
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      // 화면 거의 끝에 도달하면 다음 페이지 요청
+      final providerParam = _getProviderParam();
+      ref.read(paginatedGrainsProvider(providerParam).notifier).fetchNextPage();
+    }
+  }
+
+  // [수정] Provider 파라미터를 가져오는 헬퍼 함수
+  CloudProviderParam _getProviderParam() {
     final typeString =
         GoRouterState.of(context).uri.queryParameters['type'] ?? 'dynamic';
     final cloudType = typeString == 'static'
         ? CloudType.static
         : CloudType.dynamic;
+    return CloudProviderParam(id: widget.cloudId, type: cloudType);
+  }
 
-    // ✅ [추가] Provider에 전달할 파라미터 객체를 생성합니다.
-    final providerParam = CloudProviderParam(id: cloudId, type: cloudType);
+  @override
+  Widget build(BuildContext context) {
+    final providerParam = _getProviderParam();
+    // [수정] 새로운 paginatedGrainsProvider를 watch
+    final postsAsync = ref.watch(paginatedGrainsProvider(providerParam));
 
-    // ✅ [수정] 기존 cloudId 대신 새로 만든 providerParam 객체를 전달합니다.
-    final postsInCloudAsync = ref.watch(
-      issueGrainsInCloudProvider(providerParam),
-    );
+    final appBarTitle = widget.name ?? '구름 게시판';
 
     return Scaffold(
-      appBar: AppBar(
-        // TODO: 나중에는 실제 구름의 이름을 표시하도록 수정할 수 있습니다.
-        title: const Text("구름 게시판"),
-      ),
-      // 5. AsyncValue의 when 메서드는 로딩/에러/데이터 상태에 따라
-      // 다른 UI를 보여주도록 하여 코드를 매우 깔끔하게 만들어 줍니다.
+      appBar: AppBar(title: Text(appBarTitle)),
       body: SafeArea(
         top: false,
-        child: postsInCloudAsync.when(
+        child: postsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(child: Text('게시물을 불러올 수 없습니다: $err')),
-          data: (posts) {
+          data: (paginatedPosts) {
+            final posts = paginatedPosts.posts;
+
             if (posts.isEmpty) {
               return const Center(
                 child: Text(
@@ -49,21 +79,31 @@ class CloudScreen extends ConsumerWidget {
                 ),
               );
             }
-            // 6. 데이터가 성공적으로 로드되면, ListView.builder를 사용해 목록을 그립니다.
+
             return ListView.builder(
-              itemCount: posts.length,
+              // [수정] 스크롤 컨트롤러 연결
+              controller: _scrollController,
+              // [수정] itemCount 계산: 다음 페이지가 있으면 로딩 인디케이터를 위해 +1
+              itemCount: posts.length + (paginatedPosts.hasNext ? 1 : 0),
               itemBuilder: (context, index) {
+                // [수정] 마지막 아이템이면 로딩 인디케이터 표시
+                if (index == posts.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
                 final post = posts[index];
                 return IssueGrainItem(
-                  postId: post.postId,
+                  grain: post,
                   displayMode: IssueGrainDisplayMode.boardPreview,
-                  onTap: () {
-                    //    URL 경로를 동적으로 생성하여 전달합니다.
-                    debugPrint(
-                      "🚀 CloudScreen Navigation 시작 - grainId: ${post.postId}",
+                  onTap: () async {
+                    context.push(
+                      '/cloud/${widget.cloudId}/grain/${post.postId}',
                     );
-                    context.push('/cloud/$cloudId/grain/${post.postId}');
-                    debugPrint("🚀 CloudScreen Navigation 호출 완료");
+
+                    ref.invalidate(paginatedGrainsProvider(providerParam));
                   },
                 );
               },

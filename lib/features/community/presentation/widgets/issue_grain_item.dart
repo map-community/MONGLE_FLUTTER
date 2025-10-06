@@ -14,13 +14,13 @@ import 'package:timeago/timeago.dart' as timeago;
 enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
 
 class IssueGrainItem extends ConsumerStatefulWidget {
-  final String postId;
+  final IssueGrain grain;
   final VoidCallback? onTap;
   final IssueGrainDisplayMode displayMode;
 
   const IssueGrainItem({
     super.key,
-    required this.postId,
+    required this.grain,
     this.onTap,
     this.displayMode = IssueGrainDisplayMode.mapPreview,
   });
@@ -34,38 +34,26 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
 
   @override
   Widget build(BuildContext context) {
-    final grainAsync = ref.watch(issueGrainProvider(widget.postId));
+    final grain = widget.grain;
 
-    return grainAsync.when(
-      loading: () => const SizedBox(
-        height: 150,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, stack) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(child: Text('오류: $e')),
-      ),
-      data: (grain) {
-        Widget content;
-        switch (widget.displayMode) {
-          case IssueGrainDisplayMode.mapPreview:
-            content = _buildMapPreviewLayout(context, grain);
-            break;
-          case IssueGrainDisplayMode.boardPreview:
-            content = _buildBoardPreviewLayout(context, grain);
-            break;
-          case IssueGrainDisplayMode.fullView:
-            content = _buildFullLayout(context, grain);
-            break;
-        }
+    Widget content;
+    switch (widget.displayMode) {
+      case IssueGrainDisplayMode.mapPreview:
+        content = _buildMapPreviewLayout(context, grain);
+        break;
+      case IssueGrainDisplayMode.boardPreview:
+        content = _buildBoardPreviewLayout(context, grain);
+        break;
+      case IssueGrainDisplayMode.fullView:
+        content = _buildFullLayout(context, grain);
+        break;
+    }
 
-        if (widget.displayMode == IssueGrainDisplayMode.mapPreview) {
-          return content;
-        }
+    if (widget.displayMode == IssueGrainDisplayMode.mapPreview) {
+      return content;
+    }
 
-        return InkWell(onTap: widget.onTap, child: content);
-      },
-    );
+    return InkWell(onTap: widget.onTap, child: content);
   }
 
   /// 지도 미리보기 전용 레이아웃입니다. (단순 카드 형태)

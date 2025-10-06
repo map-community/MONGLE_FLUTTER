@@ -125,12 +125,12 @@ return data(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( String message)?  error,TResult Function( NLatLng initialPosition,  MapObjectsResponse? mapObjects)?  data,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( String message)?  error,TResult Function( NLatLng initialPosition,  MapObjectsResponse? mapObjects,  NLatLngBounds? currentBounds)?  data,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Loading() when loading != null:
 return loading();case _Error() when error != null:
 return error(_that.message);case _Data() when data != null:
-return data(_that.initialPosition,_that.mapObjects);case _:
+return data(_that.initialPosition,_that.mapObjects,_that.currentBounds);case _:
   return orElse();
 
 }
@@ -148,12 +148,12 @@ return data(_that.initialPosition,_that.mapObjects);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( String message)  error,required TResult Function( NLatLng initialPosition,  MapObjectsResponse? mapObjects)  data,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( String message)  error,required TResult Function( NLatLng initialPosition,  MapObjectsResponse? mapObjects,  NLatLngBounds? currentBounds)  data,}) {final _that = this;
 switch (_that) {
 case _Loading():
 return loading();case _Error():
 return error(_that.message);case _Data():
-return data(_that.initialPosition,_that.mapObjects);case _:
+return data(_that.initialPosition,_that.mapObjects,_that.currentBounds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -170,12 +170,12 @@ return data(_that.initialPosition,_that.mapObjects);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( String message)?  error,TResult? Function( NLatLng initialPosition,  MapObjectsResponse? mapObjects)?  data,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( String message)?  error,TResult? Function( NLatLng initialPosition,  MapObjectsResponse? mapObjects,  NLatLngBounds? currentBounds)?  data,}) {final _that = this;
 switch (_that) {
 case _Loading() when loading != null:
 return loading();case _Error() when error != null:
 return error(_that.message);case _Data() when data != null:
-return data(_that.initialPosition,_that.mapObjects);case _:
+return data(_that.initialPosition,_that.mapObjects,_that.currentBounds);case _:
   return null;
 
 }
@@ -285,13 +285,14 @@ as String,
 
 
 class _Data implements MapState {
-  const _Data({required this.initialPosition, this.mapObjects});
+  const _Data({required this.initialPosition, this.mapObjects, this.currentBounds});
   
 
 // 지도의 초기 카메라 위치를 설정하기 위한 좌표
  final  NLatLng initialPosition;
 // API로부터 받아온 지도 객체(알갱이, 구름) 데이터. 아직 로드 전일 수 있으므로 nullable.
  final  MapObjectsResponse? mapObjects;
+ final  NLatLngBounds? currentBounds;
 
 /// Create a copy of MapState
 /// with the given fields replaced by the non-null parameter values.
@@ -303,16 +304,16 @@ _$DataCopyWith<_Data> get copyWith => __$DataCopyWithImpl<_Data>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Data&&(identical(other.initialPosition, initialPosition) || other.initialPosition == initialPosition)&&(identical(other.mapObjects, mapObjects) || other.mapObjects == mapObjects));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Data&&(identical(other.initialPosition, initialPosition) || other.initialPosition == initialPosition)&&(identical(other.mapObjects, mapObjects) || other.mapObjects == mapObjects)&&(identical(other.currentBounds, currentBounds) || other.currentBounds == currentBounds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,initialPosition,mapObjects);
+int get hashCode => Object.hash(runtimeType,initialPosition,mapObjects,currentBounds);
 
 @override
 String toString() {
-  return 'MapState.data(initialPosition: $initialPosition, mapObjects: $mapObjects)';
+  return 'MapState.data(initialPosition: $initialPosition, mapObjects: $mapObjects, currentBounds: $currentBounds)';
 }
 
 
@@ -323,7 +324,7 @@ abstract mixin class _$DataCopyWith<$Res> implements $MapStateCopyWith<$Res> {
   factory _$DataCopyWith(_Data value, $Res Function(_Data) _then) = __$DataCopyWithImpl;
 @useResult
 $Res call({
- NLatLng initialPosition, MapObjectsResponse? mapObjects
+ NLatLng initialPosition, MapObjectsResponse? mapObjects, NLatLngBounds? currentBounds
 });
 
 
@@ -340,11 +341,12 @@ class __$DataCopyWithImpl<$Res>
 
 /// Create a copy of MapState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? initialPosition = null,Object? mapObjects = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? initialPosition = null,Object? mapObjects = freezed,Object? currentBounds = freezed,}) {
   return _then(_Data(
 initialPosition: null == initialPosition ? _self.initialPosition : initialPosition // ignore: cast_nullable_to_non_nullable
 as NLatLng,mapObjects: freezed == mapObjects ? _self.mapObjects : mapObjects // ignore: cast_nullable_to_non_nullable
-as MapObjectsResponse?,
+as MapObjectsResponse?,currentBounds: freezed == currentBounds ? _self.currentBounds : currentBounds // ignore: cast_nullable_to_non_nullable
+as NLatLngBounds?,
   ));
 }
 
