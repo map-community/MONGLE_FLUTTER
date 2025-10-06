@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
@@ -33,6 +34,8 @@ final commentProvider = StateNotifierProvider.autoDispose
       ref,
       postId,
     ) {
+      ref.watch(authProvider);
+
       // 2. 여기서 blockedUsersProvider를 watch 합니다.
       // 이 한 줄 덕분에, 사용자를 차단/해제할 때마다 blockedUsersProvider의 상태가 바뀌고,
       // Riverpod는 이 Provider를 "재생성"하여 CommentNotifier를 새로 만듭니다.

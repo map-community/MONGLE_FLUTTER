@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
@@ -148,6 +149,8 @@ final paginatedGrainsProvider = StateNotifierProvider.autoDispose
       AsyncValue<PaginatedPosts>,
       CloudProviderParam
     >((ref, param) {
+      ref.watch(authProvider);
+
       // 차단/신고 목록이 변경되면 이 Provider가 자동으로 재실행되어 목록을 새로고침합니다.
       ref.watch(blockedUsersProvider);
       ref.watch(reportedContentProvider);
@@ -160,6 +163,8 @@ final paginatedGrainsProvider = StateNotifierProvider.autoDispose
 /// GrainDetailScreen, MapScreen 등에서 계속 사용됩니다.
 final issueGrainProvider = StateNotifierProvider.autoDispose
     .family<IssueGrainNotifier, AsyncValue<IssueGrain>, String>((ref, postId) {
+      ref.watch(authProvider);
+
       final issueGrainRepository = ref.watch(issueGrainRepositoryProvider);
       final reactionRepository = ref.watch(reactionRepositoryProvider);
       return IssueGrainNotifier(

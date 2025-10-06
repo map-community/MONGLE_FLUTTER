@@ -7,6 +7,8 @@ import 'package:mongle_flutter/features/auth/domain/entities/login_request.dart'
 import 'package:mongle_flutter/features/auth/domain/entities/sign_up_request.dart';
 import 'package:mongle_flutter/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_state.dart';
+import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 
 /// StateNotifierProvider를 생성하여 앱 전역에 AuthNotifier 인스턴스를 제공합니다.
 /// UI는 이 Provider를 통해 인증 상태를 구독하고, Notifier의 메서드를 호출하여 상태를 변경합니다.
@@ -16,17 +18,18 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final tokenStorage = ref.watch(tokenStorageServiceProvider);
 
   // AuthNotifier를 생성할 때 의존성을 전달해줍니다.
-  return AuthNotifier(authRepository, tokenStorage);
+  return AuthNotifier(ref, authRepository, tokenStorage);
 });
 
 /// '상태'인 AuthState를 관리하는 '관리자(Notifier)' 클래스입니다.
 /// 앱의 모든 인증 관련 비즈니스 로직(로그인, 로그아웃 등)을 담당합니다.
 class AuthNotifier extends StateNotifier<AuthState> {
+  final Ref _ref;
   final AuthRepository _authRepository;
   final TokenStorageService _tokenStorage;
 
   /// 생성자에서 Repository와 TokenStorage를 받고, 초기 상태를 .initial()로 설정합니다.
-  AuthNotifier(this._authRepository, this._tokenStorage)
+  AuthNotifier(this._ref, this._authRepository, this._tokenStorage)
     : super(const AuthState.initial()) {
     // Notifier가 처음 생성될 때, 기기에 저장된 토큰이 있는지 확인하여 자동 로그인을 시도합니다.
     _checkToken();
@@ -93,6 +96,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // 로그아웃 실패 시에도 클라이언트의 상태는 로그아웃 처리합니다.
       print("로그아웃 중 오류 발생: $e");
     } finally {
+      // .family Provider는 직접 무효화할 수 없지만,
+      // 이를 사용하는 상위 Provider(mapViewModelProvider 등)를 무효화하면
+      // 하위 Provider들도 자연스럽게 함께 초기화됩니다.
       // 성공/실패 여부와 관계없이 상태를 '비인증'으로 변경합니다.
       state = const AuthState.unauthenticated();
     }

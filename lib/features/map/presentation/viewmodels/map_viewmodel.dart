@@ -4,6 +4,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
@@ -148,6 +149,8 @@ class MapViewModel extends StateNotifier<MapState> {
 final mapViewModelProvider = StateNotifierProvider<MapViewModel, MapState>((
   ref,
 ) {
+  ref.watch(authProvider);
+
   // ✅ 4. [상태 감시] blockedUsersProvider를 watch 합니다.
   // 이로써 차단 목록이 변경될 때마다 MapViewModel이 재실행되고,
   // 지도 객체를 다시 불러와 필터링하게 됩니다.
