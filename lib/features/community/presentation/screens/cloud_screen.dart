@@ -92,13 +92,14 @@ class _CloudScreenState extends ConsumerState<CloudScreen> {
 
                 final post = posts[index];
                 return IssueGrainItem(
-                  // [수정] N+1 해결의 핵심: post 객체 전체를 전달
                   grain: post,
                   displayMode: IssueGrainDisplayMode.boardPreview,
-                  onTap: () {
+                  onTap: () async {
                     context.push(
                       '/cloud/${widget.cloudId}/grain/${post.postId}',
                     );
+
+                    ref.invalidate(paginatedGrainsProvider(providerParam));
                   },
                 );
               },
