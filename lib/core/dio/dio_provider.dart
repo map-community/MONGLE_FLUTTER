@@ -13,13 +13,13 @@ final dioProvider = Provider<Dio>((ref) {
 
   dio.options = BaseOptions(
     baseUrl: baseUrl ?? 'http://localhost:8080', // .env 파일이 없을 경우를 대비한 기본값
-    connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 3),
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 8),
   );
 
   // 우리가 만든 ApiInterceptor를 dio에 추가합니다.
   // 이제 이 dio 인스턴스를 통해 나가는 모든 요청/응답은 ApiInterceptor를 거치게 됩니다.
-  dio.interceptors.add(ApiInterceptor(ref));
+  dio.interceptors.add(ApiInterceptor(ref, dio));
 
   // (추가) 개발 중 로그를 확인하기 위해 LogInterceptor를 추가하면 편리합니다.
   dio.interceptors.add(

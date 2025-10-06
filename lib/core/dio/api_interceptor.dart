@@ -10,7 +10,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiInterceptor extends Interceptor {
   final Ref ref;
-  ApiInterceptor(this.ref);
+  final Dio dio;
+
+  ApiInterceptor(this.ref, this.dio);
 
   @override
   void onRequest(
@@ -111,7 +113,7 @@ class ApiInterceptor extends Interceptor {
             print("🔁 [ApiInterceptor] 새로운 토큰으로 원래 요청을 재시도합니다.");
 
             // 5. 원래의 dioProvider를 사용하여 원래 요청을 재시도
-            final response = await ref.read(dioProvider).fetch(originalRequest);
+            final response = await dio.fetch(originalRequest);
             return handler.resolve(response);
           } on DioException catch (reissueErr) {
             print("‼️ [ApiInterceptor] 리프레시 토큰으로 재발급 실패! 로그인 화면으로 보내야 합니다.");
