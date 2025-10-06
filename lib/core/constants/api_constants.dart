@@ -22,4 +22,10 @@ class ApiConstants {
       '/$targetType/$targetId/reaction';
 
   static const String mapObjects = '/map/objects';
+
+  // 게시글 삭제 경로
+  static String deletePost(String postId) => '/posts/$postId';
+
+  // 댓글 삭제 경로
+  static String deleteComment(String commentId) => '/comments/$commentId';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
@@ -9,6 +10,7 @@ import 'package:mongle_flutter/features/community/presentation/widgets/user_prof
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
@@ -276,6 +278,54 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
     );
   }
 
+  // ✨ 1. [추가] 게시글 삭제 확인 대화상자를 띄우는 메서드
+  void _showDeleteConfirmationDialog(BuildContext context, IssueGrain grain) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('게시글 삭제'),
+          content: const Text('정말로 이 게시글을 삭제하시겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('취소'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: const Text('삭제', style: TextStyle(color: Colors.red)),
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // 대화상자 먼저 닫기
+
+                final success = await ref
+                    .read(postCommandProvider.notifier)
+                    .deletePost(grain.postId, grain.author.id!);
+
+                if (success) {
+                  // [핵심] 게시글 목록을 가진 Provider들을 무효화하여 새로고침!
+                  ref.invalidate(paginatedGrainsProvider);
+                  ref.invalidate(mapViewModelProvider);
+
+                  // 스낵바로 사용자에게 성공 피드백 제공
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                  );
+                } else {
+                  // 실패 시 스낵바
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('게시글 삭제에 실패했습니다.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showBlockConfirmationDialog(BuildContext context, Author author) {
     showDialog(
       context: context,
@@ -316,6 +366,11 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
   // IssueGrainItem 클래스 내부에 추가
   /// 게시글 우측 상단의 '더보기' 팝업 메뉴
   Widget _buildMoreMenu(BuildContext context, IssueGrain grain) {
+    // 현재 로그인된 사용자의 ID를 가져옴 (AsyncValue 처리)
+    final currentMemberId = ref.watch(currentMemberIdProvider).valueOrNull;
+    // 이 게시글의 작성자인지 확인
+    final isAuthor = grain.author.id == currentMemberId;
+
     return PopupMenuButton<String>(
       key: _menuKey,
       icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
@@ -328,11 +383,26 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
           );
         } else if (value == 'block') {
           _showBlockConfirmationDialog(context, grain.author);
+        } else if (value == 'delete') {
+          // ✨ 3. [추가] 삭제 선택 시 동작
+          _showDeleteConfirmationDialog(context, grain);
         }
       },
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
         const PopupMenuItem<String>(value: 'report', child: Text('신고하기')),
-        const PopupMenuItem<String>(value: 'block', child: Text('이 사용자 차단하기')),
+        // 내가 쓴 글이 아닐 경우에만 '차단하기' 메뉴를 보여줌
+        if (!isAuthor)
+          const PopupMenuItem<String>(
+            value: 'block',
+            child: Text('이 사용자 차단하기'),
+          ),
+        // 내가 쓴 글일 경우에만 '삭제하기' 메뉴를 보여줌
+        if (isAuthor) const PopupMenuDivider(),
+        if (isAuthor)
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: Text('삭제하기', style: TextStyle(color: Colors.red)),
+          ),
       ],
     );
   }

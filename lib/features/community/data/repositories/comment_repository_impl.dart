@@ -124,4 +124,13 @@ class CommentRepositoryImpl implements CommentRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<void> deleteComment({required String commentId}) async {
+    try {
+      await _dio.delete(ApiConstants.deleteComment(commentId));
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

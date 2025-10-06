@@ -171,6 +171,19 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     }
   }
 
+  // 게시글 삭제 메서드 구현
+  @override
+  Future<void> deletePost(String postId) async {
+    try {
+      // dio를 사용하여 DELETE 요청을 보냅니다.
+      await _dio.delete(ApiConstants.deletePost(postId));
+    } catch (e) {
+      // Dio 에러 또는 ApiInterceptor가 가공한 에러를 그대로 다시 던져서
+      // 상위 계층(StateNotifier)에서 처리하도록 합니다.
+      rethrow;
+    }
+  }
+
   @override
   Future<void> likeIssueGrain(String id) async {
     // TODO: 백엔드 API가 준비되면 실제 엔드포인트와 로직을 구현해야 합니다.
