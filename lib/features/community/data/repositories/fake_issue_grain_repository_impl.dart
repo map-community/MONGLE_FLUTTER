@@ -1,5 +1,6 @@
 // lib/features/community/data/repositories/fake_issue_grain_repository_impl.dart
 
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_cloud_contents_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_issue_grain_data.dart';
@@ -131,6 +132,36 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     String? cursor,
   }) {
     return _getPaginatedGrainsInCloud(cloudId, cursor: cursor);
+  }
+
+  Future<PaginatedPosts> getNearbyGrains(NLatLngBounds bounds) async {
+    // 1. 실제 API처럼 딜레이를 줍니다.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // 2. 메모리 DB에서 bounds에 포함되는 게시글만 필터링합니다.
+    final nearbyGrains = _db.where((grain) {
+      if (grain.latitude == null || grain.longitude == null) {
+        return false;
+      }
+      final position = NLatLng(grain.latitude!, grain.longitude!);
+
+      // 👇 [수정] contains 메서드 대신 직접 좌표를 비교하여 영역 포함 여부를 확인합니다.
+      final bool isLatitudeInside =
+          position.latitude >= bounds.southWest.latitude &&
+          position.latitude <= bounds.northEast.latitude;
+      final bool isLongitudeInside =
+          position.longitude >= bounds.southWest.longitude &&
+          position.longitude <= bounds.northEast.longitude;
+
+      return isLatitudeInside && isLongitudeInside;
+    }).toList();
+
+    // 3. 필터링된 결과를 PaginatedPosts 객체에 담아 반환합니다.
+    return PaginatedPosts(
+      posts: nearbyGrains,
+      hasNext: false,
+      nextCursor: null,
+    );
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mongle_flutter/core/constants/api_constants.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart'; // Dio Provider를 사용하기 위해 import
 import 'package:mongle_flutter/core/errors/exceptions.dart';
@@ -132,6 +133,26 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     };
     // 공통 헬퍼 메서드를 호출하여 작업을 위임합니다.
     return _getGrainsInCloud(params);
+  }
+
+  @override
+  Future<PaginatedPosts> getNearbyGrains(NLatLngBounds bounds) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.posts,
+        queryParameters: {
+          'swLat': bounds.southWest.latitude,
+          'swLng': bounds.southWest.longitude,
+          'neLat': bounds.northEast.latitude,
+          'neLng': bounds.northEast.longitude,
+          // size, cursor 등 페이지네이션 파라미터도 추가 가능
+        },
+      );
+      // MapObjectsResponse가 아닌 PaginatedPosts로 파싱
+      return PaginatedPosts.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override

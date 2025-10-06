@@ -32,6 +32,7 @@ class MapState with _$MapState {
     required NLatLng initialPosition,
     // API로부터 받아온 지도 객체(알갱이, 구름) 데이터. 아직 로드 전일 수 있으므로 nullable.
     MapObjectsResponse? mapObjects,
+    NLatLngBounds? currentBounds,
   }) = _Data;
 }
 
@@ -90,50 +91,48 @@ class MapViewModel extends StateNotifier<MapState> {
   /// 지도 객체(알갱이, 구름)를 불러오는 핵심 비즈니스 로직 메서드
   Future<void> fetchMapObjects(NLatLngBounds bounds) async {
     try {
+      // 1. API로부터 원본 데이터를 가져옵니다.
       final response = await _mapRepository.getMapObjects(bounds);
 
-      // [필터링 로직 추가]
-      // 두 개의 필터 목록을 모두 가져옵니다.
+      // 2. 필터링에 필요한 목록을 가져옵니다.
       final blockedUserIds = _ref.read(blockedUsersProvider);
       final reportedContents = _ref.read(reportedContentProvider);
 
-      // 필터링할 조건이 없으면 바로 반환하여 성능을 최적화합니다.
+      // 최종적으로 state에 저장할 MapObjectsResponse 객체를 담을 변수
+      final MapObjectsResponse finalMapObjects;
+
+      // 3. 필터링 조건이 있는지 확인합니다.
       if (blockedUserIds.isEmpty && reportedContents.isEmpty) {
-        state.whenOrNull(
-          data: (initialPosition, _) => state = MapState.data(
-            initialPosition: initialPosition,
-            mapObjects: response,
-          ),
-        );
-        return;
+        // 필터링할 내용이 없으면 원본 데이터를 그대로 사용합니다.
+        finalMapObjects = response;
+      } else {
+        // 필터링할 내용이 있으면 필터링 로직을 수행합니다.
+        final visibleGrains = response.grains.where((grain) {
+          final isBlocked = blockedUserIds.contains(grain.author.id);
+          if (isBlocked) return false;
+
+          final isReported = reportedContents.any(
+            (reported) =>
+                reported.id == grain.postId &&
+                reported.type == ReportContentType.POST,
+          );
+          if (isReported) return false;
+
+          return true;
+        }).toList();
+
+        // 필터링된 grains로 새로운 MapObjectsResponse 객체를 생성합니다.
+        finalMapObjects = response.copyWith(grains: visibleGrains);
       }
 
-      // ✅ 2. 차단과 신고 필터를 모두 적용합니다.
-      final visibleGrains = response.grains.where((grain) {
-        // 조건 1: 작성자가 차단된 사용자인지 확인
-        final isBlocked = blockedUserIds.contains(grain.author.id);
-        if (isBlocked) return false;
-
-        // 조건 2: 이 게시물이 내가 신고한 게시물인지 확인
-        final isReported = reportedContents.any(
-          (reported) =>
-              reported.id == grain.postId &&
-              reported.type == ReportContentType.POST,
-        );
-        if (isReported) return false;
-
-        return true;
-      }).toList();
-
-      // 필터링된 grains 목록으로 새로운 MapObjectsResponse를 만듭니다.
-      final visibleMapObjects = response.copyWith(grains: visibleGrains);
-
+      // 4. 현재 state가 'data' 상태일 때만 새로운 데이터로 업데이트합니다.
       state.whenOrNull(
-        data: (initialPosition, _) {
+        data: (initialPosition, _, __) {
+          // 👈 두 번째, 세 번째 파라미터를 `_`, `__`로 받음
           state = MapState.data(
             initialPosition: initialPosition,
-            // ✅ 3. 필터링된 데이터를 상태에 업데이트합니다.
-            mapObjects: visibleMapObjects,
+            mapObjects: finalMapObjects,
+            currentBounds: bounds,
           );
         },
       );

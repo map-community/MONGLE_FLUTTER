@@ -1,6 +1,7 @@
 // lib/features/map/presentation/screens/map_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/comment_input_field.dart';
@@ -14,6 +15,7 @@ import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_stra
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/multi_stage_bottom_sheet.dart';
+import 'package:mongle_flutter/features/map/providers/map_providers.dart';
 
 // 1. ConsumerWidget에서 ConsumerStatefulWidget으로 변경
 class MapScreen extends ConsumerStatefulWidget {
@@ -71,7 +73,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mapState.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (message) => Center(child: Text(message)),
-              data: (initialPosition, mapObjects) {
+              data: (initialPosition, mapObjects, _) {
+                // 👈 세 번째 파라미터 `_` 추가
                 return MapView(
                   initialPosition: initialPosition,
                   bottomPadding: screenHeight * sheetState.height,
@@ -262,15 +265,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     BuildContext context,
     ScrollController scrollController,
   ) {
+    // 1. ViewModel의 전체 상태(MapState)를 watch합니다.
     final mapState = ref.watch(mapViewModelProvider);
 
-    return mapState.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (message) => Center(child: Text(message)),
-      data: (_, mapObjects) {
-        final grainDtos = mapObjects?.grains ?? [];
+    // 2. whenOrNull을 사용해 data 상태일 때 currentBounds 값을 안전하게 추출합니다.
+    final NLatLngBounds? visibleBounds = mapState.whenOrNull(
+      data: (initialPosition, mapObjects, currentBounds) => currentBounds,
+    );
 
-        if (grainDtos.isEmpty) {
+    // 3. bounds 정보가 아직 없다면(초기 로딩 등) 로딩 위젯을 표시합니다.
+    if (visibleBounds == null) {
+      return Column(
+        children: [
+          _buildHandle(),
+          const Expanded(child: Center(child: CircularProgressIndicator())),
+        ],
+      );
+    }
+
+    // 4. 이제 visibleBounds가 null이 아님이 보장되므로, provider에 전달합니다.
+    final nearbyGrainsAsync = ref.watch(nearbyGrainsProvider(visibleBounds));
+
+    // 3. AsyncValue.when을 사용하여 로딩/에러/데이터 상태에 따라 다른 UI를 보여줍니다.
+    return nearbyGrainsAsync.when(
+      loading: () => Column(
+        children: [
+          _buildHandle(),
+          const Expanded(child: Center(child: CircularProgressIndicator())),
+        ],
+      ),
+      error: (e, _) => Column(
+        children: [
+          _buildHandle(),
+          Expanded(child: Center(child: Text('오류: $e'))),
+        ],
+      ),
+      data: (paginatedPosts) {
+        final posts = paginatedPosts.posts;
+
+        if (posts.isEmpty) {
           return Column(
             children: [
               _buildHandle(),
@@ -281,6 +314,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           );
         }
 
+        // 4. CustomScrollView와 SliverList.builder를 사용해 UI를 그립니다.
         return CustomScrollView(
           controller: scrollController,
           slivers: [
@@ -295,40 +329,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
             ),
             SliverList.builder(
-              itemCount: grainDtos.length,
+              itemCount: posts.length,
               itemBuilder: (context, index) {
-                final grainDto = grainDtos[index];
-                // [수정] 각 리스트 아이템을 Consumer로 감싸서
-                // DTO의 postId를 사용해 issueGrainProvider를 개별적으로 watch 합니다.
-                // 이렇게 하면 각 아이템이 필요한 전체 데이터를 스스로 가져옵니다.
-                return Consumer(
-                  builder: (context, ref, child) {
-                    final grainAsync = ref.watch(
-                      issueGrainProvider(grainDto.postId),
-                    );
-                    return grainAsync.when(
-                      loading: () => const SizedBox(
-                        height: 150,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (e, _) => Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 8.0,
-                        ),
-                        child: Text('게시글을 불러올 수 없습니다: $e'),
-                      ),
-                      data: (grain) => IssueGrainItem(
-                        // [수정] 가져온 grain 객체를 전달합니다.
-                        grain: grain,
-                        displayMode: IssueGrainDisplayMode.boardPreview,
-                        onTap: () {
-                          ref
-                              .read(mapSheetStrategyProvider.notifier)
-                              .showGrainPreview(grain.postId);
-                        },
-                      ),
-                    );
+                // 5. 이미 모든 정보를 가진 post 객체를 가져옵니다.
+                final post = posts[index];
+
+                // 6. ✅ 더 이상 Consumer나 ref.watch 없이, 데이터를 그대로 전달합니다.
+                return IssueGrainItem(
+                  grain: post,
+                  displayMode: IssueGrainDisplayMode.boardPreview,
+                  onTap: () {
+                    ref
+                        .read(mapSheetStrategyProvider.notifier)
+                        .showGrainPreview(post.postId);
                   },
                 );
               },
