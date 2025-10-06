@@ -50,9 +50,19 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    // 서버에 로그아웃 요청을 보낼 수도 있고 (선택사항),
-    // 우선 클라이언트의 토큰만 삭제하여 로그아웃 상태로 만듭니다.
-    await _tokenStorage.clearTokens();
+    try {
+      // 1. 서버에 로그아웃을 요청합니다.
+      // ApiInterceptor가 헤더에 Access Token을 자동으로 추가해 줍니다.
+      await _dio.post(ApiConstants.logout);
+    } catch (e) {
+      // 2. 서버 요청이 실패하더라도 오류를 출력하고 계속 진행합니다.
+      //    (오프라인 상태에서도 앱에서는 로그아웃이 되어야 하므로)
+      print("서버 로그아웃 요청 실패: $e");
+    } finally {
+      // 3. API 요청의 성공/실패 여부와 관계없이,
+      //    기기에 저장된 모든 토큰을 삭제하여 클라이언트 측 로그아웃을 완료합니다.
+      await _tokenStorage.clearTokens();
+    }
   }
 
   @override
