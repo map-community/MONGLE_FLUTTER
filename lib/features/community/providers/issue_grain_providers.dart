@@ -278,24 +278,22 @@ class ReactionNotifier {
   ReactionNotifier(this._repository, this._postId);
 
   // '좋아요' 버튼을 눌렀을 때 UI가 호출할 함수
-  Future<void> like() async {
-    await _updateReaction(ReactionType.LIKE);
+  Future<ReactionResponse> like() async {
+    return await _updateReaction(ReactionType.LIKE);
   }
 
   // '싫어요' 버튼을 눌렀을 때 UI가 호출할 함수
-  Future<void> dislike() async {
-    await _updateReaction(ReactionType.DISLIKE);
+  Future<ReactionResponse> dislike() async {
+    return await _updateReaction(ReactionType.DISLIKE);
   }
 
   // 실제 API를 호출하는 내부 비공개 함수
-  Future<void> _updateReaction(ReactionType type) async {
-    // 생성자에서 받아둔 postId와 repository를 사용하여 API를 호출합니다.
-    await _repository.updateReaction(
+  Future<ReactionResponse> _updateReaction(ReactionType type) async {
+    return await _repository.updateReaction(
       targetType: 'posts',
       targetId: _postId,
       reactionType: type,
     );
-    // TODO: 성공 시 UI 즉시 반영 로직 (다음 단계에서 구현)
   }
 }
 
