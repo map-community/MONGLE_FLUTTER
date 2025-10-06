@@ -7,7 +7,9 @@ import 'package:mongle_flutter/features/community/providers/issue_grain_provider
 // [수정] ConsumerWidget을 ConsumerStatefulWidget으로 변경
 class CloudScreen extends ConsumerStatefulWidget {
   final String cloudId;
-  const CloudScreen({super.key, required this.cloudId});
+  final String? name;
+
+  const CloudScreen({super.key, required this.cloudId, this.name});
 
   @override
   ConsumerState<CloudScreen> createState() => _CloudScreenState();
@@ -57,8 +59,10 @@ class _CloudScreenState extends ConsumerState<CloudScreen> {
     // [수정] 새로운 paginatedGrainsProvider를 watch
     final postsAsync = ref.watch(paginatedGrainsProvider(providerParam));
 
+    final appBarTitle = widget.name ?? '구름 게시판';
+
     return Scaffold(
-      appBar: AppBar(title: const Text("구름 게시판")),
+      appBar: AppBar(title: Text(appBarTitle)),
       body: SafeArea(
         top: false,
         child: postsAsync.when(

@@ -102,10 +102,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/cloud/:cloudId',
         pageBuilder: (context, state) {
           final cloudId = state.pathParameters['cloudId']!;
+          final cloudName = state.extra as String?;
+
           return _buildSlideTransitionPage(
             context: context,
             state: state,
-            child: CloudScreen(cloudId: cloudId),
+            child: CloudScreen(cloudId: cloudId, name: cloudName),
           );
         },
         routes: [

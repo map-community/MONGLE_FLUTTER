@@ -70,7 +70,9 @@ class MapOverlayManager {
 
       // 폴리곤에 탭 리스너 추가
       polygon.setOnTapListener((_) {
-        GoRouter.of(_context).push('/cloud/${cloud.placeId}?type=static');
+        GoRouter.of(
+          _context,
+        ).push('/cloud/${cloud.placeId}?type=static', extra: cloud.name);
       });
       overlaysToAdd.add(polygon);
     }
