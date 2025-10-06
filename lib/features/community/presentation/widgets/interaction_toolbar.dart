@@ -13,7 +13,7 @@ class InteractionToolbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(issueGrainProvider(grain.postId).notifier);
+    final reactionNotifier = ref.read(reactionNotifierProvider(grain.postId));
     final myReaction = grain.myReaction;
 
     return Padding(
@@ -40,7 +40,7 @@ class InteractionToolbar extends ConsumerWidget {
                 ? Colors
                       .blueAccent // 내가 좋아요를 눌렀다면 파란색
                 : Colors.grey.shade600,
-            onTap: notifier.like, // Notifier의 like() 함수 호출
+            onTap: reactionNotifier.like, // Notifier의 like() 함수 호출
           ),
           const SizedBox(width: 8),
           // 3. 싫어요 (탭 기능 있음)
@@ -52,7 +52,7 @@ class InteractionToolbar extends ConsumerWidget {
                 : Icons.thumb_down_outlined, // 아니라면 테두리 아이콘
             count: grain.dislikeCount.toString(),
             color: Colors.grey.shade600, // 싫어요는 항상 회색으로 유지
-            onTap: notifier.dislike, // Notifier의 dislike() 함수 호출
+            onTap: reactionNotifier.dislike, // Notifier의 dislike() 함수 호출
           ),
           const SizedBox(width: 8),
           // 4. 댓글 (탭 기능 있음)

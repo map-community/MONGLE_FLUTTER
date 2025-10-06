@@ -50,13 +50,14 @@ final issueGrainsInCloudProvider = FutureProvider.autoDispose
 */
 
 // [신규] 페이지네이션 상태를 관리하는 StateNotifier
-class PaginatedGrainsNotifier extends StateNotifier<AsyncValue<PaginatedPosts>> {
+class PaginatedGrainsNotifier
+    extends StateNotifier<AsyncValue<PaginatedPosts>> {
   final IssueGrainRepository _repository;
   final CloudProviderParam _param;
   final Ref _ref;
 
   PaginatedGrainsNotifier(this._repository, this._param, this._ref)
-      : super(const AsyncValue.loading()) {
+    : super(const AsyncValue.loading()) {
     _fetchFirstPage();
   }
 
@@ -72,7 +73,9 @@ class PaginatedGrainsNotifier extends StateNotifier<AsyncValue<PaginatedPosts>> 
 
   Future<void> fetchNextPage() async {
     // 로딩 중이거나, 데이터가 없거나, 마지막 페이지면 실행하지 않음
-    if (state.isLoading || state.isRefreshing || !(state.value?.hasNext ?? false)) {
+    if (state.isLoading ||
+        state.isRefreshing ||
+        !(state.value?.hasNext ?? false)) {
       return;
     }
 
@@ -85,9 +88,7 @@ class PaginatedGrainsNotifier extends StateNotifier<AsyncValue<PaginatedPosts>> 
       final nextPage = await _fetchPage(cursor: currentState.nextCursor);
       // 현재 상태에 새로운 게시물 목록을 추가하여 상태를 업데이트합니다.
       state = AsyncValue.data(
-        nextPage.copyWith(
-          posts: [...currentState.posts, ...nextPage.posts],
-        ),
+        nextPage.copyWith(posts: [...currentState.posts, ...nextPage.posts]),
       );
     } catch (e) {
       // 에러가 발생해도 앱이 멈추지 않도록 처리합니다.
@@ -102,11 +103,15 @@ class PaginatedGrainsNotifier extends StateNotifier<AsyncValue<PaginatedPosts>> 
     switch (_param.type) {
       case CloudType.static:
         result = await _repository.getGrainsInStaticCloud(
-            placeId: _param.id, cursor: cursor);
+          placeId: _param.id,
+          cursor: cursor,
+        );
         break;
       case CloudType.dynamic:
         result = await _repository.getGrainsInDynamicCloud(
-            cloudId: _param.id, cursor: cursor);
+          cloudId: _param.id,
+          cursor: cursor,
+        );
         break;
     }
 
@@ -122,8 +127,8 @@ class PaginatedGrainsNotifier extends StateNotifier<AsyncValue<PaginatedPosts>> 
       if (isBlocked) return false;
 
       final isReported = reportedContents.any(
-            (reported) =>
-        reported.id == grain.postId &&
+        (reported) =>
+            reported.id == grain.postId &&
             reported.type == ReportContentType.POST,
       );
       if (isReported) return false;
@@ -137,8 +142,11 @@ class PaginatedGrainsNotifier extends StateNotifier<AsyncValue<PaginatedPosts>> 
 
 // [신규] 위 Notifier를 UI에 제공하는 StateNotifierProvider
 final paginatedGrainsProvider = StateNotifierProvider.autoDispose
-    .family<PaginatedGrainsNotifier, AsyncValue<PaginatedPosts>, CloudProviderParam>(
-        (ref, param) {
+    .family<
+      PaginatedGrainsNotifier,
+      AsyncValue<PaginatedPosts>,
+      CloudProviderParam
+    >((ref, param) {
       // 차단/신고 목록이 변경되면 이 Provider가 자동으로 재실행되어 목록을 새로고침합니다.
       ref.watch(blockedUsersProvider);
       ref.watch(reportedContentProvider);
@@ -147,19 +155,18 @@ final paginatedGrainsProvider = StateNotifierProvider.autoDispose
       return PaginatedGrainsNotifier(repository, param, ref);
     });
 
-
 /// [유지] 단일 게시물 상세 정보를 위한 issueGrainProvider는 그대로 유지합니다.
 /// GrainDetailScreen, MapScreen 등에서 계속 사용됩니다.
 final issueGrainProvider = StateNotifierProvider.autoDispose
     .family<IssueGrainNotifier, AsyncValue<IssueGrain>, String>((ref, postId) {
-  final issueGrainRepository = ref.watch(issueGrainRepositoryProvider);
-  final reactionRepository = ref.watch(reactionRepositoryProvider);
-  return IssueGrainNotifier(
-    issueGrainRepository,
-    reactionRepository,
-    postId,
-  );
-});
+      final issueGrainRepository = ref.watch(issueGrainRepositoryProvider);
+      final reactionRepository = ref.watch(reactionRepositoryProvider);
+      return IssueGrainNotifier(
+        issueGrainRepository,
+        reactionRepository,
+        postId,
+      );
+    });
 
 // ========================================================================
 // 3. State Notifier Class for a single grain
@@ -171,10 +178,10 @@ class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
   final String _postId;
 
   IssueGrainNotifier(
-      this._issueGrainRepository,
-      this._reactionRepository,
-      this._postId,
-      ) : super(const AsyncValue.loading()) {
+    this._issueGrainRepository,
+    this._reactionRepository,
+    this._postId,
+  ) : super(const AsyncValue.loading()) {
     _fetchIssueGrain();
   }
 
@@ -227,9 +234,9 @@ class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
   }
 
   IssueGrain _calculateOptimisticState(
-      IssueGrain currentState,
-      ReactionType newReaction,
-      ) {
+    IssueGrain currentState,
+    ReactionType newReaction,
+  ) {
     int newLikeCount = currentState.likeCount;
     int newDislikeCount = currentState.dislikeCount;
     ReactionType? finalReaction;
@@ -254,3 +261,52 @@ class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
     );
   }
 }
+
+// ========================================================================
+// 4. [신규] '좋아요/싫어요' 액션 전용 Notifier 및 Provider
+// ========================================================================
+
+/// '좋아요/싫어요' 기능만 담당하는 가볍고 "차가운(Cold)" Notifier 클래스.
+/// 이 클래스는 StateNotifier를 상속하지 않는데, UI가 구독할 상태(state)를 가지지 않고
+/// 오직 '행동(action)'만 수행하기 때문입니다.
+class ReactionNotifier {
+  final ReactionRepository _repository;
+  final String _postId;
+
+  // 생성자: 필요한 부품들(repository, postId)을 전달받아 저장만 합니다.
+  //         API 호출과 같은 어떠한 동작도 하지 않으므로 "안전"합니다.
+  ReactionNotifier(this._repository, this._postId);
+
+  // '좋아요' 버튼을 눌렀을 때 UI가 호출할 함수
+  Future<void> like() async {
+    await _updateReaction(ReactionType.LIKE);
+  }
+
+  // '싫어요' 버튼을 눌렀을 때 UI가 호출할 함수
+  Future<void> dislike() async {
+    await _updateReaction(ReactionType.DISLIKE);
+  }
+
+  // 실제 API를 호출하는 내부 비공개 함수
+  Future<void> _updateReaction(ReactionType type) async {
+    // 생성자에서 받아둔 postId와 repository를 사용하여 API를 호출합니다.
+    await _repository.updateReaction(
+      targetType: 'posts',
+      targetId: _postId,
+      reactionType: type,
+    );
+    // TODO: 성공 시 UI 즉시 반영 로직 (다음 단계에서 구현)
+  }
+}
+
+/// 위 ReactionNotifier를 UI에 제공하는 Provider.
+final reactionNotifierProvider = Provider.autoDispose
+    .family<ReactionNotifier, String>((ref, postId) {
+      // .family를 사용하여 각 postId마다 독립적인 ReactionNotifier를 생성합니다.
+
+      // 다른 Provider를 통해 ReactionRepository의 인스턴스를 가져옵니다.
+      final reactionRepository = ref.watch(reactionRepositoryProvider);
+
+      // postId와 repository를 주입하여 ReactionNotifier 인스턴스를 생성 후 반환합니다.
+      return ReactionNotifier(reactionRepository, postId);
+    });
