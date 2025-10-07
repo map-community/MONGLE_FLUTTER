@@ -9,7 +9,8 @@ import 'package:mongle_flutter/features/community/providers/issue_grain_provider
 // ✨ 1. ConsumerStatefulWidget으로 변경
 class GrainDetailScreen extends ConsumerStatefulWidget {
   final String grainId;
-  const GrainDetailScreen({super.key, required this.grainId});
+  final String? boardName;
+  const GrainDetailScreen({super.key, required this.grainId, this.boardName});
 
   @override
   ConsumerState<GrainDetailScreen> createState() {
@@ -61,7 +62,8 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: grainAsync.when(
-          data: (grain) => Text(grain.author.nickname),
+          data: (grain) =>
+              Text(widget.boardName ?? grain.author.nickname + '님의 글'),
           loading: () => const Text(''),
           error: (_, __) => const Text('오류'),
         ),

@@ -101,6 +101,7 @@ class _CloudScreenState extends ConsumerState<CloudScreen> {
                   onTap: () async {
                     context.push(
                       '/cloud/${widget.cloudId}/grain/${post.postId}',
+                      extra: appBarTitle,
                     );
 
                     ref.invalidate(paginatedGrainsProvider(providerParam));

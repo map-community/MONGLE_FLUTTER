@@ -115,6 +115,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'grain/:grainId',
             pageBuilder: (context, state) {
               final grainId = state.pathParameters['grainId']!;
+              final boardName = state.extra as String?;
 
               debugPrint("🔄 Router pageBuilder 호출됨");
               debugPrint("🔄 grainId: $grainId");
@@ -123,7 +124,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               return _buildSlideTransitionPage(
                 context: context,
                 state: state,
-                child: GrainDetailScreen(grainId: grainId),
+                child: GrainDetailScreen(
+                  grainId: grainId,
+                  boardName: boardName,
+                ),
               );
             },
           ),
