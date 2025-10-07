@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/issue_grain_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
@@ -147,6 +149,8 @@ final paginatedGrainsProvider = StateNotifierProvider.autoDispose
       AsyncValue<PaginatedPosts>,
       CloudProviderParam
     >((ref, param) {
+      ref.watch(authProvider);
+
       // 차단/신고 목록이 변경되면 이 Provider가 자동으로 재실행되어 목록을 새로고침합니다.
       ref.watch(blockedUsersProvider);
       ref.watch(reportedContentProvider);
@@ -159,6 +163,8 @@ final paginatedGrainsProvider = StateNotifierProvider.autoDispose
 /// GrainDetailScreen, MapScreen 등에서 계속 사용됩니다.
 final issueGrainProvider = StateNotifierProvider.autoDispose
     .family<IssueGrainNotifier, AsyncValue<IssueGrain>, String>((ref, postId) {
+      ref.watch(authProvider);
+
       final issueGrainRepository = ref.watch(issueGrainRepositoryProvider);
       final reactionRepository = ref.watch(reactionRepositoryProvider);
       return IssueGrainNotifier(
@@ -308,3 +314,45 @@ final reactionNotifierProvider = Provider.autoDispose
       // postId와 repository를 주입하여 ReactionNotifier 인스턴스를 생성 후 반환합니다.
       return ReactionNotifier(reactionRepository, postId);
     });
+
+// ========================================================================
+// ✨ 5. [신규] 게시글 '삭제' 액션 전용 Notifier 및 Provider
+// ========================================================================
+
+/// 게시글 삭제 명령(Command)만 처리하는 Notifier. UI 상태는 관리하지 않습니다.
+class PostCommandNotifier extends StateNotifier<AsyncValue<void>> {
+  final Ref _ref;
+  final IssueGrainRepository _issueGrainRepository;
+
+  PostCommandNotifier(this._ref)
+    : _issueGrainRepository = _ref.read(issueGrainRepositoryProvider),
+      super(const AsyncData(null));
+
+  /// 게시글을 삭제하는 메서드
+  Future<bool> deletePost(String postId, String authorId) async {
+    // [권한 확인] 현재 로그인한 사용자의 ID를 가져옵니다.
+    final currentUserId = await _ref.read(currentMemberIdProvider.future);
+    if (currentUserId != authorId) {
+      print("삭제 권한이 없습니다.");
+      // 사용자에게 스낵바 등으로 실패를 알려줄 수 있습니다.
+      return false;
+    }
+
+    state = const AsyncValue.loading();
+    try {
+      await _issueGrainRepository.deletePost(postId);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, s) {
+      state = AsyncValue.error(e, s);
+      print("게시글 삭제 실패: $e");
+      return false;
+    }
+  }
+}
+
+/// PostCommandNotifier의 인스턴스를 제공하는 Provider
+final postCommandProvider =
+    StateNotifierProvider.autoDispose<PostCommandNotifier, AsyncValue<void>>(
+      (ref) => PostCommandNotifier(ref),
+    );

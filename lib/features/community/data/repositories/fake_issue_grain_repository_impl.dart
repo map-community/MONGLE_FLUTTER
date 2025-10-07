@@ -181,4 +181,15 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     print("API 요청: $id 게시물 싫어요");
     await Future.delayed(const Duration(milliseconds: 150));
   }
+
+  @override
+  Future<void> deletePost(String postId) async {
+    // 실제 API 호출처럼 0.3초 딜레이를 줍니다.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // 메모리 DB에서 postId가 일치하는 게시글을 찾아 제거합니다.
+    _db.removeWhere((grain) => grain.postId == postId);
+
+    print('🗑️ [FakeRepo] 게시글 삭제됨: $postId');
+  }
 }

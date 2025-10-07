@@ -138,4 +138,34 @@ class FakeCommentRepositoryImpl implements CommentRepository {
       nextCursor: nextCursor,
     );
   }
+
+  @override
+  Future<void> deleteComment({required String commentId}) async {
+    // 실제 API 호출처럼 0.3초 딜레이를 줍니다.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // 메모리 DB를 순회하며 삭제할 댓글(또는 대댓글)을 찾습니다.
+    for (final postId in _db.keys) {
+      final comments = _db[postId]!;
+      for (var i = 0; i < comments.length; i++) {
+        // 1. 일반 댓글 목록에서 찾기
+        if (comments[i].commentId == commentId) {
+          // isDeleted 플래그를 true로 설정하여 '삭제된 상태'로 만듭니다.
+          comments[i] = comments[i].copyWith(isDeleted: true);
+          print('🗑️ [FakeRepo] 댓글 삭제됨: $commentId');
+          return; // 찾았으므로 함수 종료
+        }
+
+        // 2. 대댓글 목록에서 찾기
+        final replies = comments[i].replies;
+        for (var j = 0; j < replies.length; j++) {
+          if (replies[j].commentId == commentId) {
+            replies[j] = replies[j].copyWith(isDeleted: true);
+            print('🗑️ [FakeRepo] 대댓글 삭제됨: $commentId');
+            return; // 찾았으므로 함수 종료
+          }
+        }
+      }
+    }
+  }
 }

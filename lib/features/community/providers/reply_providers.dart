@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
@@ -219,6 +220,12 @@ class RepliesNotifier extends StateNotifier<AsyncValue<RepliesState>> {
 /// `.family`를 사용하여, 부모 댓글의 ID(`String`)를 파라미터로 받아
 /// 각 댓글마다 독립적인 대댓글 상태를 관리할 수 있게 합니다.
 final repliesProvider = StateNotifierProvider.autoDispose
-    .family<RepliesNotifier, AsyncValue<RepliesState>, String>(
-      (ref, parentCommentId) => RepliesNotifier(ref, parentCommentId),
-    );
+    .family<RepliesNotifier, AsyncValue<RepliesState>, String>((
+      ref,
+      parentCommentId,
+    ) {
+      // ✨ [추가] 인증 상태가 변경되면 이 프로바이더가 자동으로 재실행됩니다.
+      ref.watch(authProvider);
+
+      return RepliesNotifier(ref, parentCommentId);
+    });

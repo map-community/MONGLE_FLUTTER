@@ -277,6 +277,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
   }
 
   Widget _buildMoreMenu(BuildContext context) {
+    final isAuthor = widget.comment.isAuthor;
+
     return PopupMenuButton<String>(
       key: _menuKey,
       icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
@@ -289,11 +291,23 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           );
         } else if (value == 'block') {
           _showBlockConfirmationDialog(context, widget.comment.author);
+        } else if (value == 'delete') {
+          // ✨ 3. [추가] 삭제 선택 시 동작
+          _showDeleteConfirmationDialog(context, widget.comment);
         }
       },
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
         const PopupMenuItem<String>(value: 'report', child: Text('신고하기')),
-        const PopupMenuItem<String>(value: 'block', child: Text('이 사용자 차단하기')),
+        const PopupMenuItem<String>(
+          value: 'block',
+          child: Text('이 사용자 차단하기'),
+        ), // ✨ 4. [추가] 내가 쓴 댓글일 경우에만 '삭제하기' 메뉴를 보여줌
+        if (isAuthor) const PopupMenuDivider(), // 구분선
+        if (isAuthor)
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: Text('삭제하기', style: TextStyle(color: Colors.red)),
+          ),
       ],
     );
   }
@@ -338,6 +352,37 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         ).showSnackBar(const SnackBar(content: Text('신고가 접수되었습니다.')));
       }
     });
+  }
+
+  // ✨ 1. [추가] 삭제 확인 대화상자를 띄우는 메서드
+  void _showDeleteConfirmationDialog(BuildContext context, Comment comment) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('댓글 삭제'),
+          content: const Text('정말로 이 댓글을 삭제하시겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('취소'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // 대화상자 닫기
+              },
+            ),
+            TextButton(
+              child: const Text('삭제', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                // Notifier의 deleteComment 메서드 호출
+                ref
+                    .read(commentProvider(widget.postId).notifier)
+                    .deleteComment(comment.commentId, comment.author.id!);
+                Navigator.of(dialogContext).pop(); // 대화상자 닫기
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildDeletedComment() {

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
@@ -32,6 +34,8 @@ final commentProvider = StateNotifierProvider.autoDispose
       ref,
       postId,
     ) {
+      ref.watch(authProvider);
+
       // 2. 여기서 blockedUsersProvider를 watch 합니다.
       // 이 한 줄 덕분에, 사용자를 차단/해제할 때마다 blockedUsersProvider의 상태가 바뀌고,
       // Riverpod는 이 Provider를 "재생성"하여 CommentNotifier를 새로 만듭니다.
@@ -67,6 +71,49 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
        _ref = ref,
        super(const AsyncValue.loading()) {
     _fetchFirstPage();
+  }
+
+  Future<bool> deleteComment(String commentId, String authorId) async {
+    // [권한 확인] 현재 로그인한 사용자의 ID를 가져옵니다.
+    // .future를 통해 FutureProvider의 값을 비동기적으로 읽어올 수 있습니다.
+    final currentUserId = await _ref.read(currentMemberIdProvider.future);
+
+    // [안전장치] 댓글 작성자와 현재 로그인한 사용자가 다를 경우 삭제를 막습니다.
+    if (currentUserId != authorId) {
+      // 실제 앱에서는 사용자에게 "권한이 없습니다"와 같은 메시지를 보여주는 것이 좋습니다.
+      print("삭제 권한이 없습니다.");
+      return false;
+    }
+
+    // 현재 상태가 로딩 중이거나 에러 상태이면 아무 작업도 하지 않습니다.
+    if (state.valueOrNull == null) return false;
+
+    // 만약을 위해 현재 상태를 백업해 둡니다. (API 요청 실패 시 롤백용)
+    final backupState = state.value!;
+
+    // [낙관적 UI 업데이트]
+    // 1. 현재 댓글 목록에서 삭제할 댓글을 제외한 새 목록을 만듭니다.
+    final newComments = backupState.comments
+        .where((comment) => comment.commentId != commentId)
+        .toList();
+
+    // 2. UI 상태를 즉시 새 목록으로 업데이트합니다.
+    state = AsyncValue.data(backupState.copyWith(comments: newComments));
+
+    try {
+      // 3. 백그라운드에서 실제 API 요청을 보냅니다.
+      await _commentRepository.deleteComment(commentId: commentId);
+      // 삭제 성공 후, 댓글 수 등 최신 정보 반영을 위해 목록을 새로고침합니다.
+      await _fetchFirstPage();
+      return true;
+    } catch (e) {
+      // 4. API 요청이 실패하면, 백업해 둔 원래 상태로 UI를 되돌립니다 (롤백).
+      if (mounted) {
+        state = AsyncValue.data(backupState);
+      }
+      print("댓글 삭제 실패: $e");
+      return false;
+    }
   }
 
   // '답글 모드'로 상태를 전환하는 메서드

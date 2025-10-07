@@ -28,4 +28,7 @@ abstract class CommentRepository {
     int size,
     String? cursor,
   });
+
+  /// 특정 댓글(commentId)을 삭제합니다.
+  Future<void> deleteComment({required String commentId});
 }
