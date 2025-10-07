@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/dio/dio_provider.dart';
+import 'package:mongle_flutter/features/community/data/repositories/block_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_block_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/block_repository.dart';
 
@@ -6,7 +8,9 @@ import 'package:mongle_flutter/features/community/domain/repositories/block_repo
 // "BlockRepository 주세요" 라고 요청하면 FakeBlockRepositoryImpl 인스턴스를 반환합니다.
 // 나중에 실제 API를 연동할 때 이 Provider 내부만 RealRepository로 교체하면 됩니다.
 final blockRepositoryProvider = Provider<BlockRepository>((ref) {
-  return FakeBlockRepositoryImpl();
+  final dio = ref.watch(dioProvider);
+  // ✅ 수정: 생성자에 ref와 dio 인스턴스를 모두 전달합니다.
+  return BlockRepositoryImpl(ref, dio);
 });
 
 // 2. [상태 관리 및 제공] 차단된 사용자 목록 상태를 관리하고 외부에 노출하는 Provider

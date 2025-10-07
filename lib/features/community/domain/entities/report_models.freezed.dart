@@ -11,6 +11,7 @@ part of 'report_models.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$ReportedContent {
 
@@ -21,6 +22,8 @@ mixin _$ReportedContent {
 @pragma('vm:prefer-inline')
 $ReportedContentCopyWith<ReportedContent> get copyWith => _$ReportedContentCopyWithImpl<ReportedContent>(this as ReportedContent, _$identity);
 
+  /// Serializes this ReportedContent to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -28,7 +31,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is ReportedContent&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,type);
 
@@ -204,11 +207,11 @@ return $default(_that.id,_that.type);case _:
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _ReportedContent implements ReportedContent {
   const _ReportedContent({required this.id, required this.type});
-  
+  factory _ReportedContent.fromJson(Map<String, dynamic> json) => _$ReportedContentFromJson(json);
 
 @override final  String id;
 @override final  ReportContentType type;
@@ -219,14 +222,17 @@ class _ReportedContent implements ReportedContent {
 @pragma('vm:prefer-inline')
 _$ReportedContentCopyWith<_ReportedContent> get copyWith => __$ReportedContentCopyWithImpl<_ReportedContent>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$ReportedContentToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReportedContent&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,type);
 

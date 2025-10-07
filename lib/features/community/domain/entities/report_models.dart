@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'report_models.freezed.dart'; // freezed가 생성할 파일
+part 'report_models.freezed.dart';
+part 'report_models.g.dart'; // g.dart 파일 part 추가
 
 // 신고 대상의 종류
 enum ReportContentType { POST, COMMENT }
@@ -20,10 +21,15 @@ abstract class ReportedContent with _$ReportedContent {
     required String id,
     required ReportContentType type,
   }) = _ReportedContent;
+
+  // fromJson 팩토리 생성자
+  factory ReportedContent.fromJson(Map<String, dynamic> json) =>
+      _$ReportedContentFromJson(json);
 }
 
+// ✅ [복원] 누락되었던 ReportReasonExtension 코드
+// 이 코드가 있어야 .korean 속성을 사용할 수 있습니다.
 extension ReportReasonExtension on ReportReason {
-  // 'korean'이라는 이름의 게터(getter)를 추가합니다.
   String get korean {
     switch (this) {
       case ReportReason.SPAM:
