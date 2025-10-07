@@ -33,6 +33,7 @@ class AuthRepositoryImpl implements AuthRepository {
       ApiConstants.verificationCode, // 1단계에서 정의한 경로 사용
       data: {'email': email}, // 서버가 요구하는 형식에 맞춰 email 데이터를 전송
     );
+  }
 
   @override
   Future<TokenInfo> login(LoginRequest request) async {
