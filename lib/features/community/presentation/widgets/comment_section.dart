@@ -150,6 +150,7 @@ class _RepliesSection extends ConsumerWidget {
                   postId: postId,
                   comment: reply,
                   isReply: true,
+                  parentCommentId: parentCommentId,
                   isHighlighted: replyingToCommentId == reply.commentId,
                 ),
               ),

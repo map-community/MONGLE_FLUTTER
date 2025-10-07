@@ -140,7 +140,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               ? Theme.of(context).primaryColor
               : Colors.grey.shade700,
           onTap: () {
-            if (widget.isReply) {
+            if (widget.isReply && widget.parentCommentId != null) {
               // 대댓글의 경우 RepliesNotifier를 호출
               ref
                   .read(repliesProvider(widget.parentCommentId!).notifier)
@@ -163,7 +163,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               ? Colors.grey.shade800
               : Colors.grey.shade700,
           onTap: () {
-            if (widget.isReply) {
+            if (widget.isReply && widget.parentCommentId != null) {
               ref
                   .read(repliesProvider(widget.parentCommentId!).notifier)
                   .dislike(widget.comment.commentId);
