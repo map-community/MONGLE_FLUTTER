@@ -269,31 +269,128 @@ class IssueGrainNotifier extends StateNotifier<AsyncValue<IssueGrain>> {
 }
 
 // ========================================================================
-// 4. [신규] '좋아요/싫어요' 액션 전용 Notifier 및 Provider
+// 4. [수정] '좋아요/싫어요' 액션 및 상태 관리 Provider
 // ========================================================================
 
-/// '좋아요/싫어요' 기능만 담당하는 가볍고 "차가운(Cold)" Notifier 클래스.
-/// 이 클래스는 StateNotifier를 상속하지 않는데, UI가 구독할 상태(state)를 가지지 않고
-/// 오직 '행동(action)'만 수행하기 때문입니다.
-class ReactionNotifier {
+/// ⭐ StateNotifier로 변경하여 상태 관리
+class ReactionNotifier extends StateNotifier<ReactionState> {
   final ReactionRepository _repository;
   final String _postId;
 
-  // 생성자: 필요한 부품들(repository, postId)을 전달받아 저장만 합니다.
-  //         API 호출과 같은 어떠한 동작도 하지 않으므로 "안전"합니다.
-  ReactionNotifier(this._repository, this._postId);
+  // ⭐ 생성자 파라미터 간소화 (initialGrain만 받음)
+  ReactionNotifier(this._repository, this._postId, ReactionState initialState)
+    : super(initialState);
 
-  // '좋아요' 버튼을 눌렀을 때 UI가 호출할 함수
+  /// 좋아요 토글
   Future<ReactionResponse> like() async {
-    return await _updateReaction(ReactionType.LIKE);
+    if (state.isUpdating) {
+      return ReactionResponse(
+        likeCount: state.likeCount,
+        dislikeCount: state.dislikeCount,
+      );
+    }
+
+    final oldState = state;
+    final wasLiked = state.myReaction == ReactionType.LIKE;
+
+    // 낙관적 업데이트
+    if (wasLiked) {
+      state = state.copyWith(
+        likeCount: state.likeCount - 1,
+        myReaction: null,
+        isUpdating: true,
+      );
+    } else {
+      int newLikeCount = state.likeCount + 1;
+      int newDislikeCount = state.dislikeCount;
+
+      if (state.myReaction == ReactionType.DISLIKE) {
+        newDislikeCount--;
+      }
+
+      state = state.copyWith(
+        likeCount: newLikeCount,
+        dislikeCount: newDislikeCount,
+        myReaction: ReactionType.LIKE,
+        isUpdating: true,
+      );
+    }
+
+    try {
+      final response = await _updateReaction(ReactionType.LIKE);
+
+      if (mounted) {
+        state = state.copyWith(
+          likeCount: response.likeCount,
+          dislikeCount: response.dislikeCount,
+          isUpdating: false,
+        );
+      }
+
+      return response;
+    } catch (e) {
+      if (mounted) {
+        state = oldState;
+      }
+      rethrow;
+    }
   }
 
-  // '싫어요' 버튼을 눌렀을 때 UI가 호출할 함수
+  /// 싫어요 토글
   Future<ReactionResponse> dislike() async {
-    return await _updateReaction(ReactionType.DISLIKE);
+    if (state.isUpdating) {
+      return ReactionResponse(
+        likeCount: state.likeCount,
+        dislikeCount: state.dislikeCount,
+      );
+    }
+
+    final oldState = state;
+    final wasDisliked = state.myReaction == ReactionType.DISLIKE;
+
+    // 낙관적 업데이트
+    if (wasDisliked) {
+      state = state.copyWith(
+        dislikeCount: state.dislikeCount - 1,
+        myReaction: null,
+        isUpdating: true,
+      );
+    } else {
+      int newLikeCount = state.likeCount;
+      int newDislikeCount = state.dislikeCount + 1;
+
+      if (state.myReaction == ReactionType.LIKE) {
+        newLikeCount--;
+      }
+
+      state = state.copyWith(
+        likeCount: newLikeCount,
+        dislikeCount: newDislikeCount,
+        myReaction: ReactionType.DISLIKE,
+        isUpdating: true,
+      );
+    }
+
+    try {
+      final response = await _updateReaction(ReactionType.DISLIKE);
+
+      if (mounted) {
+        state = state.copyWith(
+          likeCount: response.likeCount,
+          dislikeCount: response.dislikeCount,
+          isUpdating: false,
+        );
+      }
+
+      return response;
+    } catch (e) {
+      if (mounted) {
+        state = oldState;
+      }
+      rethrow;
+    }
   }
 
-  // 실제 API를 호출하는 내부 비공개 함수
   Future<ReactionResponse> _updateReaction(ReactionType type) async {
     return await _repository.updateReaction(
       targetType: 'posts',
@@ -303,16 +400,32 @@ class ReactionNotifier {
   }
 }
 
-/// 위 ReactionNotifier를 UI에 제공하는 Provider.
-final reactionNotifierProvider = Provider.autoDispose
-    .family<ReactionNotifier, String>((ref, postId) {
-      // .family를 사용하여 각 postId마다 독립적인 ReactionNotifier를 생성합니다.
+// ⭐ [중요] 파라미터를 (postId, grain) 튜플로 변경
+class ReactionProviderParam extends Equatable {
+  final String postId;
+  final IssueGrain grain;
 
-      // 다른 Provider를 통해 ReactionRepository의 인스턴스를 가져옵니다.
+  const ReactionProviderParam({required this.postId, required this.grain});
+
+  @override
+  List<Object?> get props => [postId]; // ⭐ postId로만 비교 (grain 변경은 무시)
+}
+
+/// ⭐ [변경] 파라미터를 grain 포함으로 변경
+final reactionNotifierProvider = StateNotifierProvider.autoDispose
+    .family<ReactionNotifier, ReactionState, ReactionProviderParam>((
+      ref,
+      param,
+    ) {
       final reactionRepository = ref.watch(reactionRepositoryProvider);
 
-      // postId와 repository를 주입하여 ReactionNotifier 인스턴스를 생성 후 반환합니다.
-      return ReactionNotifier(reactionRepository, postId);
+      final initialState = ReactionState(
+        likeCount: param.grain.likeCount,
+        dislikeCount: param.grain.dislikeCount,
+        myReaction: param.grain.myReaction,
+      );
+
+      return ReactionNotifier(reactionRepository, param.postId, initialState);
     });
 
 // ========================================================================

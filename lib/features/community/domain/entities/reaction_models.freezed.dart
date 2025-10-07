@@ -277,4 +277,270 @@ as int,
 
 }
 
+/// @nodoc
+mixin _$ReactionState {
+
+ int get likeCount; int get dislikeCount; ReactionType? get myReaction; bool get isUpdating;
+/// Create a copy of ReactionState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ReactionStateCopyWith<ReactionState> get copyWith => _$ReactionStateCopyWithImpl<ReactionState>(this as ReactionState, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReactionState&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,likeCount,dislikeCount,myReaction,isUpdating);
+
+@override
+String toString() {
+  return 'ReactionState(likeCount: $likeCount, dislikeCount: $dislikeCount, myReaction: $myReaction, isUpdating: $isUpdating)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ReactionStateCopyWith<$Res>  {
+  factory $ReactionStateCopyWith(ReactionState value, $Res Function(ReactionState) _then) = _$ReactionStateCopyWithImpl;
+@useResult
+$Res call({
+ int likeCount, int dislikeCount, ReactionType? myReaction, bool isUpdating
+});
+
+
+
+
+}
+/// @nodoc
+class _$ReactionStateCopyWithImpl<$Res>
+    implements $ReactionStateCopyWith<$Res> {
+  _$ReactionStateCopyWithImpl(this._self, this._then);
+
+  final ReactionState _self;
+  final $Res Function(ReactionState) _then;
+
+/// Create a copy of ReactionState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? likeCount = null,Object? dislikeCount = null,Object? myReaction = freezed,Object? isUpdating = null,}) {
+  return _then(_self.copyWith(
+likeCount: null == likeCount ? _self.likeCount : likeCount // ignore: cast_nullable_to_non_nullable
+as int,dislikeCount: null == dislikeCount ? _self.dislikeCount : dislikeCount // ignore: cast_nullable_to_non_nullable
+as int,myReaction: freezed == myReaction ? _self.myReaction : myReaction // ignore: cast_nullable_to_non_nullable
+as ReactionType?,isUpdating: null == isUpdating ? _self.isUpdating : isUpdating // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ReactionState].
+extension ReactionStatePatterns on ReactionState {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ReactionState value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ReactionState() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ReactionState value)  $default,){
+final _that = this;
+switch (_that) {
+case _ReactionState():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ReactionState value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ReactionState() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int likeCount,  int dislikeCount,  ReactionType? myReaction,  bool isUpdating)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ReactionState() when $default != null:
+return $default(_that.likeCount,_that.dislikeCount,_that.myReaction,_that.isUpdating);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int likeCount,  int dislikeCount,  ReactionType? myReaction,  bool isUpdating)  $default,) {final _that = this;
+switch (_that) {
+case _ReactionState():
+return $default(_that.likeCount,_that.dislikeCount,_that.myReaction,_that.isUpdating);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int likeCount,  int dislikeCount,  ReactionType? myReaction,  bool isUpdating)?  $default,) {final _that = this;
+switch (_that) {
+case _ReactionState() when $default != null:
+return $default(_that.likeCount,_that.dislikeCount,_that.myReaction,_that.isUpdating);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _ReactionState implements ReactionState {
+  const _ReactionState({required this.likeCount, required this.dislikeCount, this.myReaction, this.isUpdating = false});
+  
+
+@override final  int likeCount;
+@override final  int dislikeCount;
+@override final  ReactionType? myReaction;
+@override@JsonKey() final  bool isUpdating;
+
+/// Create a copy of ReactionState
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ReactionStateCopyWith<_ReactionState> get copyWith => __$ReactionStateCopyWithImpl<_ReactionState>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReactionState&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.dislikeCount, dislikeCount) || other.dislikeCount == dislikeCount)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,likeCount,dislikeCount,myReaction,isUpdating);
+
+@override
+String toString() {
+  return 'ReactionState(likeCount: $likeCount, dislikeCount: $dislikeCount, myReaction: $myReaction, isUpdating: $isUpdating)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ReactionStateCopyWith<$Res> implements $ReactionStateCopyWith<$Res> {
+  factory _$ReactionStateCopyWith(_ReactionState value, $Res Function(_ReactionState) _then) = __$ReactionStateCopyWithImpl;
+@override @useResult
+$Res call({
+ int likeCount, int dislikeCount, ReactionType? myReaction, bool isUpdating
+});
+
+
+
+
+}
+/// @nodoc
+class __$ReactionStateCopyWithImpl<$Res>
+    implements _$ReactionStateCopyWith<$Res> {
+  __$ReactionStateCopyWithImpl(this._self, this._then);
+
+  final _ReactionState _self;
+  final $Res Function(_ReactionState) _then;
+
+/// Create a copy of ReactionState
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? likeCount = null,Object? dislikeCount = null,Object? myReaction = freezed,Object? isUpdating = null,}) {
+  return _then(_ReactionState(
+likeCount: null == likeCount ? _self.likeCount : likeCount // ignore: cast_nullable_to_non_nullable
+as int,dislikeCount: null == dislikeCount ? _self.dislikeCount : dislikeCount // ignore: cast_nullable_to_non_nullable
+as int,myReaction: freezed == myReaction ? _self.myReaction : myReaction // ignore: cast_nullable_to_non_nullable
+as ReactionType?,isUpdating: null == isUpdating ? _self.isUpdating : isUpdating // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
 // dart format on

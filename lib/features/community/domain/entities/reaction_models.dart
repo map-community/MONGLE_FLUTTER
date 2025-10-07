@@ -18,3 +18,13 @@ abstract class ReactionResponse with _$ReactionResponse {
   factory ReactionResponse.fromJson(Map<String, dynamic> json) =>
       _$ReactionResponseFromJson(json);
 }
+
+@freezed
+abstract class ReactionState with _$ReactionState {
+  const factory ReactionState({
+    required int likeCount,
+    required int dislikeCount,
+    ReactionType? myReaction,
+    @Default(false) bool isUpdating,
+  }) = _ReactionState;
+}
