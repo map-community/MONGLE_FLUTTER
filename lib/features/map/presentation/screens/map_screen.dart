@@ -41,7 +41,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (selectedGrainId != null) {
       snapSizes = [peekFraction, grainPreviewFraction, fullFraction];
     } else {
-      snapSizes = [peekFraction, fullFraction];
+      snapSizes = [peekFraction]; // fullFraction 는 추후 로컬 피드 기획 완료시 추가.
     }
 
     final canPop = sheetState.mode == SheetMode.minimized;
@@ -150,9 +150,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return ListView(
       controller: scrollController,
       padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
       children: [
         _buildHandle(),
-        const ListTile(title: Text("주변 이슈 목록(구름)")),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.touch_app_outlined, size: 18, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Text(
+                "지도에서 알갱이를 선택해 보세요",
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
