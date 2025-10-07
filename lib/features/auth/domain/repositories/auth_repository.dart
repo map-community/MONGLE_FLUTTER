@@ -6,6 +6,9 @@ import 'package:mongle_flutter/features/auth/domain/entities/token_info.dart';
 
 // 인증(Authentication)과 관련된 데이터 통신 규칙을 정의하는 '계약서'
 abstract class AuthRepository {
+  // 이메일 인증 코드를 요청하는 기능
+  Future<void> requestVerificationCode(String email);
+
   // 회원가입을 요청하는 기능
   Future<void> signUp(SignUpRequest request);
 
