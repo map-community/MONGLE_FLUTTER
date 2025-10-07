@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/fake_report_repository_impl.dart';
+import 'package:mongle_flutter/features/community/data/repositories/report_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/domain/repositories/report_repository.dart';
 
 // 1. [서비스 제공] ReportRepository의 구현체(Fake)를 제공하는 Provider
 // "ReportRepository 주세요" 라고 요청하면 FakeReportRepositoryImpl 인스턴스를 반환합니다.
 final reportRepositoryProvider = Provider<ReportRepository>((ref) {
-  return FakeReportRepositoryImpl();
+  // return FakeReportRepositoryImpl();
+  return ReportRepositoryImpl(ref.watch(dioProvider));
 });
 
 // 2. [상태 관리 및 제공] '사용자가 신고해서 숨김 처리된' 콘텐츠 ID 목록을 관리하는 Provider

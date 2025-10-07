@@ -34,4 +34,6 @@ class ApiConstants {
   static String blockUser(String userId) => '/blocks/$userId';
   // 내 차단 목록 조회 경로
   static const String myBlockedUsers = '/blocks/me';
+
+  static const String reports = '/reports';
 }
