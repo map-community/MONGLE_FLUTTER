@@ -36,9 +36,6 @@ class ReactionRepositoryImpl implements ReactionRepository {
       // 1단계에서 만든 ApiConstants.reaction 함수로 URL을 동적으로 생성합니다.
       final response = await _dio.post(
         ApiConstants.reaction(targetType, targetId),
-        queryParameters: {
-          'memberId': memberId, // 서버 요구사항에 따라 memberId를 쿼리 파라미터로 전송
-        },
         data: {
           // 서버는 reactionType을 enum의 이름 그대로(예: "LIKE") 받습니다.
           'reactionType': reactionType.name,

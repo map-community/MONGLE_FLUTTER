@@ -9,9 +9,6 @@ class MapRepositoryImpl implements MapRepository {
   final Dio _dio;
   MapRepositoryImpl(this._dio);
 
-  // TODO: [임시] 인증 기능 구현 전까지 사용할 하드코딩된 사용자 ID
-  static const String _tempMemberId = "temp-user-12345";
-
   @override
   Future<MapObjectsResponse> getMapObjects(NLatLngBounds bounds) async {
     try {
@@ -25,7 +22,6 @@ class MapRepositoryImpl implements MapRepository {
           'swLng': bounds.southWest.longitude,
           'neLat': bounds.northEast.latitude,
           'neLng': bounds.northEast.longitude,
-          'memberId': _tempMemberId, // 차단 필터링을 위한 임시 ID
         },
       );
       // 3. 성공 시, JSON 데이터를 MapObjectsResponse.fromJson을 통해 Dart 객체로 변환합니다.

@@ -20,41 +20,6 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
   // 생성자: 이 클래스가 생성될 때 반드시 Dio 인스턴스를 전달받아야 합니다.
   IssueGrainRepositoryImpl(this._dio, this._tokenStorage);
 
-  // JWT 토큰에서 memberId(sub)를 추출하는 임시 비공개 함수
-  Future<String> _getRequiredMemberId() async {
-    final token = await _tokenStorage.getAccessToken();
-
-    // 1. 토큰이 없는 경우, 명확한 에러 메시지를 던집니다.
-    if (token == null) {
-      throw ApiException('로그인이 필요합니다. 다시 로그인해주세요.');
-    }
-
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) {
-        // 2. 토큰 형식이 잘못된 경우의 에러 처리
-        throw ApiException('인증 정보가 올바르지 않습니다. (Malformed Token)');
-      }
-
-      final payload = parts[1];
-      final normalized = base64Url.normalize(payload);
-      final decoded = utf8.decode(base64Url.decode(normalized));
-      final payloadMap = json.decode(decoded) as Map<String, dynamic>;
-      final memberId = payloadMap['sub'] as String?;
-
-      if (memberId == null) {
-        // 3. 토큰 안에 'sub' 클레임이 없는 경우의 에러 처리
-        throw ApiException('인증 정보가 올바르지 않습니다. (No Subject)');
-      }
-
-      return memberId;
-    } catch (e) {
-      // 4. 그 외 모든 디코딩 관련 에러 처리
-      print('토큰 디코딩 실패: $e');
-      throw ApiException('인증 정보를 처리하는 중 오류가 발생했습니다.');
-    }
-  }
-
   // --- 글쓰기 관련 함수 (실제 API 호출) ---
 
   @override
@@ -147,12 +112,9 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     required String placeId,
     String? cursor,
   }) async {
-    final memberId = await _getRequiredMemberId();
-    // 백엔드 명세에 맞는 쿼리 파라미터를 설정합니다.
     final params = {
       'placeId': placeId,
       'cursor': cursor, // cursor 파라미터 추가
-      'memberId': memberId,
     };
     // 공통 헬퍼 메서드를 호출하여 작업을 위임합니다.
     return _getGrainsInCloud(params);
@@ -163,13 +125,9 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     required String cloudId,
     String? cursor,
   }) async {
-    final memberId = await _getRequiredMemberId();
-
-    // 백엔드 명세에 맞는 쿼리 파라미터를 설정합니다.
     final params = {
       'cloudId': cloudId,
       'cursor': cursor, // cursor 파라미터 추가
-      'memberId': memberId,
     };
     // 공통 헬퍼 메서드를 호출하여 작업을 위임합니다.
     return _getGrainsInCloud(params);
