@@ -17,21 +17,62 @@ import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/multi_stage_bottom_sheet.dart';
 import 'package:mongle_flutter/features/map/providers/map_providers.dart';
 
-// 1. ConsumerWidget에서 ConsumerStatefulWidget으로 변경
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
-  // 2. createState 메서드 구현
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-// 3. State 클래스를 ConsumerState<MapScreen>으로 상속
 class _MapScreenState extends ConsumerState<MapScreen> {
-  // 4. 기존 build 메서드 및 모든 헬퍼 메서드를 State 클래스 안으로 이동
+  // 👇 에러 상태를 추적하기 위한 변수
+  bool _hasError = false;
+
   @override
   Widget build(BuildContext context) {
-    // 이제 'ref'는 클래스의 멤버이므로 어디서든 접근 가능합니다.
+    // 👇 ref.listen은 반드시 build 메서드 안에서 호출해야 합니다!
+    ref.listen<MapState>(mapViewModelProvider, (previous, next) {
+      next.when(
+        loading: () {
+          // 로딩 중에는 에러 상태 해제
+          if (_hasError) {
+            setState(() => _hasError = false);
+          }
+        },
+        error: (message) {
+          print("🔴 [MapScreen] 에러 감지: $message");
+          // 에러 플래그 설정
+          if (!_hasError) {
+            setState(() => _hasError = true);
+          }
+
+          // SnackBar 표시
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message)),
+                ],
+              ),
+              backgroundColor: Colors.red.shade600,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        data: (_, mapObjects, __) {
+          // 데이터가 성공적으로 로드되면 에러 상태 해제
+          if (mapObjects != null && _hasError) {
+            setState(() => _hasError = false);
+          } else if (mapObjects == null && !_hasError) {
+            // mapObjects가 null이면 에러 상태로 설정
+            setState(() => _hasError = true);
+          }
+        },
+      );
+    });
     final mapState = ref.watch(mapViewModelProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final sheetState = ref.watch(mapSheetStrategyProvider);
@@ -41,12 +82,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (selectedGrainId != null) {
       snapSizes = [peekFraction, grainPreviewFraction, fullFraction];
     } else {
-      snapSizes = [peekFraction]; // fullFraction 는 추후 로컬 피드 기획 완료시 추가.
+      snapSizes = [peekFraction];
     }
 
     final canPop = sheetState.mode == SheetMode.minimized;
-
     final isFabVisible = sheetState.mode == SheetMode.minimized;
+
+    final NLatLng initialPosition =
+        mapState.whenOrNull(data: (pos, _, __) => pos) ??
+        const NLatLng(35.890, 128.612);
 
     return PopScope(
       canPop: canPop,
@@ -69,20 +113,88 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: Scaffold(
         body: Stack(
           children: [
-            // 1. 지도
-            mapState.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (message) => Center(child: Text(message)),
-              data: (initialPosition, mapObjects, _) {
-                // 👈 세 번째 파라미터 `_` 추가
-                return MapView(
-                  initialPosition: initialPosition,
-                  bottomPadding: screenHeight * sheetState.height,
-                );
-              },
+            // 1. 지도 (항상 표시)
+            MapView(
+              initialPosition: initialPosition,
+              bottomPadding: screenHeight * sheetState.height,
             ),
 
-            // 2. FAB (지도 바로 위에 그려짐)
+            // 👇 2. 에러 오버레이 (반투명 검은색 + 인디케이터 + 재시도 버튼)
+            if (_hasError)
+              Container(
+                color: Colors.black.withOpacity(0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        '서버 연결 중...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '10초마다 자동으로 재시도합니다',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          print("🔄 [MapScreen] 수동 재시도 버튼 클릭");
+                          ref.read(mapViewModelProvider.notifier).retry();
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('지금 다시 시도'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // 👇 3. 초기 로딩 오버레이 (밝은 배경)
+            mapState.whenOrNull(
+                  loading: () => Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text(
+                            '지도를 불러오는 중...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ) ??
+                const SizedBox.shrink(),
+
+            // 4. FAB
             Positioned(
               right: 16,
               bottom: (screenHeight * peekFraction) + 16,
@@ -101,7 +213,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
             ),
 
-            // 3. 바텀시트 (FAB 위에 그려짐)
+            // 5. 바텀시트
             MultiStageBottomSheet(
               strategyProvider: mapSheetStrategyProvider,
               minSnapSize: peekFraction,
@@ -130,7 +242,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               },
             ),
 
-            // 4. 댓글 입력창 (가장 위에 그려짐)
+            // 6. 댓글 입력창
             if (sheetState.mode == SheetMode.full)
               Align(
                 alignment: Alignment.bottomCenter,
@@ -145,7 +257,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 기본 상태의 바텀시트
   Widget _buildDefaultSheet(ScrollController scrollController) {
     return ListView(
       controller: scrollController,
@@ -171,7 +282,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 미리보기 상태의 바텀시트 (고정 크기 카드)
   Widget _buildPreviewCard(
     BuildContext context,
     String grainId,
@@ -190,7 +300,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           child: Column(
             children: [
               _buildHandle(),
-              // [수정] grainAsync의 상태에 따라 UI를 분기 처리합니다.
               grainAsync.when(
                 loading: () => const SizedBox(
                   height: 150,
@@ -201,7 +310,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: Center(child: Text('오류: $e')),
                 ),
                 data: (grain) => IssueGrainItem(
-                  // [수정] postId 대신 가져온 grain 객체를 전달합니다.
                   grain: grain,
                   displayMode: IssueGrainDisplayMode.mapPreview,
                   onTap: null,
@@ -214,7 +322,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 전체보기 상태의 바텀시트 (스크롤 뷰)
   Widget _buildFullScrollView(
     BuildContext context,
     ScrollController scrollController,
@@ -254,7 +361,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
             data: (grain) => SliverToBoxAdapter(
               child: IssueGrainItem(
-                // [수정] postId 대신 가져온 grain 객체를 전달합니다.
                 grain: grain,
                 displayMode: IssueGrainDisplayMode.fullView,
               ),
@@ -274,20 +380,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 주변 알갱이 목록을 보여주는 '로컬 피드' 위젯
   Widget _buildLocalFeedSheet(
     BuildContext context,
     ScrollController scrollController,
   ) {
-    // 1. ViewModel의 전체 상태(MapState)를 watch합니다.
     final mapState = ref.watch(mapViewModelProvider);
 
-    // 2. whenOrNull을 사용해 data 상태일 때 currentBounds 값을 안전하게 추출합니다.
     final NLatLngBounds? visibleBounds = mapState.whenOrNull(
       data: (initialPosition, mapObjects, currentBounds) => currentBounds,
     );
 
-    // 3. bounds 정보가 아직 없다면(초기 로딩 등) 로딩 위젯을 표시합니다.
     if (visibleBounds == null) {
       return Column(
         children: [
@@ -297,10 +399,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
     }
 
-    // 4. 이제 visibleBounds가 null이 아님이 보장되므로, provider에 전달합니다.
     final nearbyGrainsAsync = ref.watch(nearbyGrainsProvider(visibleBounds));
 
-    // 3. AsyncValue.when을 사용하여 로딩/에러/데이터 상태에 따라 다른 UI를 보여줍니다.
     return nearbyGrainsAsync.when(
       loading: () => Column(
         children: [
@@ -328,7 +428,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           );
         }
 
-        // 4. CustomScrollView와 SliverList.builder를 사용해 UI를 그립니다.
         return CustomScrollView(
           controller: scrollController,
           slivers: [
@@ -345,10 +444,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             SliverList.builder(
               itemCount: posts.length,
               itemBuilder: (context, index) {
-                // 5. 이미 모든 정보를 가진 post 객체를 가져옵니다.
                 final post = posts[index];
 
-                // 6. ✅ 더 이상 Consumer나 ref.watch 없이, 데이터를 그대로 전달합니다.
                 return IssueGrainItem(
                   grain: post,
                   displayMode: IssueGrainDisplayMode.boardPreview,
@@ -366,7 +463,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 바텀시트 핸들 UI
   Widget _buildHandle() {
     return Center(
       child: Container(
