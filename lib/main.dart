@@ -6,6 +6,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:mongle_flutter/core/navigation/router.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
@@ -15,7 +16,7 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   // 1. runApp() 전에 Flutter 엔진과 위젯 바인딩이 준비되도록 보장합니다.
   // main 함수 상단에서 이미 호출되었으므로, 이 라인은 중복되어 제거해도 괜찮습니다.
-  // WidgetsFlutterBinding.ensureInitialized(); 
+  // WidgetsFlutterBinding.ensureInitialized();
 
   // 2. .env 파일을 로드합니다.
   await dotenv.load(fileName: ".env");
@@ -30,8 +31,8 @@ void main() async {
           print("사용량 초과 (message: $message)");
           break;
         case NUnauthorizedClientException() ||
-        NClientUnspecifiedException() ||
-        NAnotherAuthFailedException():
+            NClientUnspecifiedException() ||
+            NAnotherAuthFailedException():
           print("인증 실패: $ex");
           break;
       }
@@ -55,8 +56,11 @@ class MyApp extends ConsumerWidget {
     // ref.watch를 사용하여 routerProvider로부터 GoRouter 인스턴스를 가져옵니다.
     final router = ref.watch(routerProvider);
 
+    // 🔥 로그아웃 시 이 값이 바뀌면서 전체 위젯 트리 재생성
+    final restartKey = ref.watch(appRestartTriggerProvider);
+
     return MaterialApp.router(
-      // Provider를 통해 얻어온 router 인스턴스를 사용합니다.
+      key: ObjectKey(restartKey), // 🔥 key 추가
       routerConfig: router,
       title: '몽글 (MONGLE)',
       theme: ThemeData(

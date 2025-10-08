@@ -9,6 +9,7 @@ import 'package:mongle_flutter/features/auth/domain/repositories/auth_repository
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_state.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
+import 'package:flutter/services.dart';
 
 /// StateNotifierProvider를 생성하여 앱 전역에 AuthNotifier 인스턴스를 제공합니다.
 /// UI는 이 Provider를 통해 인증 상태를 구독하고, Notifier의 메서드를 호출하여 상태를 변경합니다.
@@ -88,19 +89,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// 로그아웃 메서드
+  /// 로그아웃 - 전체 앱 재시작 트리거
   Future<void> logout() async {
     try {
       await _authRepository.logout();
     } catch (e) {
-      // 로그아웃 실패 시에도 클라이언트의 상태는 로그아웃 처리합니다.
       print("로그아웃 중 오류 발생: $e");
     } finally {
-      // .family Provider는 직접 무효화할 수 없지만,
-      // 이를 사용하는 상위 Provider(mapViewModelProvider 등)를 무효화하면
-      // 하위 Provider들도 자연스럽게 함께 초기화됩니다.
-      // 성공/실패 여부와 관계없이 상태를 '비인증'으로 변경합니다.
       state = const AuthState.unauthenticated();
+
+      // 앱 전체 재시작 신호 (UniqueKey 생성으로 위젯 트리 재생성)
+      _ref.read(appRestartTriggerProvider.notifier).triggerRestart();
     }
+  }
+}
+
+/// 앱 전체 재시작을 위한 Provider
+/// UniqueKey를 사용하여 매번 새로운 key를 생성
+final appRestartTriggerProvider = StateProvider<Object>((ref) {
+  return Object(); // 초기값
+});
+
+extension AppRestartExtension on StateController<Object> {
+  void triggerRestart() {
+    state = Object(); // 새로운 Object 인스턴스 = 새로운 identity
   }
 }

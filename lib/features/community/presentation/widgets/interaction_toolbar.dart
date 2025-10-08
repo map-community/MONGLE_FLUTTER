@@ -77,6 +77,7 @@ class InteractionToolbar extends ConsumerWidget {
           ),
           const Spacer(),
 
+          /*
           // 공유
           IconButton(
             icon: const Icon(Icons.share_outlined),
@@ -86,6 +87,8 @@ class InteractionToolbar extends ConsumerWidget {
             iconSize: 20,
             color: Colors.grey.shade600,
           ),
+
+           */
         ],
       ),
     );
