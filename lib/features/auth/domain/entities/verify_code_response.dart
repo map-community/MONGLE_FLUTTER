@@ -5,7 +5,7 @@ part 'verify_code_response.g.dart';
 
 /// 인증 코드 확인 응답
 @freezed
-class VerifyCodeResponse with _$VerifyCodeResponse {
+abstract class VerifyCodeResponse with _$VerifyCodeResponse {
   const factory VerifyCodeResponse({required String verificationToken}) =
       _VerifyCodeResponse;
 

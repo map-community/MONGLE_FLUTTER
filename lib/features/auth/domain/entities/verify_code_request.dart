@@ -5,7 +5,7 @@ part 'verify_code_request.g.dart';
 
 /// 인증 코드 확인 요청
 @freezed
-class VerifyCodeRequest with _$VerifyCodeRequest {
+abstract class VerifyCodeRequest with _$VerifyCodeRequest {
   const factory VerifyCodeRequest({
     required String email,
     required String verificationCode,
