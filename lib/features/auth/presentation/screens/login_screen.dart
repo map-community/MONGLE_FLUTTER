@@ -45,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // authProvider의 상태 변화에 따라SnackBar 표시나 화면 이동을 처리합니다.
     ref.listen<AuthState>(authProvider, (previous, next) {
       next.whenOrNull(
-        authenticated: () {
+        authenticated: (user) {
           // 로그인 성공 시 홈 화면으로 이동
           context.go('/map');
         },

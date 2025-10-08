@@ -5,6 +5,7 @@ import 'package:mongle_flutter/features/auth/domain/entities/sign_up_request.dar
 import 'package:mongle_flutter/features/auth/domain/entities/token_info.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/verify_code_request.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/verify_code_response.dart';
+import 'package:mongle_flutter/features/profile/domain/entities/user_profile.dart';
 
 // 인증(Authentication)과 관련된 데이터 통신 규칙을 정의하는 '계약서'
 abstract class AuthRepository {
@@ -28,4 +29,7 @@ abstract class AuthRepository {
 
   // 회원 탈퇴를 요청하는 기능
   Future<void> withdraw();
+
+  // 내 정보(UserProfile)를 가져오는 기능
+  Future<UserProfile> getMe();
 }

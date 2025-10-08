@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mongle_flutter/features/profile/domain/entities/user_profile.dart';
 
 part 'auth_state.freezed.dart';
 
@@ -11,7 +12,7 @@ class AuthState with _$AuthState {
   const factory AuthState.loading() = _Loading;
 
   // 로그인에 성공하여 인증된 상태
-  const factory AuthState.authenticated() = _Authenticated;
+  const factory AuthState.authenticated(UserProfile user) = _Authenticated;
 
   // 로그아웃되었거나, 로그인에 실패했거나, 토큰이 없는 비인증 상태
   const factory AuthState.unauthenticated({String? message}) = _Unauthenticated;

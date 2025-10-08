@@ -61,7 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
 
       final isAuthenticated = authState.maybeWhen(
-        authenticated: () => true, // authenticated 상태일 때만 true
+        authenticated: (user) => true, // authenticated 상태일 때만 true
         orElse: () => false, // 그 외 모든 경우는 false
       );
 

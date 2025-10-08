@@ -63,7 +63,7 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
     // ✅ [추가] 로그인 상태를 확인하기 위한 변수입니다.
     final isLoggedIn = ref
         .watch(authProvider)
-        .maybeWhen(authenticated: () => true, orElse: () => false);
+        .maybeWhen(authenticated: (user) => true, orElse: () => false);
 
     // SafeArea는 그대로 유지하여 시스템 네비게이션 바를 침범하지 않도록 합니다.
     return IgnorePointer(

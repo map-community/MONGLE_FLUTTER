@@ -60,7 +60,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // 토큰이 존재하면 '인증된' 상태로, 없으면 '비인증' 상태로 설정합니다.
     // (더 정교하게는 토큰 유효성 검사 API를 호출할 수도 있습니다.)
     if (accessToken != null) {
-      state = const AuthState.authenticated();
+      try {
+        // ✅ [수정] 토큰이 있으면 사용자 정보를 가져옵니다.
+        final user = await _authRepository.getMe();
+        state = AuthState.authenticated(user);
+      } catch (e) {
+        // ✅ [수정] 정보 가져오기 실패 시 로그아웃 처리
+        state = const AuthState.unauthenticated();
+        await _tokenStorage.clearTokens();
+      }
     } else {
       state = const AuthState.unauthenticated();
     }
@@ -72,9 +80,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final loginRequest = LoginRequest(email: email, password: password);
       await _authRepository.login(loginRequest); // Repository를 통해 로그인 시도
-      state = const AuthState.authenticated(); // 성공 시 '인증됨' 상태로 변경
+      final user = await _authRepository.getMe();
+      state = AuthState.authenticated(user);
     } on DioException catch (e) {
-      // ✅ 개선: ApiInterceptor가 처리한 메시지 사용
       final errorMessage = _extractErrorMessage(e);
       state = AuthState.unauthenticated(message: errorMessage);
     } catch (e) {
@@ -100,6 +108,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // 회원 탈퇴 메서드
   Future<String?> withdraw() async {
+    // 현재 사용자 정보를 미리 저장해둡니다.
+    final currentUser = state.whenOrNull(authenticated: (user) => user);
+    if (currentUser == null) {
+      return '로그인 상태가 아닙니다.';
+    }
+
     state = const AuthState.loading();
     try {
       await _authRepository.withdraw();
@@ -110,14 +124,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       print("회원 탈퇴 중 오류 발생: $e");
       final errorMessage = _extractErrorMessage(e);
       if (mounted) {
-        // 실패 시 다시 'authenticated' 상태로 복원
-        state = const AuthState.authenticated();
+        // 실패 시 미리 저장해둔 사용자 정보로 authenticated 상태를 복원합니다.
+        state = AuthState.authenticated(currentUser);
       }
       return errorMessage; // 실패 시 에러 메시지 반환
     } catch (e) {
       print("회원 탈퇴 중 예상치 못한 오류 발생: $e");
       if (mounted) {
-        state = const AuthState.authenticated();
+        // 실패 시 미리 저장해둔 사용자 정보로 authenticated 상태를 복원합니다.
+        state = AuthState.authenticated(currentUser);
       }
       return '알 수 없는 오류로 탈퇴에 실패했습니다.';
     }

@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_state.dart';
+import 'package:mongle_flutter/features/profile/domain/entities/user_profile.dart';
 
 /// 현재 로그인된 사용자의 Member ID(sub)를 Access Token에서 추출하여 제공하는 Provider
 ///
@@ -38,4 +41,15 @@ final currentMemberIdProvider = FutureProvider<String?>((ref) async {
     print('Token decoding failed in currentMemberIdProvider: $e');
     return null;
   }
+});
+
+/// 현재 로그인된 사용자의 UserProfile 객체를 제공하는 Provider
+/// UI 위젯은 이 Provider를 watch하여 사용자 정보가 필요할 때마다 쉽게 접근할 수 있습니다.
+/// 로그인/로그아웃 시 자동으로 상태가 업데이트됩니다.
+final userProvider = Provider<UserProfile?>((ref) {
+  // authProvider의 상태를 감시(watch)합니다.
+  final authState = ref.watch(authProvider);
+  // authState가 authenticated 상태일 때만 user 데이터를 반환하고,
+  // 그 외의 모든 경우(unauthenticated, loading 등)에는 null을 반환합니다.
+  return authState.maybeWhen(authenticated: (user) => user, orElse: () => null);
 });

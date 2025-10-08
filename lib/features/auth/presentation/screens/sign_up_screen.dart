@@ -56,7 +56,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     // 로그인 성공 시 /map으로 이동
     ref.listen<AuthState>(authProvider, (previous, next) {
       next.whenOrNull(
-        authenticated: () {
+        authenticated: (user) {
           if (mounted) context.go('/map');
         },
       );

@@ -10,6 +10,7 @@ import 'package:mongle_flutter/features/auth/domain/entities/token_info.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/verify_code_request.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/verify_code_response.dart';
 import 'package:mongle_flutter/features/auth/domain/repositories/auth_repository.dart';
+import 'package:mongle_flutter/features/profile/domain/entities/user_profile.dart';
 
 // 이 구현체를 앱 전역에서 사용할 수 있도록 Provider로 만듭니다.
 // UI나 다른 로직에서는 이 Provider를 통해 AuthRepository의 기능에 접근합니다.
@@ -117,5 +118,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> withdraw() async {
     // ApiInterceptor가 Authorization 헤더를 자동으로 추가해줍니다.
     await _dio.delete(ApiConstants.withdraw);
+  }
+
+  // getMe 메서드의 실제 API 호출 구현
+  @override
+  Future<UserProfile> getMe() async {
+    final response = await _dio.get(ApiConstants.getMe);
+    // ApiInterceptor가 data 필드를 추출해주므로 바로 fromJson 호출
+    return UserProfile.fromJson(response.data);
   }
 }

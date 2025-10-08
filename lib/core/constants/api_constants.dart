@@ -12,6 +12,8 @@ class ApiConstants {
 
   //  회원 탈퇴 경로
   static const String withdraw = '/user/me';
+  // 내 정보 조회 경로
+  static const String getMe = '/user/me';
 
   static const String posts = '/posts';
   static const String postFileUploadUrls = '/post-files/upload-urls';
