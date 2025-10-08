@@ -7,6 +7,10 @@ import 'package:mime/mime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mongle_flutter/core/dio/dio_provider.dart';
+import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
+import 'package:mongle_flutter/features/community/data/repositories/issue_grain_repository_impl.dart';
+import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:mongle_flutter/core/services/profanity_filter_service.dart';
 
@@ -382,39 +386,13 @@ final writeGrainProvider =
 
 final profanityFilterProvider = Provider((ref) => ProfanityFilterService());
 
-// --- 컴파일 에러 방지를 위한 임시 클래스 및 Provider ---
 final issueGrainRepositoryProvider = Provider<IssueGrainRepository>((ref) {
-  throw UnimplementedError();
+  // 1. 다른 Provider를 통해 Dio 인스턴스를 가져옵니다.
+  final dio = ref.watch(dioProvider);
+
+  // 2. TokenStorageServiceProvider를 통해 TokenStorageService 인스턴스를 가져옵니다.
+  final tokenStorage = ref.watch(tokenStorageServiceProvider);
+
+  // 3. 가져온 의존성들을 IssueGrainRepositoryImpl 생성자에 주입하여 인스턴스를 생성하고 반환합니다.
+  return IssueGrainRepositoryImpl(dio, tokenStorage);
 });
-
-class IssueGrainRepository {
-  Future<void> createPost({
-    required String content,
-    required double latitude,
-    required double longitude,
-  }) async {}
-  Future<List<IssuedUrlInfo>> requestUploadUrls({
-    required List<UploadFileInfo> files,
-  }) async {
-    return [];
-  }
-
-  Future<void> completePostCreation({
-    required String content,
-    required List<String> fileKeyList,
-    required double latitude,
-    required double longitude,
-  }) async {}
-}
-
-class UploadFileInfo {
-  final String fileName;
-  final int fileSize;
-  UploadFileInfo({required this.fileName, required this.fileSize});
-}
-
-class IssuedUrlInfo {
-  final String presignedUrl;
-  final String fileKey;
-  IssuedUrlInfo({required this.presignedUrl, required this.fileKey});
-}
