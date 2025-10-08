@@ -146,20 +146,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ProfileScreen(),
             routes: [
               GoRoute(
-                path: 'privacy-policy',
-                builder: (context, state) => const SimpleInfoScreen(
-                  title: '개인정보처리방침',
-                  body: privacyPolicyMarkdown,
-                ),
-              ),
-              GoRoute(
-                path: 'terms-of-service',
-                builder: (context, state) => const SimpleInfoScreen(
-                  title: '이용약관',
-                  body: termsOfServiceMarkdown,
-                ),
-              ),
-              GoRoute(
                 path: 'contact',
                 builder: (context, state) => const SimpleInfoScreen(
                   title: '문의하기',

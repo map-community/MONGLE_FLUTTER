@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_state.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -64,15 +65,24 @@ class ProfileScreen extends ConsumerWidget {
             leading: const Icon(Icons.shield_outlined),
             title: const Text('개인정보처리방침'),
             onTap: () {
-              // ✅ GoRouter를 사용하여 해당 경로로 이동
-              context.go('/profile/privacy-policy');
+              // ✅ [수정] GoRouter 대신 웹뷰 다이얼로그 호출
+              _showTermsDialog(
+                context,
+                '개인정보처리방침',
+                'https://sites.google.com/view/mongle-privacy-notice',
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: const Text('이용약관'),
             onTap: () {
-              context.go('/profile/terms-of-service');
+              // ✅ [수정] GoRouter 대신 웹뷰 다이얼로그 호출
+              _showTermsDialog(
+                context,
+                '이용약관',
+                'https://sites.google.com/view/mongle-terms-of-service',
+              );
             },
           ),
           ListTile(
@@ -134,4 +144,47 @@ class ProfileScreen extends ConsumerWidget {
       },
     );
   }
+}
+
+// ✅ [추가] 회원가입 화면에서 사용했던 웹뷰 다이얼로그 함수
+void _showTermsDialog(BuildContext context, String title, String url) {
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: EdgeInsets.zero,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Divider(),
+            Expanded(
+              child: WebViewWidget(
+                controller: WebViewController()
+                  ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                  ..loadRequest(Uri.parse(url)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
