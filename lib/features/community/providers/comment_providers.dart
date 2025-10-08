@@ -7,6 +7,7 @@ import 'package:mongle_flutter/features/community/data/repositories/comment_repo
 import 'package:mongle_flutter/features/community/data/repositories/fake_comment_repository_impl.dart';
 import 'package:mongle_flutter/features/community/data/repositories/mock_comment_data.dart';
 import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
+import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
@@ -16,6 +17,7 @@ import 'package:mongle_flutter/features/community/domain/repositories/reaction_r
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/reply_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
+import 'package:mongle_flutter/features/profile/domain/entities/user_profile.dart';
 
 // --- Data Layer Provider ---
 final commentRepositoryProvider = Provider<CommentRepository>((ref) {
@@ -277,26 +279,27 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
   }
 
   Future<void> addComment(String content) async {
-    print('------------------------------------');
-    print("댓글 addcomment실행" + _postId + " " + content);
-    print('------------------------------------');
     final previousState = state.valueOrNull;
-    print('------------------------------------');
-    print("0" + _postId + " " + content);
-    print('------------------------------------');
     if (previousState == null || previousState.isSubmitting) return;
-    print('------------------------------------');
-    print("1" + _postId + " " + content);
-    print('------------------------------------');
+
+    // 1. userProvider에서 현재 로그인된 사용자 정보를 가져옵니다.
+    final UserProfile? currentUser = _ref.read(userProvider);
+    // 2. 비로그인 상태이면 작업을 중단합니다. (UI에서 이미 막았지만, 이중 안전장치)
+    if (currentUser == null) return;
+
+    // 3. 가져온 UserProfile 데이터로 Author 객체를 만듭니다.
+    final author = Author(
+      id: 'temp_id', // 임시 ID, 서버 응답 후 실제 ID로 교체됩니다.
+      nickname: currentUser.nickname,
+      profileImageUrl: currentUser.profileImageUrl,
+    );
+
     final newComment = Comment(
       commentId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
-      author: mockCurrentUser,
+      author: author,
       createdAt: DateTime.now(),
     );
-    print('------------------------------------');
-    print("2" + _postId + " " + content);
-    print('------------------------------------');
     // ✨ 1. UI를 즉시 업데이트하면서, isSubmitting 상태를 true로 설정합니다.
     state = AsyncValue.data(
       previousState.copyWith(
@@ -325,6 +328,10 @@ class CommentNotifier extends StateNotifier<AsyncValue<PaginatedComments>> {
   }
 
   Future<void> addReply(String parentCommentId, String content) async {
+    // 대댓글 로직에서도 동일하게 사용자 정보를 가져와 사용합니다.
+    final UserProfile? currentUser = _ref.read(userProvider);
+    if (currentUser == null) return;
+
     exitReplyMode();
     final previousState = state.valueOrNull;
     if (previousState == null || previousState.isSubmitting) return;
