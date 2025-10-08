@@ -36,6 +36,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkToken();
   }
 
+  // 이메일 인증 코드를 요청하는 메서드
+  /// 성공 시 null을, 실패 시 에러 메시지를 String으로 반환합니다.
+  Future<String?> requestVerificationCode(String email) async {
+    try {
+      await _authRepository.requestVerificationCode(email);
+      return null; // 성공적으로 요청이 완료되면 null을 반환합니다.
+    } on DioException catch (e) {
+      // Dio를 통해 발생한 예외 (네트워크, 서버 4xx/5xx 에러 등)
+      // ApiInterceptor가 가공해준 깔끔한 에러 메시지를 반환합니다.
+      return e.error.toString();
+    } catch (e) {
+      // DioException 외에 예상치 못한 다른 종류의 에러가 발생한 경우
+      return '알 수 없는 오류가 발생했습니다.';
+    }
+  }
+
   /// 앱 시작 시 토큰 확인 및 자동 로그인 로직
   Future<void> _checkToken() async {
     // 안전한 저장소에서 AccessToken을 읽어옵니다.
@@ -58,38 +74,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _authRepository.login(loginRequest); // Repository를 통해 로그인 시도
       state = const AuthState.authenticated(); // 성공 시 '인증됨' 상태로 변경
     } on DioException catch (e) {
-      // ApiInterceptor가 가공해준 에러 메시지를 상태에 담습니다.
-      state = AuthState.unauthenticated(message: e.error.toString());
+      // ✅ 개선: ApiInterceptor가 처리한 메시지 사용
+      final errorMessage = _extractErrorMessage(e);
+      state = AuthState.unauthenticated(message: errorMessage);
     } catch (e) {
       // DioException 외의 예외 상황을 위한 최종 안전망
       state = AuthState.unauthenticated(message: '로그인 중 예상치 못한 오류가 발생했습니다.');
     }
   }
 
-  /// 회원가입 메서드
-  Future<bool> signUp(String email, String password, String nickname) async {
-    state = const AuthState.loading();
-    try {
-      final signUpRequest = SignUpRequest(
-        email: email,
-        password: password,
-        nickname: nickname,
-      );
-      await _authRepository.signUp(signUpRequest);
-
-      // 회원가입 성공 후, 동일한 정보로 바로 로그인을 시도합니다.
-      await login(email, password);
-      return true;
-    } on DioException catch (e) {
-      state = AuthState.unauthenticated(message: e.error.toString());
-      return false;
-    } catch (e) {
-      state = AuthState.unauthenticated(message: '회원가입 중 예상치 못한 오류가 발생했습니다.');
-      return false;
-    }
-  }
-
   /// 로그아웃 - 전체 앱 재시작 트리거
+  /// 로그아웃 메서드
   Future<void> logout() async {
     try {
       await _authRepository.logout();
@@ -113,5 +108,33 @@ final appRestartTriggerProvider = StateProvider<Object>((ref) {
 extension AppRestartExtension on StateController<Object> {
   void triggerRestart() {
     state = Object(); // 새로운 Object 인스턴스 = 새로운 identity
+  }
+}
+
+/// ✅ 개선: ApiInterceptor가 처리한 에러 메시지를 추출
+/// DioException.error에 ApiException이 담겨 있으므로 이를 활용
+String _extractErrorMessage(DioException e) {
+  // 1. ApiInterceptor가 담아준 ApiException 메시지 확인
+  if (e.error is ApiException) {
+    return (e.error as ApiException).message;
+  }
+
+  // 2. error 필드가 String인 경우
+  if (e.error is String) {
+    return e.error as String;
+  }
+
+  // 3. 그 외의 경우 (네트워크 오류 등)
+  switch (e.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.receiveTimeout:
+    case DioExceptionType.sendTimeout:
+      return '네트워크 연결 시간을 초과했습니다.';
+    case DioExceptionType.connectionError:
+      return '네트워크 연결에 실패했습니다.';
+    case DioExceptionType.cancel:
+      return '요청이 취소되었습니다.';
+    default:
+      return '알 수 없는 오류가 발생했습니다.';
   }
 }
