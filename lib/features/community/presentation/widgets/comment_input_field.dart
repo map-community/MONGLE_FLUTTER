@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/core/services/profanity_filter_service.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_state.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
 import 'package:mongle_flutter/features/community/providers/comment_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 
 class CommentInputField extends ConsumerStatefulWidget {
   final String postId;
@@ -57,6 +60,11 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
         commentStateAsync.isLoading;
     final notifier = ref.read(commentProvider(widget.postId).notifier);
 
+    // ✅ [추가] 로그인 상태를 확인하기 위한 변수입니다.
+    final isLoggedIn = ref
+        .watch(authProvider)
+        .maybeWhen(authenticated: () => true, orElse: () => false);
+
     // SafeArea는 그대로 유지하여 시스템 네비게이션 바를 침범하지 않도록 합니다.
     return IgnorePointer(
       ignoring: isSubmitting,
@@ -97,6 +105,13 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
                           controller: _textController, // ✨ 2. 컨트롤러 연결
                           focusNode: _focusNode, // ✨ 3. 포커스 노드 연결
                           enabled: !isSubmitting,
+                          // ✅ [추가] 로그인하지 않은 경우 키보드가 올라오지 않도록 막고, 탭 이벤트를 처리합니다.
+                          readOnly: !isLoggedIn,
+                          onTap: () {
+                            if (!isLoggedIn) {
+                              context.push('/login');
+                            }
+                          },
                           style: const TextStyle(fontSize: 14),
                           keyboardType: TextInputType.multiline,
                           minLines: 1,
@@ -117,6 +132,12 @@ class _CommentInputFieldState extends ConsumerState<CommentInputField> {
                         onPressed: isSubmitting
                             ? null
                             : () {
+                                // ✅ [추가] 전송 버튼 클릭 시에도 로그인 상태를 확인합니다.
+                                if (!isLoggedIn) {
+                                  context.push('/login');
+                                  return;
+                                }
+
                                 final content = _textController.text.trim();
                                 if (content.isEmpty) return; // 내용이 없으면 전송 안 함
 
