@@ -97,6 +97,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _ref.read(appRestartTriggerProvider.notifier).triggerRestart();
     }
   }
+
+  // 회원 탈퇴 메서드
+  Future<String?> withdraw() async {
+    state = const AuthState.loading();
+    try {
+      await _authRepository.withdraw();
+      // 탈퇴 성공 후, 로그아웃 처리를 통해 상태를 정리합니다.
+      await logout();
+      return null; // 성공 시 null 반환
+    } on DioException catch (e) {
+      print("회원 탈퇴 중 오류 발생: $e");
+      final errorMessage = _extractErrorMessage(e);
+      if (mounted) {
+        // 실패 시 다시 'authenticated' 상태로 복원
+        state = const AuthState.authenticated();
+      }
+      return errorMessage; // 실패 시 에러 메시지 반환
+    } catch (e) {
+      print("회원 탈퇴 중 예상치 못한 오류 발생: $e");
+      if (mounted) {
+        state = const AuthState.authenticated();
+      }
+      return '알 수 없는 오류로 탈퇴에 실패했습니다.';
+    }
+  }
 }
 
 /// 앱 전체 재시작을 위한 Provider

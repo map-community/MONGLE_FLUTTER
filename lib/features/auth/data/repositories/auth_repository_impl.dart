@@ -111,4 +111,11 @@ class AuthRepositoryImpl implements AuthRepository {
     // 5. 새로운 토큰 정보를 반환합니다.
     return newTokenInfo;
   }
+
+  // 회원 탈퇴 API 호출 구현
+  @override
+  Future<void> withdraw() async {
+    // ApiInterceptor가 Authorization 헤더를 자동으로 추가해줍니다.
+    await _dio.delete(ApiConstants.withdraw);
+  }
 }

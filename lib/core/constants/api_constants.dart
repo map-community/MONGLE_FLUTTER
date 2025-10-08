@@ -10,6 +10,9 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String reissue = '/auth/reissue';
 
+  //  회원 탈퇴 경로
+  static const String withdraw = '/user/me';
+
   static const String posts = '/posts';
   static const String postFileUploadUrls = '/post-files/upload-urls';
 
