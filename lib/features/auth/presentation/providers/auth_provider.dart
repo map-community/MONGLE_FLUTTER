@@ -36,6 +36,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkToken();
   }
 
+  // 이메일 인증 코드를 요청하는 메서드
+  /// 성공 시 null을, 실패 시 에러 메시지를 String으로 반환합니다.
+  Future<String?> requestVerificationCode(String email) async {
+    try {
+      await _authRepository.requestVerificationCode(email);
+      return null; // 성공적으로 요청이 완료되면 null을 반환합니다.
+    } on DioException catch (e) {
+      // Dio를 통해 발생한 예외 (네트워크, 서버 4xx/5xx 에러 등)
+      // ApiInterceptor가 가공해준 깔끔한 에러 메시지를 반환합니다.
+      return e.error.toString();
+    } catch (e) {
+      // DioException 외에 예상치 못한 다른 종류의 에러가 발생한 경우
+      return '알 수 없는 오류가 발생했습니다.';
+    }
+  }
+
   /// 앱 시작 시 토큰 확인 및 자동 로그인 로직
   Future<void> _checkToken() async {
     // 안전한 저장소에서 AccessToken을 읽어옵니다.

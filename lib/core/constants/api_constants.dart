@@ -10,10 +10,11 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String reissue = '/auth/reissue';
 
-  static const String postFileUploadUrls = '/post-files/upload-urls';
   static const String posts = '/posts';
+  static const String postFileUploadUrls = '/post-files/upload-urls';
 
   static String postById(String postId) => '/posts/$postId';
+
   static String getComments(String postId) => '/posts/$postId/comments';
   static String getReplies(String parentCommentId) =>
       '/comments/$parentCommentId/replies';
