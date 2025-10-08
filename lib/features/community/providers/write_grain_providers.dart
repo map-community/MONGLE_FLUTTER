@@ -70,10 +70,13 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         pickerConfig: AssetPickerConfig(
           dragToSelect: false,
           maxAssets: remainingSlots,
-          requestType: RequestType.common, // 사진 + 동영상
+          // ✅ [임시 비활성화] 동영상 업로드를 막기 위해 .common에서 .image로 변경합니다.
+          // 추후 동영상 기능을 다시 활성화하려면 .common으로 되돌리면 됩니다.
+          requestType: RequestType.image,
           specialPickerType: SpecialPickerType.noPreview,
           textDelegate: const KoreanAssetPickerTextDelegate(),
           pickerTheme: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
             primaryColor: Theme.of(context).primaryColor,
             colorScheme: ColorScheme.light(
               primary: Theme.of(context).primaryColor,

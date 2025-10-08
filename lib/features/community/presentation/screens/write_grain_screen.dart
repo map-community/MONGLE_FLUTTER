@@ -94,8 +94,23 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                         TextField(
                           controller: _textController,
                           decoration: const InputDecoration(
-                            hintText: '지금 무슨 일이 일어나고 있나요?',
+                            hintText: '지금 있는 위치에 대한 이야기를 남겨보세요!',
                             border: InputBorder.none,
+                            helperText:
+                                '\n\n\n\n몽글은 누구나 기분 좋게 참여할 수 있는 커뮤니티를 함께 만들어가고 있습니다. '
+                                '아래와 같은 내용은 모두의 즐거운 경험을 위해 삼가주세요.\n\n'
+                                '• 타인의 명예를 훼손하거나 불쾌감을 주는 행위\n'
+                                '• 욕설, 비방, 음란물 등 불쾌감을 주는 내용\n'
+                                '• 허위 사실 유포 및 타인 사칭\n'
+                                '• 저작권 등 다른 사람의 권리를 침해하는 행위\n'
+                                '• 상업적인 홍보 또는 광고성 활동\n\n'
+                                '위반 시 게시물이 삭제되고 서비스 이용이 제한될 수 있습니다.',
+                            helperStyle: TextStyle(
+                              color: Color.fromARGB(255, 189, 189, 189),
+                              fontSize: 12,
+                              height: 1.5,
+                            ),
+                            helperMaxLines: 15,
                           ),
                           maxLines: null,
                           maxLength: maxTextLength,
@@ -308,7 +323,7 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                     ? null
                     // 올바른 메서드 이름(`pickMediaWithAssetsPicker`)을 호출하고 `context`를 전달합니다.
                     : () => notifier.pickMediaWithAssetsPicker(context),
-                tooltip: '사진/동영상 추가',
+                tooltip: '사진 추가',
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -358,7 +373,7 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
   ) {
     if (totalMediaCount == 0) {
       return Text(
-        '사진/동영상 최대 10개 (동영상 1개)',
+        '사진 최대 10개',
         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
       );
     }
