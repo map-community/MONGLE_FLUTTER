@@ -65,7 +65,10 @@ class ApiInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     print("🚨 [ApiInterceptor] onError 진입! 에러 타입: ${err.type}");
     print("   - 요청 경로: ${err.requestOptions.path}");
-
+    if (err.response != null) {
+      print('   - ❗ 응답 상태 코드: ${err.response?.statusCode}');
+      print('   - ❗ 응답 데이터: ${err.response?.data}');
+    }
     final responseData = err.response?.data;
 
     // 401 에러 및 AUTH-016 코드 확인

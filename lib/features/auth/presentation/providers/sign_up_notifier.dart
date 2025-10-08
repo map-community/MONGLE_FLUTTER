@@ -25,11 +25,11 @@ class SignUpNotifier extends StateNotifier<SignUpState> {
 
   /// 🔹 1단계: 이메일 인증 코드 발송
   Future<String?> requestVerificationCode(String email) async {
-    // Rate Limiting 체크 (60초 이내 재발송 방지)
+    // Rate Limiting 체크 (30초 이내 재발송 방지)
     if (state.lastCodeSentAt != null) {
       final difference = DateTime.now().difference(state.lastCodeSentAt!);
-      if (difference.inSeconds < 60) {
-        return '${60 - difference.inSeconds}초 후에 다시 시도해주세요.';
+      if (difference.inSeconds < 30) {
+        return '${30 - difference.inSeconds}초 후에 다시 시도해주세요.';
       }
     }
 
@@ -101,12 +101,44 @@ class SignUpNotifier extends StateNotifier<SignUpState> {
     state = state.copyWith(password: password, step: SignUpStep.nicknameInput);
   }
 
-  /// 🆕 4단계: 최종 회원가입 (닉네임까지 모두 입력됨)
-  Future<bool> signUp(String nickname) async {
+  /// 🆕 4단계: 닉네임 저장 및 다음 단계로 이동
+  void saveNickname(String nickname) {
+    state = state.copyWith(
+      nickname: nickname,
+      step: SignUpStep.termsAgreement, // 약관 동의 화면으로
+    );
+  }
+
+  /// 🆕 서비스 이용약관 동의 토글
+  void toggleTermsAgreement(bool value) {
+    state = state.copyWith(termsAgreed: value);
+  }
+
+  /// 🆕 개인정보 처리방침 동의 토글
+  void togglePrivacyAgreement(bool value) {
+    state = state.copyWith(privacyAgreed: value);
+  }
+
+  /// 🆕 전체 동의
+  void toggleAllAgreements(bool value) {
+    state = state.copyWith(termsAgreed: value, privacyAgreed: value);
+  }
+
+  /// 🆕 5단계: 최종 회원가입 (약관 동의 완료 후)
+  Future<bool> signUp() async {
+    // 🔹 파라미터 없음!
     if (state.email == null ||
         state.verificationToken == null ||
-        state.password == null) {
+        state.password == null ||
+        state.nickname == null) {
+      // 🆕 닉네임 체크 추가
       state = state.copyWith(errorMessage: '필수 정보가 누락되었습니다. 처음부터 다시 시도해주세요.');
+      return false;
+    }
+
+    // 🆕 약관 동의 체크
+    if (!state.termsAgreed || !state.privacyAgreed) {
+      state = state.copyWith(errorMessage: '모든 약관에 동의해주세요.');
       return false;
     }
 
@@ -118,6 +150,7 @@ class SignUpNotifier extends StateNotifier<SignUpState> {
         step: SignUpStep.emailInput,
         verificationToken: null,
         password: null,
+        nickname: null, // 🆕
       );
       return false;
     }
@@ -128,7 +161,7 @@ class SignUpNotifier extends StateNotifier<SignUpState> {
       final request = SignUpRequest(
         email: state.email!,
         password: state.password!,
-        nickname: nickname,
+        nickname: state.nickname!, // 🔹 State에서 가져옴
         verificationToken: state.verificationToken!,
       );
 
@@ -142,7 +175,8 @@ class SignUpNotifier extends StateNotifier<SignUpState> {
       state = state.copyWith(
         step: SignUpStep.completed,
         isLoading: false,
-        password: null, // 보안을 위해 비밀번호 제거
+        password: null,
+        nickname: null, // 🆕
       );
 
       return true;
@@ -173,6 +207,9 @@ class SignUpNotifier extends StateNotifier<SignUpState> {
         break;
       case SignUpStep.nicknameInput:
         state = state.copyWith(step: SignUpStep.passwordInput, password: null);
+        break;
+      case SignUpStep.termsAgreement: // 🆕
+        state = state.copyWith(step: SignUpStep.nicknameInput, nickname: null);
         break;
       default:
         break;

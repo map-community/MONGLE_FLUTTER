@@ -9,6 +9,7 @@ import 'package:mongle_flutter/features/auth/presentation/providers/auth_provide
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_state.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/sign_up_notifier.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/sign_up_state.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -27,7 +28,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _verificationCodeController = TextEditingController();
   Timer? _expiryTimer;
   int _remainingSeconds = 300; // 5분
-
+  Timer? _resendCooldownTimer;
+  int _resendCooldownSeconds = 0;
   // 3단계: 비밀번호
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
@@ -43,6 +45,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _passwordConfirmController.dispose();
     _nicknameController.dispose();
     _expiryTimer?.cancel();
+    _resendCooldownTimer?.cancel();
     super.dispose();
   }
 
@@ -59,7 +62,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       );
     });
 
-    // 에러 메시지 표시
+    // 에러 메시지 표시 및 타이머 관리
     ref.listen<SignUpState>(signUpProvider, (previous, next) {
       if (next.errorMessage != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,6 +71,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+
+      // 追加: 타이머 시작/중지 로직
+      final prevStep = previous?.step;
+      // verificationSent 단계로 처음 진입했을 때 타이머 시작
+      if (next.step == SignUpStep.verificationSent &&
+          prevStep != SignUpStep.verificationSent) {
+        _startExpiryTimer();
+      }
+      // verificationSent 단계를 벗어나면 타이머 취소
+      else if (next.step != SignUpStep.verificationSent &&
+          prevStep == SignUpStep.verificationSent) {
+        _expiryTimer?.cancel();
       }
     });
 
@@ -94,7 +110,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   Widget _buildProgressIndicator(SignUpStep step) {
     final currentStep = _getStepNumber(step);
-    const totalSteps = 4;
+    const totalSteps = 5;
 
     return Row(
       children: List.generate(totalSteps, (index) {
@@ -131,21 +147,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         return 3;
       case SignUpStep.nicknameInput:
         return 4;
+      case SignUpStep.termsAgreement: // 🆕
+        return 5;
       case SignUpStep.completed:
-        return 4;
+        return 5;
     }
   }
 
   String _getAppBarTitle(SignUpStep step) {
     switch (step) {
       case SignUpStep.emailInput:
-        return '회원가입 (1/4)';
+        return '회원가입 (1/5)';
       case SignUpStep.verificationSent:
-        return '회원가입 (2/4)';
+        return '회원가입 (2/5)';
       case SignUpStep.passwordInput:
-        return '회원가입 (3/4)';
+        return '회원가입 (3/5)';
       case SignUpStep.nicknameInput:
-        return '회원가입 (4/4)';
+        return '회원가입 (4/5)';
+      case SignUpStep.termsAgreement: // 🆕
+        return '회원가입 (5/5)';
       case SignUpStep.completed:
         return '가입 완료';
     }
@@ -172,12 +192,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         return _buildPasswordStep(signUpState);
       case SignUpStep.nicknameInput:
         return _buildNicknameStep(signUpState);
+      case SignUpStep.termsAgreement: // 🆕
+        return _buildTermsAgreementStep(signUpState);
       case SignUpStep.completed:
         return const Center(child: CircularProgressIndicator());
     }
   }
 
   Widget _buildEmailStep(SignUpState signUpState) {
+    // 👇 [추가] 재발송 버튼과 동일한 비활성화 로직
+    final isResendDisabled = _resendCooldownSeconds > 0;
+
     return Form(
       key: _formKey,
       child: Column(
@@ -216,7 +241,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           ),
           const Spacer(),
           ElevatedButton(
-            onPressed: signUpState.isLoading ? null : _sendVerificationCode,
+            // 👇 [수정] 쿨다운 중일 때 버튼 비활성화
+            onPressed: signUpState.isLoading || isResendDisabled
+                ? null
+                : _sendVerificationCode,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
@@ -229,7 +257,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('다음', style: TextStyle(fontSize: 16)),
+                // 👇 [수정] 쿨다운 중일 때 남은 시간 표시
+                : Text(
+                    isResendDisabled
+                        ? '인증 코드 보내기 (${_resendCooldownSeconds}초)'
+                        : '인증 코드 보내기',
+                    style: const TextStyle(fontSize: 16),
+                  ),
           ),
         ],
       ),
@@ -237,7 +271,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Widget _buildVerificationStep(SignUpState signUpState) {
-    _startExpiryTimer();
+    final isResendDisabled = _resendCooldownSeconds > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -277,8 +311,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ),
         const SizedBox(height: 16),
         OutlinedButton(
-          onPressed: signUpState.isLoading ? null : _resendVerificationCode,
-          child: const Text('인증 코드 재발송'),
+          // 👇 [수정] isResendDisabled 상태에 따라 onPressed 비활성화
+          onPressed: signUpState.isLoading || isResendDisabled
+              ? null
+              : _resendVerificationCode,
+          // 👇 [수정] isResendDisabled 상태에 따라 버튼 텍스트 변경
+          child: Text(
+            isResendDisabled
+                ? '인증 코드 재발송 (${_resendCooldownSeconds}초)'
+                : '인증 코드 재발송',
+          ),
         ),
         const Spacer(),
         ElevatedButton(
@@ -295,7 +337,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     color: Colors.white,
                   ),
                 )
-              : const Text('다음', style: TextStyle(fontSize: 16)),
+              : const Text('이메일 인증 완료', style: TextStyle(fontSize: 16)),
         ),
       ],
     );
@@ -425,20 +467,189 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           ),
           const Spacer(),
           ElevatedButton(
-            onPressed: signUpState.isLoading ? null : _submitSignUp,
+            onPressed: signUpState.isLoading ? null : _submitNickname, // 🔹 변경
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: signUpState.isLoading
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text('가입하고 시작하기', style: TextStyle(fontSize: 16)),
+                : const Text(
+                    '다음',
+                    style: TextStyle(fontSize: 16),
+                  ), // 🔹 "가입하고 시작하기" → "다음"
           ),
         ],
       ),
     );
   }
 
+  Widget _buildTermsAgreementStep(SignUpState signUpState) {
+    final allAgreed = signUpState.termsAgreed && signUpState.privacyAgreed;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          '약관 동의',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '서비스 이용을 위해 약관에 동의해주세요.',
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 24),
+
+        // 전체 동의
+        CheckboxListTile(
+          title: const Text(
+            '전체 동의',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          value: allAgreed,
+          onChanged: (value) {
+            ref
+                .read(signUpProvider.notifier)
+                .toggleAllAgreements(value ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+
+        const Divider(),
+
+        // 서비스 이용약관
+        CheckboxListTile(
+          title: const Text('서비스 이용약관 (필수)'),
+          subtitle: GestureDetector(
+            onTap: () => _showTermsDialog(
+              context,
+              '서비스 이용약관',
+              'https://sites.google.com/view/mongle-terms-of-service',
+            ),
+            child: const Text(
+              '내용 보기',
+              style: TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          value: signUpState.termsAgreed,
+          onChanged: (value) {
+            ref
+                .read(signUpProvider.notifier)
+                .toggleTermsAgreement(value ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+
+        // 개인정보 처리방침
+        CheckboxListTile(
+          title: const Text('개인정보 처리방침 (필수)'),
+          subtitle: GestureDetector(
+            onTap: () => _showTermsDialog(
+              context,
+              '개인정보 처리방침',
+              'https://sites.google.com/view/mongle-privacy-notice',
+            ),
+            child: const Text(
+              '내용 보기',
+              style: TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          value: signUpState.privacyAgreed,
+          onChanged: (value) {
+            ref
+                .read(signUpProvider.notifier)
+                .togglePrivacyAgreement(value ?? false);
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+
+        const Spacer(),
+
+        ElevatedButton(
+          onPressed:
+              (signUpState.termsAgreed &&
+                  signUpState.privacyAgreed &&
+                  !signUpState.isLoading)
+              ? _submitFinalSignUp
+              : null,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          child: signUpState.isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text('가입하고 시작하기', style: TextStyle(fontSize: 16)),
+        ),
+      ],
+    );
+  }
+
+  void _showTermsDialog(BuildContext context, String title, String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        // 👇 [수정 1] Dialog 자체의 외부 여백을 제거합니다.
+        insetPadding: EdgeInsets.zero,
+        child: Container(
+          width: double.infinity,
+          // 👇 [수정 2] 높이를 화면 끝까지 최대로 설정합니다.
+          height: double.infinity,
+          // 내부 콘텐츠 여백은 그대로 유지합니다.
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: WebViewWidget(
+                  controller: WebViewController()
+                    ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                    ..loadRequest(Uri.parse(url)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ===== 액션 메서드들 =====
+
+  void _submitFinalSignUp() async {
+    final success = await ref
+        .read(signUpProvider.notifier)
+        .signUp(); // 🔹 파라미터 없음!
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('회원가입이 완료되었습니다!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
 
   void _sendVerificationCode() async {
     if (_formKey.currentState!.validate()) {
@@ -447,11 +658,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           .requestVerificationCode(_emailController.text);
 
       if (error == null && mounted) {
+        _startResendCooldown();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('인증 코드가 발송되었습니다.'),
             backgroundColor: Colors.green,
           ),
+        );
+      }
+      // 👇 [추가] 쿨다운 등 에러 발생 시 피드백
+      else if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.orange),
         );
       }
     }
@@ -465,12 +683,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (error == null && mounted) {
       _remainingSeconds = 300;
       _verificationCodeController.clear();
+      _startExpiryTimer(); // 타이머를 새로 시작합니다.
+      _startResendCooldown(); // 👇 [추가] 재발송 쿨다운 시작
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('인증 코드가 재발송되었습니다.'),
           backgroundColor: Colors.green,
         ),
+      );
+    } else if (error != null && mounted) {
+      // 60초 쿨다운 에러 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.orange),
       );
     }
   }
@@ -515,26 +740,30 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
-  void _submitSignUp() async {
+  void _submitNickname() {
+    // 🔹 이름 변경
     if (_formKey.currentState!.validate()) {
-      final success = await ref
+      ref
           .read(signUpProvider.notifier)
-          .signUp(_nicknameController.text);
+          .saveNickname(_nicknameController.text); // 🔹 변경
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('회원가입이 완료되었습니다!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('닉네임이 설정되었습니다.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
   void _startExpiryTimer() {
+    // 修正: 기존 타이머가 있으면 확실히 취소
     _expiryTimer?.cancel();
-    _remainingSeconds = 300; // 5분
+
+    // 修正: 초를 리셋하고 즉시 UI에 반영
+    setState(() {
+      _remainingSeconds = 1800; // 30분
+    });
 
     _expiryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -547,12 +776,37 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           _remainingSeconds--;
         } else {
           timer.cancel();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('인증 코드가 만료되었습니다. 다시 요청해주세요.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (mounted) {
+            // 修正: mounted 체크 추가
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('인증 코드가 만료되었습니다. 다시 요청해주세요.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      });
+    });
+  }
+
+  // 재발송 쿨다운 타이머 시작 함수
+  void _startResendCooldown() {
+    _resendCooldownTimer?.cancel();
+    setState(() {
+      _resendCooldownSeconds = 30;
+    });
+
+    _resendCooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_resendCooldownSeconds > 0) {
+          _resendCooldownSeconds--;
+        } else {
+          timer.cancel();
         }
       });
     });

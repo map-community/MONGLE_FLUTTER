@@ -16,6 +16,8 @@ mixin _$SignUpState {
 
  SignUpStep get step; String? get email; String? get verificationToken; DateTime? get tokenExpiryTime;// verificationToken 만료 시간 (10분)
  String? get password;// 🆕 비밀번호 임시 저장
+ String? get nickname; bool get termsAgreed;// 🆕 서비스 이용약관 동의
+ bool get privacyAgreed;// 🆕 개인정보 처리방침 동의
  String? get errorMessage; bool get isLoading; DateTime? get lastCodeSentAt;// 마지막 인증 코드 발송 시간
  int get codeSendCount;
 /// Create a copy of SignUpState
@@ -28,16 +30,16 @@ $SignUpStateCopyWith<SignUpState> get copyWith => _$SignUpStateCopyWithImpl<Sign
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SignUpState&&(identical(other.step, step) || other.step == step)&&(identical(other.email, email) || other.email == email)&&(identical(other.verificationToken, verificationToken) || other.verificationToken == verificationToken)&&(identical(other.tokenExpiryTime, tokenExpiryTime) || other.tokenExpiryTime == tokenExpiryTime)&&(identical(other.password, password) || other.password == password)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.lastCodeSentAt, lastCodeSentAt) || other.lastCodeSentAt == lastCodeSentAt)&&(identical(other.codeSendCount, codeSendCount) || other.codeSendCount == codeSendCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SignUpState&&(identical(other.step, step) || other.step == step)&&(identical(other.email, email) || other.email == email)&&(identical(other.verificationToken, verificationToken) || other.verificationToken == verificationToken)&&(identical(other.tokenExpiryTime, tokenExpiryTime) || other.tokenExpiryTime == tokenExpiryTime)&&(identical(other.password, password) || other.password == password)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.termsAgreed, termsAgreed) || other.termsAgreed == termsAgreed)&&(identical(other.privacyAgreed, privacyAgreed) || other.privacyAgreed == privacyAgreed)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.lastCodeSentAt, lastCodeSentAt) || other.lastCodeSentAt == lastCodeSentAt)&&(identical(other.codeSendCount, codeSendCount) || other.codeSendCount == codeSendCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,step,email,verificationToken,tokenExpiryTime,password,errorMessage,isLoading,lastCodeSentAt,codeSendCount);
+int get hashCode => Object.hash(runtimeType,step,email,verificationToken,tokenExpiryTime,password,nickname,termsAgreed,privacyAgreed,errorMessage,isLoading,lastCodeSentAt,codeSendCount);
 
 @override
 String toString() {
-  return 'SignUpState(step: $step, email: $email, verificationToken: $verificationToken, tokenExpiryTime: $tokenExpiryTime, password: $password, errorMessage: $errorMessage, isLoading: $isLoading, lastCodeSentAt: $lastCodeSentAt, codeSendCount: $codeSendCount)';
+  return 'SignUpState(step: $step, email: $email, verificationToken: $verificationToken, tokenExpiryTime: $tokenExpiryTime, password: $password, nickname: $nickname, termsAgreed: $termsAgreed, privacyAgreed: $privacyAgreed, errorMessage: $errorMessage, isLoading: $isLoading, lastCodeSentAt: $lastCodeSentAt, codeSendCount: $codeSendCount)';
 }
 
 
@@ -48,7 +50,7 @@ abstract mixin class $SignUpStateCopyWith<$Res>  {
   factory $SignUpStateCopyWith(SignUpState value, $Res Function(SignUpState) _then) = _$SignUpStateCopyWithImpl;
 @useResult
 $Res call({
- SignUpStep step, String? email, String? verificationToken, DateTime? tokenExpiryTime, String? password, String? errorMessage, bool isLoading, DateTime? lastCodeSentAt, int codeSendCount
+ SignUpStep step, String? email, String? verificationToken, DateTime? tokenExpiryTime, String? password, String? nickname, bool termsAgreed, bool privacyAgreed, String? errorMessage, bool isLoading, DateTime? lastCodeSentAt, int codeSendCount
 });
 
 
@@ -65,14 +67,17 @@ class _$SignUpStateCopyWithImpl<$Res>
 
 /// Create a copy of SignUpState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? step = null,Object? email = freezed,Object? verificationToken = freezed,Object? tokenExpiryTime = freezed,Object? password = freezed,Object? errorMessage = freezed,Object? isLoading = null,Object? lastCodeSentAt = freezed,Object? codeSendCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? step = null,Object? email = freezed,Object? verificationToken = freezed,Object? tokenExpiryTime = freezed,Object? password = freezed,Object? nickname = freezed,Object? termsAgreed = null,Object? privacyAgreed = null,Object? errorMessage = freezed,Object? isLoading = null,Object? lastCodeSentAt = freezed,Object? codeSendCount = null,}) {
   return _then(_self.copyWith(
 step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
 as SignUpStep,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,verificationToken: freezed == verificationToken ? _self.verificationToken : verificationToken // ignore: cast_nullable_to_non_nullable
 as String?,tokenExpiryTime: freezed == tokenExpiryTime ? _self.tokenExpiryTime : tokenExpiryTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,password: freezed == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
-as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
+as String?,nickname: freezed == nickname ? _self.nickname : nickname // ignore: cast_nullable_to_non_nullable
+as String?,termsAgreed: null == termsAgreed ? _self.termsAgreed : termsAgreed // ignore: cast_nullable_to_non_nullable
+as bool,privacyAgreed: null == privacyAgreed ? _self.privacyAgreed : privacyAgreed // ignore: cast_nullable_to_non_nullable
+as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,lastCodeSentAt: freezed == lastCodeSentAt ? _self.lastCodeSentAt : lastCodeSentAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,codeSendCount: null == codeSendCount ? _self.codeSendCount : codeSendCount // ignore: cast_nullable_to_non_nullable
@@ -161,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SignUpStep step,  String? email,  String? verificationToken,  DateTime? tokenExpiryTime,  String? password,  String? errorMessage,  bool isLoading,  DateTime? lastCodeSentAt,  int codeSendCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SignUpStep step,  String? email,  String? verificationToken,  DateTime? tokenExpiryTime,  String? password,  String? nickname,  bool termsAgreed,  bool privacyAgreed,  String? errorMessage,  bool isLoading,  DateTime? lastCodeSentAt,  int codeSendCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SignUpState() when $default != null:
-return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiryTime,_that.password,_that.errorMessage,_that.isLoading,_that.lastCodeSentAt,_that.codeSendCount);case _:
+return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiryTime,_that.password,_that.nickname,_that.termsAgreed,_that.privacyAgreed,_that.errorMessage,_that.isLoading,_that.lastCodeSentAt,_that.codeSendCount);case _:
   return orElse();
 
 }
@@ -182,10 +187,10 @@ return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiry
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SignUpStep step,  String? email,  String? verificationToken,  DateTime? tokenExpiryTime,  String? password,  String? errorMessage,  bool isLoading,  DateTime? lastCodeSentAt,  int codeSendCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SignUpStep step,  String? email,  String? verificationToken,  DateTime? tokenExpiryTime,  String? password,  String? nickname,  bool termsAgreed,  bool privacyAgreed,  String? errorMessage,  bool isLoading,  DateTime? lastCodeSentAt,  int codeSendCount)  $default,) {final _that = this;
 switch (_that) {
 case _SignUpState():
-return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiryTime,_that.password,_that.errorMessage,_that.isLoading,_that.lastCodeSentAt,_that.codeSendCount);case _:
+return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiryTime,_that.password,_that.nickname,_that.termsAgreed,_that.privacyAgreed,_that.errorMessage,_that.isLoading,_that.lastCodeSentAt,_that.codeSendCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +207,10 @@ return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiry
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SignUpStep step,  String? email,  String? verificationToken,  DateTime? tokenExpiryTime,  String? password,  String? errorMessage,  bool isLoading,  DateTime? lastCodeSentAt,  int codeSendCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SignUpStep step,  String? email,  String? verificationToken,  DateTime? tokenExpiryTime,  String? password,  String? nickname,  bool termsAgreed,  bool privacyAgreed,  String? errorMessage,  bool isLoading,  DateTime? lastCodeSentAt,  int codeSendCount)?  $default,) {final _that = this;
 switch (_that) {
 case _SignUpState() when $default != null:
-return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiryTime,_that.password,_that.errorMessage,_that.isLoading,_that.lastCodeSentAt,_that.codeSendCount);case _:
+return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiryTime,_that.password,_that.nickname,_that.termsAgreed,_that.privacyAgreed,_that.errorMessage,_that.isLoading,_that.lastCodeSentAt,_that.codeSendCount);case _:
   return null;
 
 }
@@ -217,7 +222,7 @@ return $default(_that.step,_that.email,_that.verificationToken,_that.tokenExpiry
 
 
 class _SignUpState implements SignUpState {
-  const _SignUpState({this.step = SignUpStep.emailInput, this.email, this.verificationToken, this.tokenExpiryTime, this.password, this.errorMessage, this.isLoading = false, this.lastCodeSentAt, this.codeSendCount = 0});
+  const _SignUpState({this.step = SignUpStep.emailInput, this.email, this.verificationToken, this.tokenExpiryTime, this.password, this.nickname, this.termsAgreed = false, this.privacyAgreed = false, this.errorMessage, this.isLoading = false, this.lastCodeSentAt, this.codeSendCount = 0});
   
 
 @override@JsonKey() final  SignUpStep step;
@@ -227,6 +232,11 @@ class _SignUpState implements SignUpState {
 // verificationToken 만료 시간 (10분)
 @override final  String? password;
 // 🆕 비밀번호 임시 저장
+@override final  String? nickname;
+@override@JsonKey() final  bool termsAgreed;
+// 🆕 서비스 이용약관 동의
+@override@JsonKey() final  bool privacyAgreed;
+// 🆕 개인정보 처리방침 동의
 @override final  String? errorMessage;
 @override@JsonKey() final  bool isLoading;
 @override final  DateTime? lastCodeSentAt;
@@ -243,16 +253,16 @@ _$SignUpStateCopyWith<_SignUpState> get copyWith => __$SignUpStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SignUpState&&(identical(other.step, step) || other.step == step)&&(identical(other.email, email) || other.email == email)&&(identical(other.verificationToken, verificationToken) || other.verificationToken == verificationToken)&&(identical(other.tokenExpiryTime, tokenExpiryTime) || other.tokenExpiryTime == tokenExpiryTime)&&(identical(other.password, password) || other.password == password)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.lastCodeSentAt, lastCodeSentAt) || other.lastCodeSentAt == lastCodeSentAt)&&(identical(other.codeSendCount, codeSendCount) || other.codeSendCount == codeSendCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SignUpState&&(identical(other.step, step) || other.step == step)&&(identical(other.email, email) || other.email == email)&&(identical(other.verificationToken, verificationToken) || other.verificationToken == verificationToken)&&(identical(other.tokenExpiryTime, tokenExpiryTime) || other.tokenExpiryTime == tokenExpiryTime)&&(identical(other.password, password) || other.password == password)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.termsAgreed, termsAgreed) || other.termsAgreed == termsAgreed)&&(identical(other.privacyAgreed, privacyAgreed) || other.privacyAgreed == privacyAgreed)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.lastCodeSentAt, lastCodeSentAt) || other.lastCodeSentAt == lastCodeSentAt)&&(identical(other.codeSendCount, codeSendCount) || other.codeSendCount == codeSendCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,step,email,verificationToken,tokenExpiryTime,password,errorMessage,isLoading,lastCodeSentAt,codeSendCount);
+int get hashCode => Object.hash(runtimeType,step,email,verificationToken,tokenExpiryTime,password,nickname,termsAgreed,privacyAgreed,errorMessage,isLoading,lastCodeSentAt,codeSendCount);
 
 @override
 String toString() {
-  return 'SignUpState(step: $step, email: $email, verificationToken: $verificationToken, tokenExpiryTime: $tokenExpiryTime, password: $password, errorMessage: $errorMessage, isLoading: $isLoading, lastCodeSentAt: $lastCodeSentAt, codeSendCount: $codeSendCount)';
+  return 'SignUpState(step: $step, email: $email, verificationToken: $verificationToken, tokenExpiryTime: $tokenExpiryTime, password: $password, nickname: $nickname, termsAgreed: $termsAgreed, privacyAgreed: $privacyAgreed, errorMessage: $errorMessage, isLoading: $isLoading, lastCodeSentAt: $lastCodeSentAt, codeSendCount: $codeSendCount)';
 }
 
 
@@ -263,7 +273,7 @@ abstract mixin class _$SignUpStateCopyWith<$Res> implements $SignUpStateCopyWith
   factory _$SignUpStateCopyWith(_SignUpState value, $Res Function(_SignUpState) _then) = __$SignUpStateCopyWithImpl;
 @override @useResult
 $Res call({
- SignUpStep step, String? email, String? verificationToken, DateTime? tokenExpiryTime, String? password, String? errorMessage, bool isLoading, DateTime? lastCodeSentAt, int codeSendCount
+ SignUpStep step, String? email, String? verificationToken, DateTime? tokenExpiryTime, String? password, String? nickname, bool termsAgreed, bool privacyAgreed, String? errorMessage, bool isLoading, DateTime? lastCodeSentAt, int codeSendCount
 });
 
 
@@ -280,14 +290,17 @@ class __$SignUpStateCopyWithImpl<$Res>
 
 /// Create a copy of SignUpState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? step = null,Object? email = freezed,Object? verificationToken = freezed,Object? tokenExpiryTime = freezed,Object? password = freezed,Object? errorMessage = freezed,Object? isLoading = null,Object? lastCodeSentAt = freezed,Object? codeSendCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? step = null,Object? email = freezed,Object? verificationToken = freezed,Object? tokenExpiryTime = freezed,Object? password = freezed,Object? nickname = freezed,Object? termsAgreed = null,Object? privacyAgreed = null,Object? errorMessage = freezed,Object? isLoading = null,Object? lastCodeSentAt = freezed,Object? codeSendCount = null,}) {
   return _then(_SignUpState(
 step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
 as SignUpStep,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,verificationToken: freezed == verificationToken ? _self.verificationToken : verificationToken // ignore: cast_nullable_to_non_nullable
 as String?,tokenExpiryTime: freezed == tokenExpiryTime ? _self.tokenExpiryTime : tokenExpiryTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,password: freezed == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
-as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
+as String?,nickname: freezed == nickname ? _self.nickname : nickname // ignore: cast_nullable_to_non_nullable
+as String?,termsAgreed: null == termsAgreed ? _self.termsAgreed : termsAgreed // ignore: cast_nullable_to_non_nullable
+as bool,privacyAgreed: null == privacyAgreed ? _self.privacyAgreed : privacyAgreed // ignore: cast_nullable_to_non_nullable
+as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,lastCodeSentAt: freezed == lastCodeSentAt ? _self.lastCodeSentAt : lastCodeSentAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,codeSendCount: null == codeSendCount ? _self.codeSendCount : codeSendCount // ignore: cast_nullable_to_non_nullable

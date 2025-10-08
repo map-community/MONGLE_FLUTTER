@@ -67,29 +67,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// 회원가입 메서드
-  Future<bool> signUp(String email, String password, String nickname) async {
-    state = const AuthState.loading();
-    try {
-      final signUpRequest = SignUpRequest(
-        email: email,
-        password: password,
-        nickname: nickname,
-      );
-      await _authRepository.signUp(signUpRequest);
-
-      // 회원가입 성공 후, 동일한 정보로 바로 로그인을 시도합니다.
-      await login(email, password);
-      return true;
-    } on DioException catch (e) {
-      state = AuthState.unauthenticated(message: e.error.toString());
-      return false;
-    } catch (e) {
-      state = AuthState.unauthenticated(message: '회원가입 중 예상치 못한 오류가 발생했습니다.');
-      return false;
-    }
-  }
-
   /// 로그아웃 - 전체 앱 재시작 트리거
   /// 로그아웃 메서드
   Future<void> logout() async {
