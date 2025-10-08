@@ -7,6 +7,8 @@ import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_ser
 import 'package:mongle_flutter/features/auth/domain/entities/login_request.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/sign_up_request.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/token_info.dart';
+import 'package:mongle_flutter/features/auth/domain/entities/verify_code_request.dart';
+import 'package:mongle_flutter/features/auth/domain/entities/verify_code_response.dart';
 import 'package:mongle_flutter/features/auth/domain/repositories/auth_repository.dart';
 
 // 이 구현체를 앱 전역에서 사용할 수 있도록 Provider로 만듭니다.
@@ -36,6 +38,22 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<VerifyCodeResponse> verifyCode(VerifyCodeRequest request) async {
+    final response = await _dio.post(
+      ApiConstants.verifyCode,
+      data: request.toJson(),
+    );
+
+    return VerifyCodeResponse.fromJson(response.data);
+  }
+
+  @override
+  Future<void> signUp(SignUpRequest request) async {
+    // 회원가입 API는 성공 시 특별한 데이터를 반환하지 않으므로, 호출만 수행합니다.
+    await _dio.post(ApiConstants.signUp, data: request.toJson());
+  }
+
+  @override
   Future<TokenInfo> login(LoginRequest request) async {
     final response = await _dio.post(
       ApiConstants.login,
@@ -50,12 +68,6 @@ class AuthRepositoryImpl implements AuthRepository {
     await _tokenStorage.saveTokens(tokenInfo);
 
     return tokenInfo;
-  }
-
-  @override
-  Future<void> signUp(SignUpRequest request) async {
-    // 회원가입 API는 성공 시 특별한 데이터를 반환하지 않으므로, 호출만 수행합니다.
-    await _dio.post(ApiConstants.signUp, data: request.toJson());
   }
 
   @override
