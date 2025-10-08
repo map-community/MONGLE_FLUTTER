@@ -10,6 +10,7 @@ abstract class SignUpRequest with _$SignUpRequest {
     required String email,
     required String password,
     required String nickname,
+    required String verificationToken,
     String? profileImageKey, // 필수가 아닌 값은 nullable(?)로 선언
   }) = _SignUpRequest;
 
