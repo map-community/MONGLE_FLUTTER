@@ -288,9 +288,7 @@ class _Data implements MapState {
   const _Data({required this.initialPosition, this.mapObjects, this.currentBounds});
   
 
-// 지도의 초기 카메라 위치를 설정하기 위한 좌표
  final  NLatLng initialPosition;
-// API로부터 받아온 지도 객체(알갱이, 구름) 데이터. 아직 로드 전일 수 있으므로 nullable.
  final  MapObjectsResponse? mapObjects;
  final  NLatLngBounds? currentBounds;
 

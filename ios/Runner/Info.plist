@@ -53,6 +53,6 @@
         <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
         <string>이 앱은 백그라운드에서도 위치 기반 알림을 제공하기 위해 사용자의 위치 정보가 필요합니다.</string>
         <key>NSPhotoLibraryUsageDescription</key>
-        <string>게시글에 사진을 첨부하기 위해 앨범에 접근해야 합니다.</string>
+        <string>게시글에 사진과 동영상을 추가하기 위해 갤러리 접근이 필요합니다.</string>
 	</dict>
 </plist>
