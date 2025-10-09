@@ -114,7 +114,8 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                         TextField(
                           controller: _textController,
                           decoration: const InputDecoration(
-                            hintText: '지금 있는 위치에 대한 이야기를 남겨보세요!',
+                            hintText:
+                                '지금 있는 위치에 대한 이야기를 남겨보세요!\n지도 위에 게시글이 표시됩니다.',
                             border: InputBorder.none,
                             helperText:
                                 '\n\n\n\n몽글은 누구나 기분 좋게 참여할 수 있는 커뮤니티를 함께 만들어가고 있습니다. '

@@ -195,6 +195,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox.shrink(),
 
             // 4. FAB
+            // 4. FAB
             Positioned(
               right: 16,
               bottom: (screenHeight * peekFraction) + 16,
@@ -203,11 +204,41 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 duration: const Duration(milliseconds: 200),
                 child: IgnorePointer(
                   ignoring: !isFabVisible,
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      context.push('/write');
-                    },
-                    child: const Icon(Icons.edit),
+                  child: Material(
+                    color: const Color(0xFF3182F6),
+                    borderRadius: BorderRadius.circular(24),
+                    elevation: 4,
+                    child: InkWell(
+                      onTap: () {
+                        context.push('/write');
+                      },
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14, // 👈 좌우 여백 조절
+                          vertical: 10, // 👈 상하 여백 조절
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.add_location_alt,
+                              color: Colors.white,
+                              size: 20, // 👈 아이콘 크기
+                            ),
+                            const SizedBox(width: 6), // 👈 아이콘-텍스트 간격
+                            const Text(
+                              '알갱이 만들기',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13, // 👈 텍스트 크기
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
