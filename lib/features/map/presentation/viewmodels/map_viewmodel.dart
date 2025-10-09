@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
@@ -12,7 +11,6 @@ import 'package:mongle_flutter/features/community/providers/report_providers.dar
 import 'package:mongle_flutter/features/map/data/models/map_objects_response.dart';
 import 'package:mongle_flutter/features/map/domain/repositories/map_repository.dart';
 import 'package:mongle_flutter/features/map/providers/map_providers.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 part 'map_viewmodel.freezed.dart';
 
@@ -31,10 +29,10 @@ class MapViewModel extends StateNotifier<MapState> {
   final Ref _ref;
   final MapRepository _mapRepository;
 
-  // 👇 자동 재시도를 위한 Timer
+  // 자동 재시도를 위한 Timer
   Timer? _retryTimer;
 
-  // 👇 마지막으로 시도한 bounds (재시도 시 사용)
+  // 마지막으로 시도한 bounds (재시도 시 사용)
   NLatLngBounds? _lastAttemptedBounds;
 
   MapViewModel(this._ref)
@@ -45,42 +43,27 @@ class MapViewModel extends StateNotifier<MapState> {
 
   @override
   void dispose() {
-    // 👇 Timer 정리
     _retryTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _init() async {
-    final status = await Permission.location.request();
+    // 👇 권한 요청 제거, 바로 경북대 위치로 시작
+    const knuPosition = NLatLng(35.890, 128.612);
 
-    if (status.isGranted) {
-      try {
-        final position = await Geolocator.getCurrentPosition();
-        const knuPosition = NLatLng(35.890, 128.612);
+    if (!mounted) return;
 
-        // 👇 disposed 체크 추가
-        if (!mounted) return;
+    state = MapState.data(initialPosition: knuPosition);
 
-        state = MapState.data(initialPosition: knuPosition);
+    final initialBounds = NLatLngBounds(
+      southWest: knuPosition,
+      northEast: knuPosition,
+    );
 
-        final initialBounds = NLatLngBounds(
-          southWest: knuPosition,
-          northEast: knuPosition,
-        );
-
-        await fetchMapObjects(initialBounds);
-      } catch (e) {
-        if (!mounted) return;
-        state = MapState.error('현재 위치를 가져오는 데 실패했습니다: ${e.toString()}');
-        // 👇 에러 발생 시 재시도 타이머 시작하지 않음 (위치 권한 문제는 재시도해도 소용없음)
-      }
-    } else {
-      if (!mounted) return;
-      state = const MapState.error('지도 서비스를 이용하려면 위치 권한이 필요합니다.');
-    }
+    await fetchMapObjects(initialBounds);
   }
 
-  /// 👇 자동 재시도 타이머 시작
+  /// 자동 재시도 타이머 시작
   void _startRetryTimer(NLatLngBounds bounds) {
     _retryTimer?.cancel();
     _lastAttemptedBounds = bounds;
@@ -94,7 +77,7 @@ class MapViewModel extends StateNotifier<MapState> {
     });
   }
 
-  /// 👇 수동 재시도 (UI에서 호출 가능)
+  /// 수동 재시도 (UI에서 호출 가능)
   void retry() {
     if (_lastAttemptedBounds != null) {
       print("🔄 [MapViewModel] 수동 재시도 시작");
@@ -103,7 +86,7 @@ class MapViewModel extends StateNotifier<MapState> {
   }
 
   Future<void> fetchMapObjects(NLatLngBounds bounds) async {
-    // 👇 재시도 타이머 취소 (새로운 요청이 시작되었으므로)
+    // 재시도 타이머 취소 (새로운 요청이 시작되었으므로)
     _retryTimer?.cancel();
     _lastAttemptedBounds = bounds;
 
@@ -135,7 +118,6 @@ class MapViewModel extends StateNotifier<MapState> {
         finalMapObjects = response.copyWith(grains: visibleGrains);
       }
 
-      // 👇 disposed 체크 추가
       if (!mounted) return;
 
       state.whenOrNull(
@@ -154,11 +136,10 @@ class MapViewModel extends StateNotifier<MapState> {
 
       if (!mounted) return;
 
-      // 👇 10초 후 자동 재시도 예약
+      // 10초 후 자동 재시도 예약
       _startRetryTimer(bounds);
 
-      // 👇 에러 발생 시 mapObjects를 null로 설정한 data 상태 유지
-      // (initialPosition은 유지하여 지도는 계속 표시되도록 함)
+      // 에러 발생 시 mapObjects를 null로 설정한 data 상태 유지
       final currentInitialPosition =
           state.whenOrNull(data: (pos, _, __) => pos) ??
           const NLatLng(35.890, 128.612);
