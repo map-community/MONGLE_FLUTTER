@@ -36,17 +36,25 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
     final writeState = ref.watch(writeGrainProvider);
     final notifier = ref.read(writeGrainProvider.notifier);
 
-    // 👇 권한 거부 상태 감지 및 다이얼로그 표시
     ref.listen(writeGrainProvider, (previous, next) {
-      // 에러 메시지 표시
       if (next.errorMessage != null &&
           previous?.errorMessage != next.errorMessage) {
-        // 👇 권한 거부 타입에 따라 다른 처리
+        // 👇 위치 권한 거부
         if (next.permissionDenialType != null) {
           _showPermissionDeniedDialog(
             context,
             next.errorMessage!,
             next.permissionDenialType!,
+            false,
+          );
+        }
+        // 👇 사진 권한 거부 (추가)
+        else if (next.photosPermissionDenialType != null) {
+          _showPermissionDeniedDialog(
+            context,
+            next.errorMessage!,
+            next.photosPermissionDenialType!,
+            true,
           );
         } else {
           // 일반 에러는 SnackBar로 표시
@@ -178,6 +186,7 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
     BuildContext context,
     String message,
     LocationPermissionDenialType denialType,
+    bool isPhotoPermission, // 👈 중괄호 제거
   ) {
     showDialog(
       context: context,
@@ -185,9 +194,16 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.location_off, color: Colors.red.shade700),
+            Icon(
+              // 👇 권한 타입에 따라 아이콘 변경
+              isPhotoPermission
+                  ? Icons.photo_library_outlined
+                  : Icons.location_off,
+              color: Colors.red.shade700,
+            ),
             const SizedBox(width: 8),
-            const Text('위치 권한 필요'),
+            // 👇 권한 타입에 따라 제목 변경
+            Text(isPhotoPermission ? '사진 권한 필요' : '위치 권한 필요'),
           ],
         ),
         content: Column(
@@ -213,7 +229,10 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
+                      // 👇 권한 타입에 따라 메시지 변경
+                      isPhotoPermission
+                          ? '사진을 첨부하려면 사진 접근 권한이 필요합니다.'
+                          : '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.blue.shade900,
@@ -252,9 +271,14 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                 Navigator.of(context).pop();
                 // 다시 시도할 수 있도록 안내
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('등록 버튼을 다시 눌러 권한을 허용해주세요.'),
-                    duration: Duration(seconds: 3),
+                  SnackBar(
+                    // 👇 권한 타입에 따라 메시지 변경
+                    content: Text(
+                      isPhotoPermission
+                          ? '사진 추가 버튼을 다시 눌러 권한을 허용해주세요.'
+                          : '등록 버튼을 다시 눌러 권한을 허용해주세요.',
+                    ),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               },

@@ -49,6 +49,7 @@ abstract class WriteGrainState with _$WriteGrainState {
     @Default([]) List<AssetEntity> photos,
     @Default([]) List<AssetEntity> videos,
     LocationPermissionDenialType? permissionDenialType,
+    LocationPermissionDenialType? photosPermissionDenialType,
   }) = _WriteGrainState;
 }
 
@@ -58,8 +59,87 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
 
   WriteGrainNotifier(this._ref) : super(const WriteGrainState());
 
+  // 👇 사진 권한 체크 메서드
+  Future<bool> _checkPhotosPermission() async {
+    // 현재 권한 상태 확인
+    final status = await Permission.photos.status;
+
+    // 이미 허용되어 있으면 true 반환
+    if (status.isGranted || status.isLimited) {
+      return true;
+    }
+
+    // 권한 요청
+    final result = await Permission.photos.request();
+
+    if (result.isGranted || result.isLimited) {
+      // ✅ 권한 승인됨
+      return true;
+    } else if (result.isDenied) {
+      // ❌ 일시적 거부
+      print("⚠️ 사진 권한이 거부되었습니다 (일시적)");
+      state = state.copyWith(
+        errorMessage: '사진 접근 권한이 필요합니다.',
+        photosPermissionDenialType: LocationPermissionDenialType.temporary,
+      );
+      // 👇 에러 표시 후 즉시 리셋 (다음 번에 다시 표시되도록)
+      Future.microtask(() {
+        if (mounted) {
+          state = state.copyWith(
+            errorMessage: null,
+            photosPermissionDenialType: null,
+          );
+        }
+      });
+      return false;
+    } else if (result.isPermanentlyDenied) {
+      // 🚫 영구적 거부
+      print("❌ 사진 권한이 영구적으로 거부되었습니다");
+      state = state.copyWith(
+        errorMessage: '사진 권한이 거부되었습니다.\n설정에서 사진 권한을 허용해주세요.',
+        photosPermissionDenialType: LocationPermissionDenialType.permanent,
+      );
+      // 👇 에러 표시 후 즉시 리셋
+      Future.microtask(() {
+        if (mounted) {
+          state = state.copyWith(
+            errorMessage: null,
+            photosPermissionDenialType: null,
+          );
+        }
+      });
+      return false;
+    } else if (result.isRestricted) {
+      // 🔒 시스템 제한
+      print("🔒 사진 권한이 시스템에 의해 제한되었습니다");
+      state = state.copyWith(
+        errorMessage: '사진 권한이 시스템에 의해 제한되었습니다.\n기기 설정을 확인해주세요.',
+        photosPermissionDenialType: LocationPermissionDenialType.restricted,
+      );
+      // 👇 에러 표시 후 즉시 리셋
+      Future.microtask(() {
+        if (mounted) {
+          state = state.copyWith(
+            errorMessage: null,
+            photosPermissionDenialType: null,
+          );
+        }
+      });
+      return false;
+    }
+
+    return false;
+  }
+
   /// wechat_assets_picker를 사용하여 갤러리에서 미디어를 선택하는 메서드
   Future<void> pickMediaWithAssetsPicker(BuildContext context) async {
+    // 👇 권한 체크 먼저 수행
+    final hasPermission = await _checkPhotosPermission();
+    if (!hasPermission) {
+      // 권한이 없으면 여기서 종료 (errorMessage는 _checkPhotosPermission에서 설정됨)
+      return;
+    }
+
     try {
       final remainingSlots =
           PostFileUploadConstants.maxFileCount -
