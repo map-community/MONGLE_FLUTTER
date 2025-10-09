@@ -13,6 +13,7 @@ import 'package:mongle_flutter/features/community/data/repositories/issue_grain_
 import 'package:mongle_flutter/features/community/domain/repositories/issue_grain_repository.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:mongle_flutter/core/services/profanity_filter_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 part 'write_grain_providers.freezed.dart';
 
@@ -33,6 +34,12 @@ class PostFileUploadConstants {
   static const List<String> allowedVideoExtensions = ['mp4', 'mov', 'avi'];
 }
 
+enum LocationPermissionDenialType {
+  temporary, // 일시적 거부 (다시 요청 가능)
+  permanent, // 영구적 거부 (설정에서만 변경 가능)
+  restricted, // 시스템 제한
+}
+
 /// 글쓰기 화면의 상태를 관리하는 클래스 (freezed 사용)
 @freezed
 abstract class WriteGrainState with _$WriteGrainState {
@@ -41,6 +48,7 @@ abstract class WriteGrainState with _$WriteGrainState {
     String? errorMessage,
     @Default([]) List<AssetEntity> photos,
     @Default([]) List<AssetEntity> videos,
+    LocationPermissionDenialType? permissionDenialType,
   }) = _WriteGrainState;
 }
 
@@ -224,6 +232,81 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     return null;
   }
 
+  // 👇 [신규] 위치 권한 요청 및 위치 가져오기 (거부 시 null 반환)
+  Future<NLatLng?> _requestLocationAndGetPosition({
+    NLatLng? designatedLocation,
+  }) async {
+    // 이미 지정된 위치가 있으면 권한 요청 없이 바로 반환
+    if (designatedLocation != null) {
+      return designatedLocation;
+    }
+
+    // 👇 현재 권한 상태 확인
+    final currentStatus = await Permission.location.status;
+
+    // 👇 이미 승인되어 있으면 바로 위치 가져오기
+    if (currentStatus.isGranted) {
+      return await _getCurrentPosition();
+    }
+
+    // 👇 권한 요청
+    final status = await Permission.location.request();
+
+    if (status.isGranted) {
+      // ✅ 권한 승인됨
+      return await _getCurrentPosition();
+    } else if (status.isDenied) {
+      // ❌ 일시적 거부 (다음에 다시 요청 가능)
+      print("⚠️ 위치 권한이 거부되었습니다 (일시적)");
+      state = state.copyWith(
+        errorMessage: '위치 권한이 필요합니다.\n알갱이는 위치 기반 서비스입니다.',
+        permissionDenialType: LocationPermissionDenialType.temporary,
+      );
+      return null;
+    } else if (status.isPermanentlyDenied) {
+      // 🚫 영구적 거부 (설정에서만 변경 가능)
+      print("❌ 위치 권한이 영구적으로 거부되었습니다");
+      state = state.copyWith(
+        errorMessage: '위치 권한이 거부되었습니다.\n설정에서 위치 권한을 허용해주세요.',
+        permissionDenialType: LocationPermissionDenialType.permanent,
+      );
+      return null;
+    } else if (status.isRestricted) {
+      // 🔒 시스템 제한
+      print("🔒 위치 권한이 시스템에 의해 제한되었습니다");
+      state = state.copyWith(
+        errorMessage: '위치 권한이 시스템에 의해 제한되었습니다.\n기기 설정을 확인해주세요.',
+        permissionDenialType: LocationPermissionDenialType.restricted,
+      );
+      return null;
+    } else {
+      // 기타 상태
+      print("⚠️ 알 수 없는 권한 상태: $status");
+      state = state.copyWith(
+        errorMessage: '위치 권한을 확인할 수 없습니다.',
+        permissionDenialType: LocationPermissionDenialType.temporary,
+      );
+      return null;
+    }
+  }
+
+  // 👇 현재 위치 가져오기 (별도 메서드로 분리)
+  Future<NLatLng?> _getCurrentPosition() async {
+    try {
+      final gpsPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+      return NLatLng(gpsPosition.latitude, gpsPosition.longitude);
+    } catch (e) {
+      print("⚠️ 위치 정보를 가져오는 데 실패: $e");
+      state = state.copyWith(
+        errorMessage: '현재 위치를 가져올 수 없습니다.\n위치 서비스가 켜져 있는지 확인해주세요.',
+      );
+      return null;
+    }
+  }
+
   Future<bool> submitPost({
     required String content,
     NLatLng? designatedLocation,
@@ -250,16 +333,26 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       return false;
     }
 
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    state = state.copyWith(
+      isSubmitting: true,
+      errorMessage: null,
+      permissionDenialType: null,
+    );
+
     try {
-      final repository = _ref.read(issueGrainRepositoryProvider);
-      final NLatLng position;
-      if (designatedLocation != null) {
-        position = designatedLocation;
-      } else {
-        final gpsPosition = await Geolocator.getCurrentPosition();
-        position = NLatLng(gpsPosition.latitude, gpsPosition.longitude);
+      // 👇 위치 권한 요청 및 위치 가져오기
+      final position = await _requestLocationAndGetPosition(
+        designatedLocation: designatedLocation,
+      );
+
+      // 👇 위치를 가져오지 못한 경우 (권한 거부 또는 위치 오류)
+      if (position == null) {
+        state = state.copyWith(isSubmitting: false);
+        // errorMessage와 permissionDenialType은 _requestLocationAndGetPosition에서 이미 설정됨
+        return false;
       }
+
+      final repository = _ref.read(issueGrainRepositoryProvider);
 
       final allAssets = [...state.photos, ...state.videos];
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 // wechat_assets_picker 패키지를 import하여 AssetEntityImage 위젯 등을 사용합니다.
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:mongle_flutter/features/community/providers/write_grain_providers.dart';
@@ -35,17 +36,28 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
     final writeState = ref.watch(writeGrainProvider);
     final notifier = ref.read(writeGrainProvider.notifier);
 
-    // 상태가 변경될 때마다 리스닝하여 에러 메시지를 SnackBar로 표시합니다.
+    // 👇 권한 거부 상태 감지 및 다이얼로그 표시
     ref.listen(writeGrainProvider, (previous, next) {
+      // 에러 메시지 표시
       if (next.errorMessage != null &&
           previous?.errorMessage != next.errorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // 👇 권한 거부 타입에 따라 다른 처리
+        if (next.permissionDenialType != null) {
+          _showPermissionDeniedDialog(
+            context,
+            next.errorMessage!,
+            next.permissionDenialType!,
+          );
+        } else {
+          // 일반 에러는 SnackBar로 표시
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.errorMessage!),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     });
 
@@ -157,6 +169,103 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // 👇 권한 거부 다이얼로그 표시
+  void _showPermissionDeniedDialog(
+    BuildContext context,
+    String message,
+    LocationPermissionDenialType denialType,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            const Text('위치 권한 필요'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          // 👇 거부 타입에 따라 다른 버튼 표시
+          if (denialType == LocationPermissionDenialType.permanent ||
+              denialType == LocationPermissionDenialType.restricted)
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                // 👇 설정 앱으로 이동
+                await openAppSettings();
+              },
+              icon: const Icon(Icons.settings),
+              label: const Text('설정 열기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 다시 시도할 수 있도록 안내
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('등록 버튼을 다시 눌러 권한을 허용해주세요.'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.check),
+              label: const Text('확인'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+        ],
       ),
     );
   }
