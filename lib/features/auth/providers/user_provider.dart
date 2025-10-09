@@ -9,6 +9,9 @@ import 'package:mongle_flutter/features/profile/domain/entities/user_profile.dar
 ///
 /// 토큰 읽기는 비동기 작업이므로 FutureProvider를 사용합니다.
 final currentMemberIdProvider = FutureProvider<String?>((ref) async {
+  // ✅ [추가] authProvider를 watch하여 로그인/로그아웃 시 자동으로 재실행되도록 함
+  ref.watch(authProvider);
+
   // 1. TokenStorageService를 통해 저장된 AccessToken을 가져옵니다.
   final tokenStorage = ref.watch(tokenStorageServiceProvider);
   final token = await tokenStorage.getAccessToken();
