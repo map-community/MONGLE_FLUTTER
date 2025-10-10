@@ -51,13 +51,5 @@
         <string>현재 위치에 새로운 글을 작성하기 위해 위치 정보가 필요합니다.</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>게시글에 사진과 동영상을 추가하기 위해 갤러리 접근이 필요합니다.</string>
-        <key>NSUserTrackingUsageDescription</key>
-        <string>회원님의 활동을 추적하여 맞춤형 광고 및 서비스 경험을 제공하는 데 사용됩니다.</string>
-        <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-        <string>주변의 실시간 정보를 지도에 표시하고, 현재 위치에 게시물을 작성하기 위해 위치 정보가 필요합니다.</string>
-        <key>NSLocationAlwaysUsageDescription</key>
-        <string>주변의 실시간 정보를 지도에 표시하고, 현재 위치에 게시물을 작성하기 위해 위치 정보가 필요합니다.</string>
-        <key>NSCameraUsageDescription</key>
-        <string>게시글에 첨부할 사진이나 동영상을 촬영하기 위해 카메라 접근이 필요합니다.</string>
 	</dict>
 </plist>

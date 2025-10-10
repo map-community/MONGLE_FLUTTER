@@ -16,7 +16,6 @@ import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmode
 import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/multi_stage_bottom_sheet.dart';
 import 'package:mongle_flutter/features/map/providers/map_providers.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -28,24 +27,6 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   // 👇 에러 상태를 추적하기 위한 변수
   bool _hasError = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // 위젯의 첫 프레임이 렌더링된 후, 안전하게 팝업을 띄웁니다.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestTrackingPermission();
-    });
-  }
-
-  // 추적 허용 요청 함수
-  Future<void> _requestTrackingPermission() async {
-    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-    if (status == TrackingStatus.notDetermined) {
-      // 사용자가 아직 선택하지 않은 경우에만 팝업을 띄웁니다.
-      await AppTrackingTransparency.requestTrackingAuthorization();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +90,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final NLatLng initialPosition =
         mapState.whenOrNull(data: (pos, _, __) => pos) ??
-        const NLatLng(35.890, 128.612);
+            const NLatLng(35.890, 128.612);
 
     return PopScope(
       canPop: canPop,
@@ -191,26 +172,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
             // 👇 3. 초기 로딩 오버레이 (밝은 배경)
             mapState.whenOrNull(
-                  loading: () => Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text(
-                            '지도를 불러오는 중...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
+              loading: () => Container(
+                color: Colors.white,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text(
+                        '지도를 불러오는 중...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ) ??
+                ),
+              ),
+            ) ??
                 const SizedBox.shrink(),
 
             // 4. FAB
@@ -333,10 +314,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildPreviewCard(
-    BuildContext context,
-    String grainId,
-    ScrollController scrollController,
-  ) {
+      BuildContext context,
+      String grainId,
+      ScrollController scrollController,
+      ) {
     final grainAsync = ref.watch(issueGrainProvider(grainId));
 
     return GestureDetector(
@@ -373,10 +354,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildFullScrollView(
-    BuildContext context,
-    ScrollController scrollController,
-    String grainId,
-  ) {
+      BuildContext context,
+      ScrollController scrollController,
+      String grainId,
+      ) {
     final grainAsync = ref.watch(issueGrainProvider(grainId));
 
     return NotificationListener<ScrollNotification>(
@@ -431,9 +412,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildLocalFeedSheet(
-    BuildContext context,
-    ScrollController scrollController,
-  ) {
+      BuildContext context,
+      ScrollController scrollController,
+      ) {
     final mapState = ref.watch(mapViewModelProvider);
 
     final NLatLngBounds? visibleBounds = mapState.whenOrNull(
