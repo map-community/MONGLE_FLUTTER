@@ -31,8 +31,8 @@ void main() async {
           print("사용량 초과 (message: $message)");
           break;
         case NUnauthorizedClientException() ||
-        NClientUnspecifiedException() ||
-        NAnotherAuthFailedException():
+            NClientUnspecifiedException() ||
+            NAnotherAuthFailedException():
           print("인증 실패: $ex");
           break;
       }
