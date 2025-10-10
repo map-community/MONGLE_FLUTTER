@@ -117,7 +117,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         ),
         const SizedBox(width: 8),
         Text(
-          timeago.format(widget.comment.createdAt, locale: 'ko'),
+          timeago.format(
+            widget.comment.createdAt.toLocal(),
+            locale: 'ko',
+          ), // .toLocal() 추가
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         const Spacer(),
