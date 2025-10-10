@@ -52,5 +52,7 @@
         <string>현재 위치에 새로운 글을 작성하기 위해 위치 정보가 필요합니다.</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>게시글에 사진과 동영상을 추가하기 위해 갤러리 접근이 필요합니다.</string>
+        <key>NSUserTrackingUsageDescription</key>
+        <string>회원님의 활동을 추적하여 맞춤형 광고 및 서비스 경험을 제공하는 데 사용됩니다.</string>
 	</dict>
 </plist>

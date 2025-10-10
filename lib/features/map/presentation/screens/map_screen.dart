@@ -16,6 +16,7 @@ import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmode
 import 'package:mongle_flutter/features/map/presentation/widgets/map_view.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/multi_stage_bottom_sheet.dart';
 import 'package:mongle_flutter/features/map/providers/map_providers.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -27,6 +28,24 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   // 👇 에러 상태를 추적하기 위한 변수
   bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 위젯의 첫 프레임이 렌더링된 후, 안전하게 팝업을 띄웁니다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestTrackingPermission();
+    });
+  }
+
+  // 추적 허용 요청 함수
+  Future<void> _requestTrackingPermission() async {
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      // 사용자가 아직 선택하지 않은 경우에만 팝업을 띄웁니다.
+      await AppTrackingTransparency.requestTrackingAuthorization();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

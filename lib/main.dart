@@ -1,5 +1,4 @@
 // lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -14,9 +13,6 @@ void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   //  네이티브 스플래시 스크린을 앱 초기화 전까지 유지하도록 설정합니다.
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  // 1. runApp() 전에 Flutter 엔진과 위젯 바인딩이 준비되도록 보장합니다.
-  // main 함수 상단에서 이미 호출되었으므로, 이 라인은 중복되어 제거해도 괜찮습니다.
-  // WidgetsFlutterBinding.ensureInitialized();
 
   // 2. .env 파일을 로드합니다.
   await dotenv.load(fileName: ".env");
@@ -31,8 +27,8 @@ void main() async {
           print("사용량 초과 (message: $message)");
           break;
         case NUnauthorizedClientException() ||
-            NClientUnspecifiedException() ||
-            NAnotherAuthFailedException():
+        NClientUnspecifiedException() ||
+        NAnotherAuthFailedException():
           print("인증 실패: $ex");
           break;
       }
