@@ -232,7 +232,7 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                     child: Text(
                       // 👇 권한 타입에 따라 메시지 변경
                       isPhotoPermission
-                          ? '사진을 첨부하려면 사진 접근 권한이 필요합니다.'
+                          ? '설정 → 권한 → 사진 및 동영상에서\n"항상 모두 허용"으로 변경해주세요'
                           : '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
                       style: TextStyle(
                         fontSize: 13,
