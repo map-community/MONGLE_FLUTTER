@@ -19,12 +19,14 @@ class IssueGrainItem extends ConsumerStatefulWidget {
   final IssueGrain grain;
   final VoidCallback? onTap;
   final IssueGrainDisplayMode displayMode;
+  final CloudProviderParam? cloudProviderParam;
 
   const IssueGrainItem({
     super.key,
     required this.grain,
     this.onTap,
     this.displayMode = IssueGrainDisplayMode.mapPreview,
+    this.cloudProviderParam,
   });
 
   @override
@@ -297,23 +299,38 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             TextButton(
               child: const Text('삭제', style: TextStyle(color: Colors.red)),
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // 대화상자 먼저 닫기
+                Navigator.of(dialogContext).pop();
 
-                final success = await ref
-                    .read(postCommandProvider.notifier)
-                    .deletePost(grain.postId, grain.author.id!);
+                bool success;
 
+                // ✅ CloudScreen에서 삭제하는 경우인지 확인
+                if (widget.cloudProviderParam != null) {
+                  // CloudScreen에서 삭제: 낙관적 UI 업데이트
+                  success = await ref
+                      .read(
+                        paginatedGrainsProvider(
+                          widget.cloudProviderParam!,
+                        ).notifier,
+                      )
+                      .deletePostOptimistically(grain.postId, grain.author.id!);
+                } else {
+                  // 다른 곳(상세, 지도)에서 삭제: 기존 방식
+                  success = await ref
+                      .read(postCommandProvider.notifier)
+                      .deletePost(grain.postId, grain.author.id!);
+
+                  if (success) {
+                    ref.invalidate(paginatedGrainsProvider);
+                    ref.invalidate(mapViewModelProvider);
+                  }
+                }
+
+                // 성공/실패 피드백
                 if (success) {
-                  // [핵심] 게시글 목록을 가진 Provider들을 무효화하여 새로고침!
-                  ref.invalidate(paginatedGrainsProvider);
-                  ref.invalidate(mapViewModelProvider);
-
-                  // 스낵바로 사용자에게 성공 피드백 제공
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('게시글이 삭제되었습니다.')),
                   );
                 } else {
-                  // 실패 시 스낵바
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('게시글 삭제에 실패했습니다.'),

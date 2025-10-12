@@ -98,6 +98,7 @@ class _CloudScreenState extends ConsumerState<CloudScreen> {
                 return IssueGrainItem(
                   grain: post,
                   displayMode: IssueGrainDisplayMode.boardPreview,
+                  cloudProviderParam: providerParam,
                   onTap: () async {
                     context.push(
                       '/cloud/${widget.cloudId}/grain/${post.postId}',
