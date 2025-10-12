@@ -147,7 +147,7 @@ class _MapViewState extends ConsumerState<MapView> {
   /// 카메라 이동이 멈췄을 때 호출되는 공통 함수
   void onCameraIdle() async {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (_mapController == null) return;
 
       // 현재 카메라 위치 정보를 가져옵니다.
