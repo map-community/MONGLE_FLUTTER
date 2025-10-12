@@ -63,6 +63,45 @@ class PaginatedGrainsNotifier
     _fetchFirstPage();
   }
 
+  /// 게시글을 목록에서 즉시 제거하는 메서드 (낙관적 UI 업데이트)
+  Future<bool> deletePostOptimistically(String postId, String authorId) async {
+    // [1] 현재 상태 확인
+    final currentState = state.valueOrNull;
+    if (currentState == null) return false;
+
+    // [2] 권한 확인
+    final currentUserId = await _ref.read(currentMemberIdProvider.future);
+    if (currentUserId != authorId) {
+      print("삭제 권한이 없습니다.");
+      return false;
+    }
+
+    // [3] 현재 상태를 백업 (실패 시 롤백용)
+    final backupState = currentState;
+
+    // [4] 낙관적 UI 업데이트: 목록에서 해당 게시글 제거
+    final newPosts = currentState.posts
+        .where((post) => post.postId != postId)
+        .toList();
+
+    // [5] UI 즉시 업데이트
+    state = AsyncValue.data(currentState.copyWith(posts: newPosts));
+
+    // [6] 백그라운드에서 서버 요청
+    try {
+      await _repository.deletePost(postId);
+      // 성공! UI는 이미 업데이트됨
+      return true;
+    } catch (e) {
+      // [7] 실패 시 롤백
+      if (mounted) {
+        state = AsyncValue.data(backupState);
+      }
+      print("게시글 삭제 실패: $e");
+      return false;
+    }
+  }
+
   Future<void> _fetchFirstPage() async {
     try {
       state = const AsyncValue.loading();
@@ -443,21 +482,16 @@ class PostCommandNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// 게시글을 삭제하는 메서드
   Future<bool> deletePost(String postId, String authorId) async {
-    // [권한 확인] 현재 로그인한 사용자의 ID를 가져옵니다.
     final currentUserId = await _ref.read(currentMemberIdProvider.future);
     if (currentUserId != authorId) {
       print("삭제 권한이 없습니다.");
-      // 사용자에게 스낵바 등으로 실패를 알려줄 수 있습니다.
       return false;
     }
 
-    state = const AsyncValue.loading();
     try {
       await _issueGrainRepository.deletePost(postId);
-      state = const AsyncValue.data(null);
       return true;
     } catch (e, s) {
-      state = AsyncValue.error(e, s);
       print("게시글 삭제 실패: $e");
       return false;
     }

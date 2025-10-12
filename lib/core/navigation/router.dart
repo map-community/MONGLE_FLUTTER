@@ -13,6 +13,7 @@ import 'package:mongle_flutter/features/auth/presentation/screens/sign_up_screen
 import 'package:mongle_flutter/features/community/presentation/screens/cloud_screen.dart';
 import 'package:mongle_flutter/features/community/presentation/screens/grain_detail_screen.dart';
 import 'package:mongle_flutter/features/community/presentation/screens/write_grain_screen.dart';
+import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/feed/presentation/screens/feed_screen.dart';
 import 'package:mongle_flutter/features/map/presentation/screens/map_screen.dart';
 import 'package:mongle_flutter/features/profile/presentation/screens/profile_screen.dart';
@@ -115,11 +116,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'grain/:grainId',
             pageBuilder: (context, state) {
               final grainId = state.pathParameters['grainId']!;
-              final boardName = state.extra as String?;
+
+              // ✅ extra를 Map으로 파싱
+              final extraData = state.extra as Map<String, dynamic>?;
+              final boardName = extraData?['boardName'] as String?;
+              final cloudProviderParam =
+                  extraData?['cloudProviderParam'] as CloudProviderParam?;
 
               debugPrint("🔄 Router pageBuilder 호출됨");
               debugPrint("🔄 grainId: $grainId");
-              debugPrint("🔄 전체 pathParameters: ${state.pathParameters}");
+              debugPrint("🔄 boardName: $boardName");
+              debugPrint("🔄 cloudProviderParam: $cloudProviderParam");
 
               return _buildSlideTransitionPage(
                 context: context,
@@ -127,6 +134,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 child: GrainDetailScreen(
                   grainId: grainId,
                   boardName: boardName,
+                  cloudProviderParam: cloudProviderParam, // ✅ 추가
                 ),
               );
             },

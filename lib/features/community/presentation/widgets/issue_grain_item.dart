@@ -10,6 +10,7 @@ import 'package:mongle_flutter/features/community/presentation/widgets/user_prof
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -19,12 +20,14 @@ class IssueGrainItem extends ConsumerStatefulWidget {
   final IssueGrain grain;
   final VoidCallback? onTap;
   final IssueGrainDisplayMode displayMode;
+  final CloudProviderParam? cloudProviderParam;
 
   const IssueGrainItem({
     super.key,
     required this.grain,
     this.onTap,
     this.displayMode = IssueGrainDisplayMode.mapPreview,
+    this.cloudProviderParam,
   });
 
   @override
@@ -297,29 +300,90 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             TextButton(
               child: const Text('삭제', style: TextStyle(color: Colors.red)),
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // 대화상자 먼저 닫기
+                Navigator.of(dialogContext).pop();
+                bool success;
 
-                final success = await ref
-                    .read(postCommandProvider.notifier)
-                    .deletePost(grain.postId, grain.author.id!);
+                if (widget.cloudProviderParam != null) {
+                  success = await ref
+                      .read(
+                        paginatedGrainsProvider(
+                          widget.cloudProviderParam!,
+                        ).notifier,
+                      )
+                      .deletePostOptimistically(grain.postId, grain.author.id!);
 
-                if (success) {
-                  // [핵심] 게시글 목록을 가진 Provider들을 무효화하여 새로고침!
-                  ref.invalidate(paginatedGrainsProvider);
-                  ref.invalidate(mapViewModelProvider);
+                  if (success &&
+                      widget.displayMode == IssueGrainDisplayMode.fullView) {
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // ✅ 직접 호출
 
-                  // 스낵바로 사용자에게 성공 피드백 제공
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('게시글이 삭제되었습니다.')),
-                  );
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                          );
+                        }
+                      });
+                    }
+                    return;
+                  }
                 } else {
-                  // 실패 시 스낵바
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('게시글 삭제에 실패했습니다.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  // 지도에서 삭제
+                  success = await ref
+                      .read(postCommandProvider.notifier)
+                      .deletePost(grain.postId, grain.author.id!);
+
+                  if (success) {
+                    // mapPreview: 바텀시트 닫고 지도 새로고침
+                    if (widget.displayMode ==
+                        IssueGrainDisplayMode.mapPreview) {
+                      ref.read(mapSheetStrategyProvider.notifier).minimize();
+                      ref.read(mapViewModelProvider.notifier).retry();
+                    }
+                    // fullView: 뒤로가기 + 지도 새로고침
+                    else if (widget.displayMode ==
+                        IssueGrainDisplayMode.fullView) {
+                      ref.read(mapSheetStrategyProvider.notifier).minimize();
+                      ref.read(mapViewModelProvider.notifier).retry();
+
+                      if (context.mounted) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+
+                            Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('게시글이 삭제되었습니다.'),
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          }
+                        });
+                      }
+                      return;
+                    }
+                  }
+                }
+
+                if (context.mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('게시글 삭제에 실패했습니다.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
             ),

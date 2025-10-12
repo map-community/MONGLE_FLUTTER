@@ -1,5 +1,7 @@
 // lib/features/map/presentation/widgets/map_view.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +33,7 @@ class _MapViewState extends ConsumerState<MapView> {
   NaverMapController? _mapController;
   MapOverlayManager? _overlayManager;
   final MarkerFactory _markerFactory = MarkerFactory();
+  Timer? _debounce; // onCameraIdle 상태에서 디바운스를 위한 타이머 변수
 
   @override
   Widget build(BuildContext context) {
@@ -135,26 +138,32 @@ class _MapViewState extends ConsumerState<MapView> {
     );
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel(); // 위젯이 제거될 때 타이머를 취소합니다.
+    super.dispose();
+  }
+
   /// 카메라 이동이 멈췄을 때 호출되는 공통 함수
   void onCameraIdle() async {
-    if (_mapController == null) return;
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      if (_mapController == null) return;
 
-    // 현재 카메라 위치 정보를 가져옵니다.
-    final cameraPosition = await _mapController!.getCameraPosition();
-    final currentZoom = cameraPosition.zoom;
-    print("📸 현재 지도 줌 레벨: $currentZoom");
+      // 현재 카메라 위치 정보를 가져옵니다.
+      final cameraPosition = await _mapController!.getCameraPosition();
+      final currentZoom = cameraPosition.zoom;
+      print("📸 현재 지도 줌 레벨: $currentZoom");
 
-    // 👇👇👇 줌 레벨 체크 로직 추가 👇👇👇
-    if (currentZoom > 13) {
-      // 줌 레벨이 13보다 클 때만 API를 요청합니다.
-      print("➡️ [MapView] onCameraIdle: 줌 레벨이 13보다 크므로 데이터 요청을 시작합니다.");
-      final bounds = await _mapController!.getContentBounds();
-      ref.read(mapViewModelProvider.notifier).fetchMapObjects(bounds);
-    } else {
-      // 줌 레벨이 13 이하일 때는 로그만 남기고 아무 작업도 하지 않습니다.
-      print("ℹ️ 줌 레벨이 13 이하이므로 새로운 API 요청을 보내지 않습니다.");
-      // 이 경우에는 오버레이를 지우거나 상태를 변경하는 코드가 없으므로,
-      // 기존에 표시되던 마커들은 그대로 유지됩니다.
-    }
+      // 👇👇👇 줌 레벨 체크 로직 추가 👇👇👇
+      if (currentZoom > 13) {
+        // 줌 레벨이 13보다 클 때만 API를 요청합니다.
+        print("➡️ [MapView] onCameraIdle: 줌 레벨이 13보다 크므로 데이터 요청을 시작합니다.");
+        final bounds = await _mapController!.getContentBounds();
+        ref.read(mapViewModelProvider.notifier).fetchMapObjects(bounds);
+      } else {
+        print("ℹ️ 줌 레벨이 13 이하이므로 API 요청을 보내지 않습니다.");
+      }
+    });
   }
 }
