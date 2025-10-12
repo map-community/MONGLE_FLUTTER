@@ -482,21 +482,16 @@ class PostCommandNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// 게시글을 삭제하는 메서드
   Future<bool> deletePost(String postId, String authorId) async {
-    // [권한 확인] 현재 로그인한 사용자의 ID를 가져옵니다.
     final currentUserId = await _ref.read(currentMemberIdProvider.future);
     if (currentUserId != authorId) {
       print("삭제 권한이 없습니다.");
-      // 사용자에게 스낵바 등으로 실패를 알려줄 수 있습니다.
       return false;
     }
 
-    state = const AsyncValue.loading();
     try {
       await _issueGrainRepository.deletePost(postId);
-      state = const AsyncValue.data(null);
       return true;
     } catch (e, s) {
-      state = AsyncValue.error(e, s);
       print("게시글 삭제 실패: $e");
       return false;
     }

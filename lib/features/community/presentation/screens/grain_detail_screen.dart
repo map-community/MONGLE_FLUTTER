@@ -10,7 +10,14 @@ import 'package:mongle_flutter/features/community/providers/issue_grain_provider
 class GrainDetailScreen extends ConsumerStatefulWidget {
   final String grainId;
   final String? boardName;
-  const GrainDetailScreen({super.key, required this.grainId, this.boardName});
+  final CloudProviderParam? cloudProviderParam;
+
+  const GrainDetailScreen({
+    super.key,
+    required this.grainId,
+    this.boardName,
+    this.cloudProviderParam,
+  });
 
   @override
   ConsumerState<GrainDetailScreen> createState() {
@@ -68,7 +75,7 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
                   child: IssueGrainItem(
                     grain: grain,
                     displayMode: IssueGrainDisplayMode.fullView,
-                    // ✨ 4. fullView 모드에서는 더 이상 CommentSection을 직접 포함하지 않음
+                    cloudProviderParam: widget.cloudProviderParam,
                   ),
                 ),
 

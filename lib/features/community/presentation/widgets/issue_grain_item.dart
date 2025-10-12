@@ -10,6 +10,7 @@ import 'package:mongle_flutter/features/community/presentation/widgets/user_prof
 import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
 import 'package:mongle_flutter/features/community/providers/report_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -300,12 +301,9 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
               child: const Text('삭제', style: TextStyle(color: Colors.red)),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-
                 bool success;
 
-                // ✅ CloudScreen에서 삭제하는 경우인지 확인
                 if (widget.cloudProviderParam != null) {
-                  // CloudScreen에서 삭제: 낙관적 UI 업데이트
                   success = await ref
                       .read(
                         paginatedGrainsProvider(
@@ -313,30 +311,79 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
                         ).notifier,
                       )
                       .deletePostOptimistically(grain.postId, grain.author.id!);
+
+                  if (success &&
+                      widget.displayMode == IssueGrainDisplayMode.fullView) {
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // ✅ 직접 호출
+
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                          );
+                        }
+                      });
+                    }
+                    return;
+                  }
                 } else {
-                  // 다른 곳(상세, 지도)에서 삭제: 기존 방식
+                  // 지도에서 삭제
                   success = await ref
                       .read(postCommandProvider.notifier)
                       .deletePost(grain.postId, grain.author.id!);
 
                   if (success) {
-                    ref.invalidate(paginatedGrainsProvider);
-                    ref.invalidate(mapViewModelProvider);
+                    // mapPreview: 바텀시트 닫고 지도 새로고침
+                    if (widget.displayMode ==
+                        IssueGrainDisplayMode.mapPreview) {
+                      ref.read(mapSheetStrategyProvider.notifier).minimize();
+                      ref.read(mapViewModelProvider.notifier).retry();
+                    }
+                    // fullView: 뒤로가기 + 지도 새로고침
+                    else if (widget.displayMode ==
+                        IssueGrainDisplayMode.fullView) {
+                      ref.read(mapSheetStrategyProvider.notifier).minimize();
+                      ref.read(mapViewModelProvider.notifier).retry();
+
+                      if (context.mounted) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+
+                            Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('게시글이 삭제되었습니다.'),
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          }
+                        });
+                      }
+                      return;
+                    }
                   }
                 }
 
-                // 성공/실패 피드백
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('게시글이 삭제되었습니다.')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('게시글 삭제에 실패했습니다.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                if (context.mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('게시글 삭제에 실패했습니다.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
             ),
