@@ -1,5 +1,6 @@
 // lib/main.dart
 
+import 'dart:async'; // Future.timeout을 사용하기 위해 추가
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -10,42 +11,44 @@ import 'package:mongle_flutter/features/auth/presentation/providers/auth_provide
 import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
-  // WidgetsBinding을 변수에 저장하여 재사용할 수 있도록 합니다.
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  //  네이티브 스플래시 스크린을 앱 초기화 전까지 유지하도록 설정합니다.
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  // 1. runApp() 전에 Flutter 엔진과 위젯 바인딩이 준비되도록 보장합니다.
-  // main 함수 상단에서 이미 호출되었으므로, 이 라인은 중복되어 제거해도 괜찮습니다.
-  // WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. .env 파일을 로드합니다.
-  await dotenv.load(fileName: ".env");
-  final naverMapClientId = dotenv.env['NAVER_MAP_CLIENT_ID'];
+  // timeago 설정은 초기화 실패와 관계없이 항상 실행되어야 하므로 try 블록 밖으로 이동합니다.
+  timeago.setLocaleMessages('ko', timeago.KoMessages());
 
-  // 3. Naver Map SDK를 초기화합니다. Client ID는 .env 파일에서 안전하게 가져옵니다.
-  await FlutterNaverMap().init(
-    clientId: naverMapClientId!,
-    onAuthFailed: (ex) {
-      switch (ex) {
-        case NQuotaExceededException(:final message):
-          print("사용량 초과 (message: $message)");
-          break;
-        case NUnauthorizedClientException() ||
-            NClientUnspecifiedException() ||
-            NAnotherAuthFailedException():
-          print("인증 실패: $ex");
-          break;
-      }
-    },
-  );
+  try {
+    // 1. 실패 가능성이 있는 초기화 로직을 try 블록 안에 배치합니다.
+    await dotenv.load(fileName: ".env");
+    final naverMapClientId = dotenv.env['NAVER_MAP_CLIENT_ID'];
 
-  timeago.setLocaleMessages('ko', timeago.KoMessages()); // 한글 메시지 설정
-  // 모든 초기화가 끝난 후, runApp을 호출하기 직전에 스플래시 스크린을 제거합니다.
-  FlutterNativeSplash.remove();
-  runApp(
-    // Riverpod를 앱 전체에서 사용하기 위해 ProviderScope로 감싸줍니다.
-    const ProviderScope(child: MyApp()),
-  );
+    if (naverMapClientId == null) {
+      throw Exception("Naver Map Client ID가 .env 파일에 없습니다.");
+    }
+
+    // 2. 10초의 타임아웃(timeout)을 추가합니다.
+    // 10초 안에 초기화가 완료되지 않으면 TimeoutException을 발생시켜 catch 블록으로 보냅니다.
+    await FlutterNaverMap()
+        .init(
+          clientId: naverMapClientId,
+          onAuthFailed: (ex) {
+            print("Naver Map 인증 실패: $ex");
+            // 인증 실패는 심각한 문제이므로 에러를 발생시켜 catch 블록에서 처리하도록 합니다.
+            throw ex;
+          },
+        )
+        .timeout(const Duration(seconds: 10));
+  } catch (e) {
+    // 3. 타임아웃을 포함한 모든 종류의 오류를 여기서 처리합니다.
+    print("앱 초기화 중 오류 발생: $e");
+    // 이 블록에서 오류 상황에 대한 추가적인 로깅이나 사용자 알림을 구현할 수 있습니다.
+  } finally {
+    // 4. 성공하든, 실패하든, finally 블록은 항상 실행됩니다.
+    // 여기서 스플래시 화면을 제거하여 앱이 멈추는 현상을 근본적으로 방지합니다.
+    FlutterNativeSplash.remove();
+  }
+
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -53,14 +56,11 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ref.watch를 사용하여 routerProvider로부터 GoRouter 인스턴스를 가져옵니다.
     final router = ref.watch(routerProvider);
-
-    // 🔥 로그아웃 시 이 값이 바뀌면서 전체 위젯 트리 재생성
     final restartKey = ref.watch(appRestartTriggerProvider);
 
     return MaterialApp.router(
-      key: ObjectKey(restartKey), // 🔥 key 추가
+      key: ObjectKey(restartKey),
       routerConfig: router,
       title: '몽글 (MONGLE)',
       theme: ThemeData(
