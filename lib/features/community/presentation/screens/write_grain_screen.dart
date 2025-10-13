@@ -183,114 +183,183 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
   }
 
   // 👇 권한 거부 다이얼로그 표시
+  // write_grain_screen.dart의 _showPermissionDeniedDialog 메서드만 교체
+
   void _showPermissionDeniedDialog(
     BuildContext context,
     String message,
     LocationPermissionDenialType denialType,
-    bool isPhotoPermission, // 👈 중괄호 제거
+    bool isPhotoPermission,
   ) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              // 👇 권한 타입에 따라 아이콘 변경
-              isPhotoPermission
-                  ? Icons.photo_library_outlined
-                  : Icons.location_off,
-              color: Colors.red.shade700,
-            ),
-            const SizedBox(width: 8),
-            // 👇 권한 타입에 따라 제목 변경
-            Text(isPhotoPermission ? '사진 권한 필요' : '위치 권한 필요'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 8,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPhotoPermission
+                      ? Icons.photo_library_outlined
+                      : Icons.location_off,
+                  color: Colors.red.shade700,
+                  size: 32,
+                ),
               ),
-              child: Row(
+              const SizedBox(height: 20),
+              Text(
+                isPhotoPermission ? '사진 권한 필요' : '위치 권한 필요',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.blue.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isPhotoPermission
+                            ? '설정 → 권한 → 사진 및 동영상에서\n"항상 모두 허용"으로 변경해주세요'
+                            : '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade900,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.blue.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      // 👇 권한 타입에 따라 메시지 변경
-                      isPhotoPermission
-                          ? '설정 → 권한 → 사진 및 동영상에서\n"항상 모두 허용"으로 변경해주세요'
-                          : '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.blue.shade900,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        foregroundColor: Colors.grey.shade700,
+                      ),
+                      child: const Text(
+                        '취소',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child:
+                        (denialType == LocationPermissionDenialType.permanent ||
+                            denialType ==
+                                LocationPermissionDenialType.restricted)
+                        ? ElevatedButton.icon(
+                            onPressed: () async {
+                              Navigator.of(context).pop();
+                              await openAppSettings();
+                            },
+                            icon: const Icon(Icons.settings, size: 18),
+                            label: const Text(
+                              '설정 열기',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          )
+                        : ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isPhotoPermission
+                                        ? '사진 추가 버튼을 다시 눌러 권한을 허용해주세요.'
+                                        : '등록 버튼을 다시 눌러 권한을 허용해주세요.',
+                                  ),
+                                  backgroundColor: Colors.blue.shade700,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              '확인',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            ],
           ),
-          // 👇 거부 타입에 따라 다른 버튼 표시
-          if (denialType == LocationPermissionDenialType.permanent ||
-              denialType == LocationPermissionDenialType.restricted)
-            ElevatedButton.icon(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                // 👇 설정 앱으로 이동
-                await openAppSettings();
-              },
-              icon: const Icon(Icons.settings),
-              label: const Text('설정 열기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-            )
-          else
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // 다시 시도할 수 있도록 안내
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    // 👇 권한 타입에 따라 메시지 변경
-                    content: Text(
-                      isPhotoPermission
-                          ? '사진 추가 버튼을 다시 눌러 권한을 허용해주세요.'
-                          : '등록 버튼을 다시 눌러 권한을 허용해주세요.',
-                    ),
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.check),
-              label: const Text('확인'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
