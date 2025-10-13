@@ -68,9 +68,11 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
         data: (grain) {
           return SafeArea(
             top: false,
+
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
+                // 1게시글 본문
                 SliverToBoxAdapter(
                   child: IssueGrainItem(
                     grain: grain,
@@ -79,7 +81,7 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
                   ),
                 ),
 
-                // 게시글의 끝부분 구분선과 댓글 섹션 사이에 구분선을 추가
+                // 게시글과 댓글 사이 구분선
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
@@ -94,9 +96,10 @@ class _GrainDetailScreenState extends ConsumerState<GrainDetailScreen> {
                   ),
                 ),
 
-                // ✨ 5. CommentSection을 GrainDetailScreen의 Sliver로 직접 추가
+                // 댓글 섹션 (제목 없음!)
                 CommentSection(postId: grain.postId),
 
+                // 하단 여백 (댓글 입력창 높이만큼)
                 // 이 공간 덕분에 마지막 댓글이 bottomNavigationBar 위로 스크롤될 수 있습니다.
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 80), // 입력창의 대략적인 높이만큼 설정

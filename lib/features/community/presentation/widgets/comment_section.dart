@@ -33,27 +33,74 @@ class CommentSection extends ConsumerWidget {
         final replyingToComment = paginatedComments.replyingTo;
 
         if (comments.isEmpty) {
-          return const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 40.0),
-              child: Center(child: Text('첫 번째 댓글을 남겨보세요!')),
+          return SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🆕 헤더 추가
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: const Text(
+                    '댓글',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                // 기존 빈 상태 메시지
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32.0),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '첫 번째 댓글을 남겨보세요!',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
 
-        // ✨ ListView 대신 SliverList를 반환합니다.
+        // ListView 대신 SliverList를 반환합니다.
         return SliverList.builder(
-          itemCount: comments.length + (paginatedComments.hasNext ? 1 : 0),
+          // itemCount에 1을 추가 (헤더 자리)
+          itemCount: 1 + comments.length + (paginatedComments.hasNext ? 1 : 0),
           itemBuilder: (context, index) {
-            if (index == comments.length) {
+            // 첫 번째 아이템은 헤더
+            if (index == 0) {
+              return Container(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: const Text(
+                  '댓글',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              );
+            }
+
+            // 로딩 인디케이터 조건 변경
+            if (index == comments.length + 1) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.0),
                 child: Center(child: CircularProgressIndicator()),
               );
             }
-            final comment = comments[index];
 
-            // '부모 댓글 + 대댓글 섹션'을 묶는 새로운 위젯을 사용합니다.
+            // 실제 댓글 index 계산 (헤더 때문에 -1)
+            final comment = comments[index - 1];
+
             return _CommentWithReplies(
               postId: postId,
               comment: comment,
