@@ -50,41 +50,47 @@ class MoreOptionsMenu extends ConsumerWidget {
             break;
         }
       },
-      itemBuilder: (context) => <PopupMenuEntry<String>>[
-        PopupMenuItem<String>(
-          value: 'report',
-          child: const Row(
-            children: [
-              Icon(Icons.report_outlined, size: 20, color: Colors.orange),
-              SizedBox(width: 12),
-              Text('신고'),
-            ],
-          ),
-        ),
-        if (!isAuthor)
-          PopupMenuItem<String>(
-            value: 'block',
-            child: Row(
-              children: [
-                Icon(Icons.block_outlined, size: 20, color: Colors.grey[700]),
-                const SizedBox(width: 12),
-                const Text('사용자 차단'),
-              ],
+      itemBuilder: (context) {
+        if (isAuthor) {
+          // 내가 쓴 글일 경우: '삭제' 메뉴만 반환
+          return [
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: const Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                  SizedBox(width: 12),
+                  Text('삭제', style: TextStyle(color: Colors.red)),
+                ],
+              ),
             ),
-          ),
-        if (isAuthor) const PopupMenuDivider(height: 16),
-        if (isAuthor)
-          PopupMenuItem<String>(
-            value: 'delete',
-            child: const Row(
-              children: [
-                Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                SizedBox(width: 12),
-                Text('삭제', style: TextStyle(color: Colors.red)),
-              ],
+          ];
+        } else {
+          // 다른 사람의 글일 경우: '신고', '차단' 메뉴 반환
+          return [
+            PopupMenuItem<String>(
+              value: 'report',
+              child: const Row(
+                children: [
+                  Icon(Icons.report_outlined, size: 20, color: Colors.orange),
+                  SizedBox(width: 12),
+                  Text('신고'),
+                ],
+              ),
             ),
-          ),
-      ],
+            PopupMenuItem<String>(
+              value: 'block',
+              child: Row(
+                children: [
+                  Icon(Icons.block_outlined, size: 20, color: Colors.grey[700]),
+                  const SizedBox(width: 12),
+                  const Text('사용자 차단'),
+                ],
+              ),
+            ),
+          ];
+        }
+      },
     );
   }
 
