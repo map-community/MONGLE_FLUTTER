@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/common/widgets/more_options_menu.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
@@ -32,8 +33,6 @@ class CommentItem extends ConsumerStatefulWidget {
 }
 
 class _CommentItemState extends ConsumerState<CommentItem> {
-  final GlobalKey _menuKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     if (widget.comment.isDeleted) {
@@ -69,7 +68,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                 ),
               ],
             ),
-            // 4. 액션 툴바도 독립적으로 배치됩니다.
             Row(
               children: [
                 if (widget.isReply) const SizedBox(width: 50),
@@ -86,7 +84,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // 1. 대댓글 아이콘을 헤더로 이동
         if (widget.isReply)
           const SizedBox(
             width: 40,
@@ -96,8 +93,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               size: 20,
             ),
           ),
-
-        // 2. CircleAvatar를 Row의 첫 번째 요소로 추가
         CircleAvatar(
           radius: 18,
           backgroundImage: widget.comment.author.profileImageUrl != null
@@ -107,24 +102,33 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               ? const Icon(Icons.person, size: 18)
               : null,
         ),
-
-        // 3. 사진과 닉네임 사이의 간격 추가
         const SizedBox(width: 12),
-
         Text(
           widget.comment.author.nickname,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),
         const SizedBox(width: 8),
         Text(
-          timeago.format(
-            widget.comment.createdAt.toLocal(),
-            locale: 'ko',
-          ), // .toLocal() 추가
+          timeago.format(widget.comment.createdAt.toLocal(), locale: 'ko'),
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         const Spacer(),
-        _buildMoreMenu(context),
+        MoreOptionsMenu(
+          contentId: widget.comment.commentId,
+          contentType: ReportContentType.COMMENT,
+          author: widget.comment.author,
+          isAuthor: widget.comment.isAuthor,
+          onDelete: () {
+            // 삭제 확인 다이얼로그는 MoreOptionsMenu에서 처리하므로,
+            // 여기서는 실제 삭제 로직만 실행합니다.
+            ref
+                .read(commentProvider(widget.postId).notifier)
+                .deleteComment(
+                  widget.comment.commentId,
+                  widget.comment.author.id!,
+                );
+          },
+        ),
       ],
     );
   }
@@ -144,12 +148,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               : Colors.grey.shade700,
           onTap: () {
             if (widget.isReply && widget.parentCommentId != null) {
-              // 대댓글의 경우 RepliesNotifier를 호출
               ref
                   .read(repliesProvider(widget.parentCommentId!).notifier)
                   .like(widget.comment.commentId);
             } else {
-              // 일반 댓글의 경우 CommentNotifier를 호출
               ref
                   .read(commentProvider(widget.postId).notifier)
                   .like(widget.comment.commentId);
@@ -204,7 +206,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     required IconData icon,
     int? count,
     String? text,
-    required Color color, // color를 필수로 받도록 변경
+    required Color color,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -240,211 +242,22 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     );
   }
 
-  void _showBlockConfirmationDialog(BuildContext context, Author author) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('사용자 차단'),
-          content: Text(
-            "'${author.nickname}'님을 차단하시겠습니까?\n차단한 사용자의 모든 게시물과 댓글이 더 이상 보이지 않게 됩니다.",
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('취소'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('차단', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                // ✅ [수정] author.id가 null이 아닌지 확인하는 안전장치 추가
-                final authorId = author.id;
-                if (authorId != null) {
-                  ref.read(blockedUsersProvider.notifier).blockUser(authorId);
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${author.nickname}님을 차단했습니다.'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildMoreMenu(BuildContext context) {
-    final isAuthor = widget.comment.isAuthor;
-
-    return PopupMenuButton<String>(
-      key: _menuKey,
-      icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
-      tooltip: '더보기',
-      // 🆕 메뉴 스타일 커스터마이징
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (value) {
-        if (value == 'report') {
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            () => _showReportReasonMenu(context),
-          );
-        } else if (value == 'block') {
-          _showBlockConfirmationDialog(context, widget.comment.author);
-        } else if (value == 'delete') {
-          // ✨ 3. [추가] 삭제 선택 시 동작
-          _showDeleteConfirmationDialog(context, widget.comment);
-        }
-      },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        // 🆕 아이콘 + 간결한 텍스트
-        PopupMenuItem<String>(
-          value: 'report',
-          child: Row(
-            children: [
-              Icon(Icons.report_outlined, size: 20, color: Colors.orange),
-              const SizedBox(width: 12),
-              const Text('신고'),
-            ],
-          ),
-        ),
-
-        // 내 댓글이 아닐 때만
-        if (!isAuthor)
-          PopupMenuItem<String>(
-            value: 'block',
-            child: Row(
-              children: [
-                Icon(Icons.block_outlined, size: 20, color: Colors.grey[700]),
-                const SizedBox(width: 12),
-                const Text('사용자 차단'),
-              ],
-            ),
-          ),
-
-        // 🆕 구분선 강조
-        if (isAuthor) const PopupMenuDivider(height: 16),
-
-        // 내 댓글일 때만
-        if (isAuthor)
-          PopupMenuItem<String>(
-            value: 'delete',
-            child: Row(
-              children: [
-                const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                const SizedBox(width: 12),
-                const Text('삭제', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  void _showReportReasonMenu(BuildContext context) {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RenderBox renderBox =
-        _menuKey.currentContext!.findRenderObject() as RenderBox;
-    final size = renderBox.size;
-    final position = renderBox.localToGlobal(Offset.zero);
-
-    showMenu<ReportReason>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, size.width, size.height),
-        Offset.zero & overlay.size,
-      ),
-      items: ReportReason.values.map((reason) {
-        return PopupMenuItem<ReportReason>(
-          value: reason,
-          child: Text(reason.korean),
-        );
-      }).toList(),
-    ).then((selectedReason) {
-      if (selectedReason != null) {
-        ref
-            .read(reportRepositoryProvider)
-            .reportContent(
-              contentId: widget.comment.commentId,
-              contentType: ReportContentType.COMMENT,
-              reason: selectedReason,
-            );
-        ref
-            .read(reportedContentProvider.notifier)
-            .addReportedContent(
-              contentId: widget.comment.commentId,
-              contentType: ReportContentType.COMMENT,
-            );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('신고가 접수되었습니다.')));
-      }
-    });
-  }
-
-  // ✨ 1. [추가] 삭제 확인 대화상자를 띄우는 메서드
-  void _showDeleteConfirmationDialog(BuildContext context, Comment comment) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('댓글 삭제'),
-          content: const Text('정말로 이 댓글을 삭제하시겠습니까?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('취소'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(); // 대화상자 닫기
-              },
-            ),
-            TextButton(
-              child: const Text('삭제', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                // Notifier의 deleteComment 메서드 호출
-                ref
-                    .read(commentProvider(widget.postId).notifier)
-                    .deleteComment(comment.commentId, comment.author.id!);
-                Navigator.of(dialogContext).pop(); // 대화상자 닫기
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildDeletedComment() {
-    // 들여쓰기 계산
-    // - 일반 댓글: 프로필(36) + 간격(12) = 48
-    // - 대댓글: 화살표(40) + 48 = 88
-    const double normalIndent = 48.0;
-    const double replyIconWidth = 40.0;
-
     return Container(
-      // 🆕 배경색 추가 (연한 회색)
       color: Colors.grey.shade100,
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 대댓글 화살표
           if (widget.isReply)
             const SizedBox(
-              width: replyIconWidth,
+              width: 40.0,
               child: Icon(
                 Icons.subdirectory_arrow_right,
                 color: Colors.grey,
                 size: 20,
               ),
             ),
-
-          // 🆕 쓰레기통 아이콘 (프로필 자리)
           Container(
             width: 36,
             height: 36,
@@ -458,10 +271,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               size: 18,
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // 텍스트
           Expanded(
             child: Text(
               '삭제된 댓글입니다.',

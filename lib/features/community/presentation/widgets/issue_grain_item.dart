@@ -1,5 +1,8 @@
+// [기존 코드]와 [수정된 코드]를 주석으로 구분했습니다.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/common/widgets/more_options_menu.dart'; // ✨ 1. [추가] 공통 메뉴 위젯 import
 import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
@@ -35,8 +38,6 @@ class IssueGrainItem extends ConsumerStatefulWidget {
 }
 
 class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
-  final GlobalKey _menuKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     final grain = widget.grain;
@@ -61,30 +62,22 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
     return InkWell(onTap: widget.onTap, child: content);
   }
 
-  /// 지도 미리보기 전용 레이아웃입니다. (단순 카드 형태)
   Widget _buildMapPreviewLayout(BuildContext context, IssueGrain grain) {
-    // 1. TextPainter를 사용해 텍스트가 3줄을 넘어가는지 미리 계산합니다.
-    final textPainter =
-        TextPainter(
-          text: TextSpan(
-            text: grain.content,
-            style: const TextStyle(height: 1.5, fontSize: 15),
-          ),
-          maxLines: 3, // 미리보기에서는 최대 3줄로 제한
-          textDirection: TextDirection.ltr,
-        )..layout(
-          maxWidth: MediaQuery.of(context).size.width - 32,
-        ); // 양쪽 패딩(16*2) 제외
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: grain.content,
+        style: const TextStyle(height: 1.5, fontSize: 15),
+      ),
+      maxLines: 3,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: MediaQuery.of(context).size.width - 32);
 
-    // 텍스트가 실제로 3줄을 넘어가는지 여부를 저장합니다.
     final isTextOverflow = textPainter.didExceedMaxLines;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      // [핵심 수정] Expanded가 없는 단순 Column으로 변경
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        // Column이 내용물 만큼의 높이만 차지하도록 설정
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
@@ -95,20 +88,15 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Column을 사용하여 텍스트 관련 위젯들을 세로로 쌓습니다.
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 2. 기본 텍스트를 표시합니다. (넘치면 ...으로 자동 처리)
               Text(
                 grain.content,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(height: 1.5, fontSize: 15),
               ),
-
-              // 3. [핵심] 텍스트가 3줄을 넘어갈 경우에만 '...더보기'를 표시합니다.
               if (isTextOverflow)
                 const Padding(
                   padding: EdgeInsets.only(top: 4.0),
@@ -121,8 +109,6 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
                     ),
                   ),
                 ),
-
-              // 4. [핵심] 사진이 있을 경우에만, 요청하신 사진 개수 위젯을 표시합니다.
               if (grain.photoUrls.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 12.0),
@@ -147,7 +133,6 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
                 ),
             ],
           ),
-
           InteractionToolbar(grain: grain, onTap: widget.onTap),
         ],
       ),
@@ -263,6 +248,9 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
   }
 
   Widget _buildAuthorRow(BuildContext context, IssueGrain grain) {
+    final currentMemberId = ref.watch(currentMemberIdProvider).valueOrNull;
+    final isAuthor = grain.author.id == currentMemberId;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -272,272 +260,112 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
         ),
         const SizedBox(width: 8),
         Text(
-          timeago.format(
-            grain.createdAt.toLocal(),
-            locale: 'ko',
-          ), // .toLocal() 추가
+          timeago.format(grain.createdAt.toLocal(), locale: 'ko'),
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
         const Spacer(),
-        _buildMoreMenu(context, grain),
-      ],
-    );
-  }
+        // 기존 PopupMenuButton을 공통 위젯으로 교체합니다.
+        MoreOptionsMenu(
+          contentId: grain.postId,
+          contentType: ReportContentType.POST,
+          author: grain.author,
+          isAuthor: isAuthor,
+          onDelete: () async {
+            bool success;
 
-  // ✨ 1. [추가] 게시글 삭제 확인 대화상자를 띄우는 메서드
-  void _showDeleteConfirmationDialog(BuildContext context, IssueGrain grain) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('게시글 삭제'),
-          content: const Text('정말로 이 게시글을 삭제하시겠습니까?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('취소'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              child: const Text('삭제', style: TextStyle(color: Colors.red)),
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                bool success;
+            // [분기 1] '구름 게시판' 또는 '구름 게시판 -> 상세 페이지'에서 삭제하는 경우
+            // cloudProviderParam이 존재하면 구름 게시판 관련 로직으로 처리합니다.
+            if (widget.cloudProviderParam != null) {
+              success = await ref
+                  .read(
+                    paginatedGrainsProvider(
+                      widget.cloudProviderParam!,
+                    ).notifier,
+                  )
+                  .deletePostOptimistically(grain.postId, grain.author.id!);
 
-                if (widget.cloudProviderParam != null) {
-                  success = await ref
-                      .read(
-                        paginatedGrainsProvider(
-                          widget.cloudProviderParam!,
-                        ).notifier,
-                      )
-                      .deletePostOptimistically(grain.postId, grain.author.id!);
-
-                  if (success &&
-                      widget.displayMode == IssueGrainDisplayMode.fullView) {
+              // '상세 페이지'에서 삭제가 성공했다면, 이전 화면(게시판 목록)으로 돌아갑니다.
+              if (success &&
+                  widget.displayMode == IssueGrainDisplayMode.fullView) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  // SnackBar는 화면 전환 후 표시해야 자연스럽습니다.
+                  Future.delayed(const Duration(milliseconds: 100), () {
                     if (context.mounted) {
-                      Navigator.of(context).pop(); // ✅ 직접 호출
-
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
-                          );
-                        }
-                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                      );
                     }
-                    return;
-                  }
-                } else {
-                  // 지도에서 삭제
-                  success = await ref
-                      .read(postCommandProvider.notifier)
-                      .deletePost(grain.postId, grain.author.id!);
+                  });
+                }
+                return; // 여기서 함수를 종료합니다.
+              }
+            }
+            // [분기 2] '지도' 또는 '지도 -> 상세 페이지'에서 삭제하는 경우
+            else {
+              success = await ref
+                  .read(postCommandProvider.notifier)
+                  .deletePost(grain.postId, grain.author.id!);
 
-                  if (success) {
-                    // mapPreview: 바텀시트 닫고 지도 새로고침
-                    if (widget.displayMode ==
-                        IssueGrainDisplayMode.mapPreview) {
-                      ref.read(mapSheetStrategyProvider.notifier).minimize();
-                      ref.read(mapViewModelProvider.notifier).retry();
-                    }
-                    // fullView: 뒤로가기 + 지도 새로고침
-                    else if (widget.displayMode ==
-                        IssueGrainDisplayMode.fullView) {
-                      ref.read(mapSheetStrategyProvider.notifier).minimize();
-                      ref.read(mapViewModelProvider.notifier).retry();
+              if (success) {
+                // '지도 위 미리보기(바텀시트)'에서 삭제한 경우
+                if (widget.displayMode == IssueGrainDisplayMode.mapPreview) {
+                  ref
+                      .read(mapSheetStrategyProvider.notifier)
+                      .minimize(); // 바텀시트를 내립니다.
+                  ref
+                      .read(mapViewModelProvider.notifier)
+                      .retry(); // 지도 데이터를 새로고침합니다.
+                }
+                // '지도에서 진입한 상세 페이지'에서 삭제한 경우
+                else if (widget.displayMode == IssueGrainDisplayMode.fullView) {
+                  ref
+                      .read(mapSheetStrategyProvider.notifier)
+                      .minimize(); // 바텀시트를 내립니다.
+                  ref
+                      .read(mapViewModelProvider.notifier)
+                      .retry(); // 지도 데이터를 새로고침합니다.
 
+                  // 화면 전환(pop)과 SnackBar 표시는 build가 끝난 후에 안전하게 처리합니다.
+                  if (context.mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (context.mounted) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
+                        Navigator.of(context).pop(); // 상세 페이지를 닫습니다.
 
-                            Future.delayed(
-                              const Duration(milliseconds: 100),
-                              () {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('게시글이 삭제되었습니다.'),
-                                    ),
-                                  );
-                                }
-                              },
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('게시글이 삭제되었습니다.')),
                             );
                           }
                         });
                       }
-                      return;
-                    }
+                    });
                   }
+                  return; // 여기서 함수를 종료합니다.
                 }
+              }
+            }
 
-                if (context.mounted) {
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('게시글이 삭제되었습니다.')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('게시글 삭제에 실패했습니다.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showBlockConfirmationDialog(BuildContext context, Author author) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('사용자 차단'),
-          content: Text(
-            "'${author.nickname}'님을 차단하시겠습니까?\n차단한 사용자의 모든 게시물과 댓글이 더 이상 보이지 않게 됩니다.",
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('취소'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              child: const Text('차단', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                // ✅ [수정] author.id가 null이 아닌지 확인하는 안전장치 추가
-                final authorId = author.id;
-                if (authorId != null) {
-                  ref.read(blockedUsersProvider.notifier).blockUser(authorId);
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${author.nickname}님을 차단했습니다.'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // IssueGrainItem 클래스 내부에 추가
-  /// 게시글 우측 상단의 '더보기' 팝업 메뉴
-  Widget _buildMoreMenu(BuildContext context, IssueGrain grain) {
-    // 현재 로그인된 사용자의 ID를 가져옴 (AsyncValue 처리)
-    final currentMemberId = ref.watch(currentMemberIdProvider).valueOrNull;
-    // 이 게시글의 작성자인지 확인
-    final isAuthor = grain.author.id == currentMemberId;
-
-    return PopupMenuButton<String>(
-      key: _menuKey,
-      icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
-      tooltip: '더보기',
-      // 메뉴 스타일 커스터마이징
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (value) {
-        if (value == 'report') {
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            () => _showReportReasonMenu(context, grain),
-          );
-        } else if (value == 'block') {
-          _showBlockConfirmationDialog(context, grain.author);
-        } else if (value == 'delete') {
-          _showDeleteConfirmationDialog(context, grain);
-        }
-      },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        // 신고하기
-        PopupMenuItem<String>(
-          value: 'report',
-          child: Row(
-            children: [
-              Icon(Icons.report_outlined, size: 20, color: Colors.orange),
-              const SizedBox(width: 12),
-              const Text('신고'),
-            ],
-          ),
+            // [공통 처리] 삭제 성공/실패에 대한 최종 SnackBar 알림
+            // (상세 페이지에서 삭제 후 뒤로 가는 경우는 위에서 return 되었으므로 실행되지 않음)
+            if (context.mounted) {
+              if (success) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('게시글이 삭제되었습니다.')));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('게시글 삭제에 실패했습니다.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
         ),
-
-        // 내가 쓴 글이 아닐 경우에만 '차단하기' 메뉴를 보여줌
-        if (!isAuthor)
-          PopupMenuItem<String>(
-            value: 'block',
-            child: Row(
-              children: [
-                Icon(Icons.block_outlined, size: 20, color: Colors.grey[700]),
-                const SizedBox(width: 12),
-                const Text('사용자 차단'),
-              ],
-            ),
-          ),
-
-        // 내가 쓴 글일 경우에만 '삭제하기' 메뉴를 보여줌
-        if (isAuthor) const PopupMenuDivider(height: 16),
-        if (isAuthor)
-          const PopupMenuItem<String>(
-            value: 'delete',
-            child: Row(
-              children: [
-                Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                SizedBox(width: 12),
-                Text('삭제', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
       ],
     );
-  }
-
-  void _showReportReasonMenu(BuildContext context, IssueGrain grain) {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RenderBox renderBox =
-        _menuKey.currentContext!.findRenderObject() as RenderBox;
-    final size = renderBox.size;
-    final position = renderBox.localToGlobal(Offset.zero);
-
-    showMenu<ReportReason>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, size.width, size.height),
-        Offset.zero & overlay.size,
-      ),
-      items: ReportReason.values.map((reason) {
-        return PopupMenuItem<ReportReason>(
-          value: reason,
-          child: Text(reason.korean),
-        );
-      }).toList(),
-    ).then((selectedReason) {
-      if (selectedReason != null) {
-        ref
-            .read(reportRepositoryProvider)
-            .reportContent(
-              contentId: grain.postId,
-              contentType: ReportContentType.POST,
-              reason: selectedReason,
-            );
-        ref
-            .read(reportedContentProvider.notifier)
-            .addReportedContent(
-              contentId: grain.postId,
-              contentType: ReportContentType.POST,
-            );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('신고가 접수되었습니다.')));
-      }
-    });
   }
 }
