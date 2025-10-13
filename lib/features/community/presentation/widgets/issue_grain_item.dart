@@ -442,6 +442,8 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
       key: _menuKey,
       icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
       tooltip: '더보기',
+      // 메뉴 스타일 커스터마이징
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) {
         if (value == 'report') {
           Future.delayed(
@@ -451,24 +453,47 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
         } else if (value == 'block') {
           _showBlockConfirmationDialog(context, grain.author);
         } else if (value == 'delete') {
-          // ✨ 3. [추가] 삭제 선택 시 동작
           _showDeleteConfirmationDialog(context, grain);
         }
       },
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        const PopupMenuItem<String>(value: 'report', child: Text('신고하기')),
+        // 신고하기
+        PopupMenuItem<String>(
+          value: 'report',
+          child: Row(
+            children: [
+              Icon(Icons.report_outlined, size: 20, color: Colors.orange),
+              const SizedBox(width: 12),
+              const Text('신고'),
+            ],
+          ),
+        ),
+
         // 내가 쓴 글이 아닐 경우에만 '차단하기' 메뉴를 보여줌
         if (!isAuthor)
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'block',
-            child: Text('이 사용자 차단하기'),
+            child: Row(
+              children: [
+                Icon(Icons.block_outlined, size: 20, color: Colors.grey[700]),
+                const SizedBox(width: 12),
+                const Text('사용자 차단'),
+              ],
+            ),
           ),
+
         // 내가 쓴 글일 경우에만 '삭제하기' 메뉴를 보여줌
-        if (isAuthor) const PopupMenuDivider(),
+        if (isAuthor) const PopupMenuDivider(height: 16),
         if (isAuthor)
           const PopupMenuItem<String>(
             value: 'delete',
-            child: Text('삭제하기', style: TextStyle(color: Colors.red)),
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                SizedBox(width: 12),
+                Text('삭제', style: TextStyle(color: Colors.red)),
+              ],
+            ),
           ),
       ],
     );

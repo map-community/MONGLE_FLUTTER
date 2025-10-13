@@ -286,6 +286,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
       key: _menuKey,
       icon: Icon(Icons.more_vert, size: 20, color: Colors.grey.shade600),
       tooltip: '더보기',
+      // 🆕 메뉴 스타일 커스터마이징
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) {
         if (value == 'report') {
           Future.delayed(
@@ -300,16 +302,45 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         }
       },
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        const PopupMenuItem<String>(value: 'report', child: Text('신고하기')),
-        const PopupMenuItem<String>(
-          value: 'block',
-          child: Text('이 사용자 차단하기'),
-        ), // ✨ 4. [추가] 내가 쓴 댓글일 경우에만 '삭제하기' 메뉴를 보여줌
-        if (isAuthor) const PopupMenuDivider(), // 구분선
+        // 🆕 아이콘 + 간결한 텍스트
+        PopupMenuItem<String>(
+          value: 'report',
+          child: Row(
+            children: [
+              Icon(Icons.report_outlined, size: 20, color: Colors.orange),
+              const SizedBox(width: 12),
+              const Text('신고'),
+            ],
+          ),
+        ),
+
+        // 내 댓글이 아닐 때만
+        if (!isAuthor)
+          PopupMenuItem<String>(
+            value: 'block',
+            child: Row(
+              children: [
+                Icon(Icons.block_outlined, size: 20, color: Colors.grey[700]),
+                const SizedBox(width: 12),
+                const Text('사용자 차단'),
+              ],
+            ),
+          ),
+
+        // 🆕 구분선 강조
+        if (isAuthor) const PopupMenuDivider(height: 16),
+
+        // 내 댓글일 때만
         if (isAuthor)
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'delete',
-            child: Text('삭제하기', style: TextStyle(color: Colors.red)),
+            child: Row(
+              children: [
+                const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                const SizedBox(width: 12),
+                const Text('삭제', style: TextStyle(color: Colors.red)),
+              ],
+            ),
           ),
       ],
     );
@@ -389,23 +420,56 @@ class _CommentItemState extends ConsumerState<CommentItem> {
   }
 
   Widget _buildDeletedComment() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+    // 들여쓰기 계산
+    // - 일반 댓글: 프로필(36) + 간격(12) = 48
+    // - 대댓글: 화살표(40) + 48 = 88
+    const double normalIndent = 48.0;
+    const double replyIconWidth = 40.0;
+
+    return Container(
+      // 🆕 배경색 추가 (연한 회색)
+      color: Colors.grey.shade100,
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // 대댓글 화살표
           if (widget.isReply)
             const SizedBox(
-              width: 40,
+              width: replyIconWidth,
               child: Icon(
                 Icons.subdirectory_arrow_right,
                 color: Colors.grey,
                 size: 20,
               ),
             ),
-          const Expanded(
+
+          // 🆕 쓰레기통 아이콘 (프로필 자리)
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.delete_outline,
+              color: Colors.grey.shade500,
+              size: 18,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // 텍스트
+          Expanded(
             child: Text(
               '삭제된 댓글입니다.',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         ],

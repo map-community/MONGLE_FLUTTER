@@ -203,21 +203,24 @@ class _RepliesSection extends ConsumerWidget {
               ),
               if (data.hasNext)
                 Padding(
-                  padding: const EdgeInsets.only(left: 50.0), // 버튼만 들여쓰기
-                  child: TextButton(
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                    onPressed: data.isLoadingMore
-                        ? null
-                        : () => ref
-                              .read(repliesProvider(parentCommentId).notifier)
-                              .fetchMoreReplies(),
-                    child: data.isLoadingMore
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('대댓글 더보기'),
+                  padding: const EdgeInsets.only(left: 50.0, right: 45.0),
+                  child: Align(
+                    alignment: Alignment.centerRight, // 🆕 오른쪽 정렬
+                    child: TextButton(
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                      onPressed: data.isLoadingMore
+                          ? null
+                          : () => ref
+                                .read(repliesProvider(parentCommentId).notifier)
+                                .fetchMoreReplies(),
+                      child: data.isLoadingMore
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('대댓글 더보기'),
+                    ),
                   ),
                 ),
             ],
