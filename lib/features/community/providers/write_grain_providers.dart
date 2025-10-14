@@ -81,34 +81,6 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     return result;
   }
 
-  // 제한된 액세스 가능성 체크
-  Future<bool> _checkIfLikelyLimitedAccess() async {
-    try {
-      print("📸 [Limited Check 1] 사진 개수 확인 시작");
-      final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
-        type: RequestType.image,
-      );
-
-      if (paths.isEmpty) {
-        print("📸 [Limited Check 2] 사진 폴더 없음");
-        return false;
-      }
-
-      final assetCount = await paths[0].assetCountAsync;
-      print("📸 [Limited Check 3] 접근 가능한 사진 개수: $assetCount");
-
-      // 사진이 1~20장이면 제한된 액세스일 가능성
-      // (기기에 사진이 정말 적을 수도 있으므로 경고만 표시)
-      final isLikely = assetCount > 0 && assetCount <= 20;
-      print("📸 [Limited Check 4] 제한된 액세스 추정: $isLikely");
-
-      return isLikely;
-    } catch (e) {
-      print("❌ [Limited Check Error] 사진 개수 확인 실패: $e");
-      return false;
-    }
-  }
-
   // 제한된 액세스 경고 다이얼로그
   Future<bool> _showLimitedAccessWarning(BuildContext context) async {
     return await showDialog<bool>(
@@ -152,7 +124,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
                       Expanded(
                         // 👈 이미 있지만 확인
                         child: Text(
-                          '설정에서 앱이 모든 사진에 접근할 수 있도록 권한을 허용해주세요',
+                          '설정에서 앱이 모든 사진에 접근할 수 있도록 권한을 허용해주세요.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.blue.shade900,
@@ -457,7 +429,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       return await _getCurrentPosition();
     } else if (status.isDenied) {
       // ❌ 일시적 거부 (다음에 다시 요청 가능)
-      print("⚠️ 위치 권한이 거부되었습니다 (일시적)");
+      print("⚠️ 위치 권한이 거부되었습니다. (일시적)");
       state = state.copyWith(
         errorMessage: '지도 위에 글을 쓰려면 위치 권한이 필요합니다.',
         permissionDenialType: LocationPermissionDenialType.temporary,
@@ -473,7 +445,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       return null;
     } else if (status.isRestricted) {
       // 🔒 시스템 제한
-      print("🔒 위치 권한이 시스템에 의해 제한되었습니다");
+      print("🔒 위치 권한이 시스템에 의해 제한되었습니다.");
       state = state.copyWith(
         errorMessage: '위치 권한이 시스템에 의해 제한되었습니다.\n기기 설정을 확인해주세요.',
         permissionDenialType: LocationPermissionDenialType.restricted,

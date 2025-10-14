@@ -254,8 +254,8 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
                     Expanded(
                       child: Text(
                         isPhotoPermission
-                            ? '설정 → 권한 → 사진 및 동영상에서\n"항상 모두 허용"으로 변경해주세요'
-                            : '몽글은 위치 기반 커뮤니티입니다.\n알갱이를 작성하려면 위치 권한이 필요합니다.',
+                            ? '설정에서 앱이 모든 사진에 접근할 수 있도록 권한을 허용해주세요.'
+                            : '지도 위에 글을 쓰려면 위치 권한이 필요합니다.',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.blue.shade900,
