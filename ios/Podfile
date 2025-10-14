@@ -47,6 +47,7 @@ post_install do |installer|
         ## 필요한 권한만 1로 설정합니다. (앱 사용 중 위치 권한만 사용)
         'PERMISSION_LOCATION_WHENINUSE=1',
         'PERMISSION_LOCATION=0',
+        'PERMISSION_PHOTOS=1',
       ]
     end
 

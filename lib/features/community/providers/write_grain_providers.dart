@@ -59,17 +59,17 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
 
   WriteGrainNotifier(this._ref) : super(const WriteGrainState());
 
-  Future<bool> _checkPhotosPermission() async {
+  Future<PermissionStatus> _checkPhotosPermission() async {
     print("🟢 [Permission 1] _checkPhotosPermission 시작");
 
     // 현재 권한 상태 확인
     final status = await Permission.photos.status;
     print("🟢 [Permission 2] 현재 status: $status");
 
-    // 이미 허용되어 있으면 true 반환
-    if (status.isGranted) {
-      print("✅ [Permission 3] 이미 허용됨");
-      return true;
+    // 이미 허용(전체 또는 제한)되어 있으면 현재 상태를 그대로 반환
+    if (status.isGranted || status.isLimited) {
+      print("✅ [Permission 3] 이미 허용됨 (상태: $status)");
+      return status;
     }
 
     // 권한 요청
@@ -77,61 +77,8 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     final result = await Permission.photos.request();
     print("🟢 [Permission 5] 권한 요청 결과: $result");
 
-    if (result.isGranted) {
-      // ✅ 허용됨 (모두 허용 or 제한된 액세스 모두 포함)
-      print("✅ [Permission 6] 허용됨");
-      return true;
-    } else if (result.isDenied) {
-      // ❌ 일시적 거부
-      print("⚠️ [Permission 7] 일시적 거부");
-      state = state.copyWith(
-        errorMessage: '사진 접근 권한이 필요합니다.',
-        photosPermissionDenialType: LocationPermissionDenialType.temporary,
-      );
-      Future.microtask(() {
-        if (mounted) {
-          state = state.copyWith(
-            errorMessage: null,
-            photosPermissionDenialType: null,
-          );
-        }
-      });
-      return false;
-    } else if (result.isPermanentlyDenied) {
-      // 🚫 영구적 거부
-      print("❌ [Permission 8] 영구적 거부");
-      state = state.copyWith(
-        errorMessage: '사진 권한이 거부되었습니다.\n설정에서 사진 권한을 허용해주세요.',
-        photosPermissionDenialType: LocationPermissionDenialType.permanent,
-      );
-      Future.microtask(() {
-        if (mounted) {
-          state = state.copyWith(
-            errorMessage: null,
-            photosPermissionDenialType: null,
-          );
-        }
-      });
-      return false;
-    } else if (result.isRestricted) {
-      // 🔒 시스템 제한
-      print("🔒 [Permission 9] 시스템 제한");
-      state = state.copyWith(
-        errorMessage: '사진 권한이 시스템에 의해 제한되었습니다.\n기기 설정을 확인해주세요.',
-        photosPermissionDenialType: LocationPermissionDenialType.restricted,
-      );
-      Future.microtask(() {
-        if (mounted) {
-          state = state.copyWith(
-            errorMessage: null,
-            photosPermissionDenialType: null,
-          );
-        }
-      });
-      return false;
-    }
-
-    return false;
+    // 요청 결과를 그대로 반환
+    return result;
   }
 
   // 제한된 액세스 가능성 체크
@@ -182,7 +129,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '혹시 "제한된 액세스"를 선택하셨나요?\n금방 선택하신 일부 사진만 접근 가능합니다.\n전체 사진에 접근하려면 설정 변경이 필요합니다!',
+                  '현재 일부 사진만 접근 가능합니다.\n전체 사진에 접근하려면 설정 변경이 필요합니다!',
                   style: TextStyle(fontSize: 15),
                 ),
                 const SizedBox(height: 12),
@@ -205,7 +152,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
                       Expanded(
                         // 👈 이미 있지만 확인
                         child: Text(
-                          '설정 → 권한 → 사진 및 동영상에서\n"항상 모두 허용"으로 변경해주세요',
+                          '사진 권한을 "전체 접근" 또는 "항상 모두 허용"으로 변경해주세요',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.blue.shade900,
@@ -241,76 +188,113 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         true;
   }
 
-  /// wechat_assets_picker를 사용하여 갤러리에서 미디어를 선택하는 메서드
+  // 위 함수에서 받은 PermissionStatus를 통해 분기 처리하도록 수정되었습니다.
   Future<void> pickMediaWithAssetsPicker(BuildContext context) async {
     print("🔵 [Step 1] pickMediaWithAssetsPicker 시작");
 
-    // 👇 권한 체크 먼저 수행
     print("🔵 [Step 2] _checkPhotosPermission 호출 전");
-    final hasPermission = await _checkPhotosPermission();
-    print("🔵 [Step 3] _checkPhotosPermission 결과: $hasPermission");
+    final status = await _checkPhotosPermission();
+    print("🔵 [Step 3] _checkPhotosPermission 결과: $status");
 
-    if (!hasPermission) {
-      print("❌ [Step 4] 권한 없음 - 여기서 return!");
-      return;
-    }
+    // 1. '전체 허용' 상태일 경우
+    if (status.isGranted) {
+      print("✅ [Step 4] '전체 허용' 상태 확인");
+      // 사진 개수를 세어서 20개 이하이면 경고창 표시
+      final isLikelyLimited = await _checkIfLikelyLimitedAccess();
+      if (isLikelyLimited) {
+        print("⚠️ [Step 5] 사진 개수가 적어 경고창 표시");
+        final shouldContinue = await _showLimitedAccessWarning(context);
+        if (!shouldContinue) {
+          return; // '설정 열기' 선택 시 종료
+        }
+      }
+      // 사진 선택 로직 진행
+      await _proceedToPickAssets(context);
 
-    // 제한된 액세스 감지 시도
-    print("🔵 [Step 5-1] 제한된 액세스 체크 시작");
-    final isLikelyLimited = await _checkIfLikelyLimitedAccess();
+      // 2. '제한된 접근' 상태일 경우
+    } else if (status.isLimited) {
+      print("⚠️ [Step 4] '제한된 접근' 상태 확인. 커스텀 경고 다이얼로그를 표시합니다.");
 
-    if (isLikelyLimited) {
-      print("⚠️ [Step 5-2] 제한된 액세스일 가능성 있음 - 경고 표시");
+      // 👇 [수정] 직접 만든 경고창을 다시 호출합니다.
       final shouldContinue = await _showLimitedAccessWarning(context);
 
-      if (!shouldContinue) {
-        print("❌ [Step 5-3] 사용자가 설정으로 이동 선택 - 종료");
-        return;
+      if (shouldContinue) {
+        // '이대로 진행'을 선택한 경우에만 사진 선택 로직을 실행합니다.
+        print("✅ [Step 5] 사용자가 '이대로 진행' 선택 - 사진 선택기로 진행");
+        await _proceedToPickAssets(context);
+      } else {
+        print("❌ [Step 5] 사용자가 '설정 열기' 선택 - 종료");
       }
-      print("✅ [Step 5-4] 사용자가 이대로 진행 선택");
+
+      // 3. 그 외 거부된 상태일 경우
     } else {
-      print("✅ [Step 5-5] 제한된 액세스 아님 - 바로 진행");
+      print("❌ [Step 4] 권한 없음 - 에러 상태 설정 및 종료");
+      if (status.isDenied) {
+        state = state.copyWith(
+          errorMessage: '사진 접근 권한이 필요합니다.',
+          photosPermissionDenialType: LocationPermissionDenialType.temporary,
+        );
+      } else if (status.isPermanentlyDenied) {
+        state = state.copyWith(
+          errorMessage: '사진 권한이 거부되었습니다.\n설정에서 사진 권한을 허용해주세요.',
+          photosPermissionDenialType: LocationPermissionDenialType.permanent,
+        );
+      } else if (status.isRestricted) {
+        state = state.copyWith(
+          errorMessage: '사진 권한이 시스템에 의해 제한되었습니다.\n기기 설정을 확인해주세요.',
+          photosPermissionDenialType: LocationPermissionDenialType.restricted,
+        );
+      }
+
+      // 에러 메시지가 잠시 표시되었다가 사라지도록 처리
+      Future.microtask(() {
+        if (mounted) {
+          state = state.copyWith(
+            errorMessage: null,
+            photosPermissionDenialType: null,
+          );
+        }
+      });
     }
+  }
+
+  /// [신규] 권한 확인 후 실제 사진/동영상 선택 로직을 처리하는 내부 함수
+  Future<void> _proceedToPickAssets(BuildContext context) async {
     try {
+      // 첨부 가능한 파일 개수를 계산합니다.
       final remainingSlots =
           PostFileUploadConstants.maxFileCount -
-          (state.photos.length + state.videos.length);
+              (state.photos.length + state.videos.length);
 
+      // 더 이상 첨부할 수 없으면 사용자에게 알립니다.
       if (remainingSlots <= 0) {
-        print("⚠️ [Step 6] remainingSlots 부족");
         state = state.copyWith(
           errorMessage:
-              '파일은 최대 ${PostFileUploadConstants.maxFileCount}개까지 첨부할 수 있습니다.',
+          '파일은 최대 ${PostFileUploadConstants.maxFileCount}개까지 첨부할 수 있습니다.',
         );
         return;
       }
 
-      print("🔵 [Step 7] AssetPicker.pickAssets 호출 전");
+      // wechat_assets_picker를 사용하여 갤러리를 엽니다.
       final List<AssetEntity>? result = await AssetPicker.pickAssets(
         context,
         pickerConfig: AssetPickerConfig(
           dragToSelect: false,
           maxAssets: remainingSlots,
-          requestType: RequestType.image,
+          requestType: RequestType.image, // 사진 및 동영상 모두 선택 가능하도록 설정
           specialPickerType: SpecialPickerType.noPreview,
           textDelegate: const KoreanAssetPickerTextDelegate(),
-          pickerTheme: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            primaryColor: Theme.of(context).primaryColor,
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).primaryColor,
-            ),
-          ),
+          pickerTheme: Theme.of(context),
+          limitedPermissionOverlayPredicate: (permissionState) => false,
         ),
       );
-      print("🔵 [Step 8] AssetPicker.pickAssets 완료. result: ${result?.length}");
 
+      // 사용자가 아무것도 선택하지 않고 갤러리를 닫으면 종료합니다.
       if (result == null || result.isEmpty) {
-        print("⚠️ [Step 9] result가 null 또는 비어있음");
         return;
       }
 
-      print("🔵 [Step 10] 선택된 파일 처리 시작");
+      // 선택된 파일들을 사진과 동영상으로 분류합니다.
       final List<AssetEntity> newPhotos = [];
       final List<AssetEntity> newVideos = [];
 
@@ -322,16 +306,17 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         }
       }
 
+      // 동영상 개수 제약 조건을 확인합니다.
       if ((state.videos.length + newVideos.length) >
           PostFileUploadConstants.maxVideoCount) {
         state = state.copyWith(
           errorMessage:
-              '동영상은 최대 ${PostFileUploadConstants.maxVideoCount}개까지 첨부할 수 있습니다.',
+          '동영상은 최대 ${PostFileUploadConstants.maxVideoCount}개까지 첨부할 수 있습니다.',
         );
         return;
       }
 
-      // 파일 크기 확인
+      // 파일 크기 제약 조건을 확인합니다.
       for (final photo in newPhotos) {
         final file = await photo.file;
         if (file == null) continue;
@@ -352,6 +337,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         }
       }
 
+      // 총 이미지 용량 제약 조건을 확인합니다.
       int totalImageSize = 0;
       for (final photo in [...state.photos, ...newPhotos]) {
         final file = await photo.file;
@@ -365,13 +351,14 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       }
 
       print("✅ [Step 11] 파일 검증 완료 - state 업데이트");
+      // 모든 검증을 통과하면 상태를 업데이트하여 선택된 파일들을 UI에 반영합니다.
       state = state.copyWith(
         photos: [...state.photos, ...newPhotos],
         videos: [...state.videos, ...newVideos],
         errorMessage: null,
       );
     } catch (e) {
-      print("❌ [Error] pickMediaWithAssetsPicker 에러: $e");
+      print("❌ [Error] _proceedToPickAssets 에러: $e");
       state = state.copyWith(errorMessage: '파일 선택 중 오류가 발생했습니다: $e');
     }
   }
@@ -475,7 +462,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       // ❌ 일시적 거부 (다음에 다시 요청 가능)
       print("⚠️ 위치 권한이 거부되었습니다 (일시적)");
       state = state.copyWith(
-        errorMessage: '위치 권한이 필요합니다.\n알갱이는 위치 기반 서비스입니다.',
+        errorMessage: '지도 위에 글을 쓰려면 위치 권한이 필요합니다.',
         permissionDenialType: LocationPermissionDenialType.temporary,
       );
       return null;
@@ -653,14 +640,14 @@ class KoreanAssetPickerTextDelegate extends AssetPickerTextDelegate {
   @override
   String get unSupportedAssetType => '지원하지 않는 형식입니다';
   @override
-  String get unableToAccessAll => '모든 파일에 접근할 수 없습니다';
+  String get unableToAccessAll => '모든 사진과 동영상에 접근할 수 없습니다';
   @override
   String get viewingLimitedAssetsTip => '일부 사진과 동영상만 표시됩니다';
   @override
   String get changeAccessibleLimitedAssets => '접근 가능한 사진 변경';
   @override
   String get accessAllTip =>
-      '앱이 기기의 일부 파일에만 접근할 수 있습니다. 시스템 설정으로 이동하여 앱이 기기의 모든 미디어에 접근하도록 허용하세요.';
+      '앱이 선택된 일부 사진과 동영상에만 접근할 수 있습니다. 시스템 설정으로 이동하여 앱이 기기의 모든 미디어에 접근하도록 허용하세요.';
   @override
   String get goToSystemSettings => '시스템 설정으로 이동';
   @override

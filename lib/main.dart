@@ -66,6 +66,15 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+
+        // 👇 [추가] 앱의 모든 ElevatedButton에 적용될 전역 스타일
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue, // 파란색 배경
+            foregroundColor: Colors.white, // 하얀색 글씨
+            surfaceTintColor: Colors.blue, // Material 3 호환성
+          ),
+        ),
       ),
     );
   }
