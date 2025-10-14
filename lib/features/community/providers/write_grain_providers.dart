@@ -152,7 +152,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
                       Expanded(
                         // 👈 이미 있지만 확인
                         child: Text(
-                          '사진 권한을 "전체 접근" 또는 "항상 모두 허용"으로 변경해주세요',
+                          '설정에서 앱이 모든 사진에 접근할 수 있도록 권한을 허용해주세요',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.blue.shade900,
@@ -196,37 +196,34 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     final status = await _checkPhotosPermission();
     print("🔵 [Step 3] _checkPhotosPermission 결과: $status");
 
-    // 1. '전체 허용' 상태일 경우
-    if (status.isGranted) {
-      print("✅ [Step 4] '전체 허용' 상태 확인");
-      // 사진 개수를 세어서 20개 이하이면 경고창 표시
-      final isLikelyLimited = await _checkIfLikelyLimitedAccess();
-      if (isLikelyLimited) {
-        print("⚠️ [Step 5] 사진 개수가 적어 경고창 표시");
-        final shouldContinue = await _showLimitedAccessWarning(context);
-        if (!shouldContinue) {
-          return; // '설정 열기' 선택 시 종료
+    // 권한이 허용된 경우 (전체 또는 일부)
+    if (status.isGranted || status.isLimited) {
+
+      // --- ⬇️ [핵심 수정] Android '부분 접근' 감지 로직 추가 ---
+      if (Platform.isAndroid && status.isGranted) {
+        // photo_manager를 통해 상세 권한 상태를 요청합니다.
+        final ps = await PhotoManager.requestPermissionExtend();
+
+        // hasAccess가 false이면 '일부 사진만 선택'한 상태입니다.
+        if (!ps.hasAccess) {
+          // 이 경우에만 사용자에게 안내 다이얼로그를 보여줍니다.
+          await _showLimitedAccessWarning(context);
         }
       }
+      // --- ⬆️ [핵심 수정] Android '부분 접근' 감지 로직 끝 ---
+
+      // iOS에서 '제한된 접근'일 경우 (기존 로직 유지)
+      else if (status.isLimited) {
+        final shouldContinue = await _showLimitedAccessWarning(context);
+        if (!shouldContinue) {
+          return;
+        }
+      }
+
       // 사진 선택 로직 진행
       await _proceedToPickAssets(context);
 
-      // 2. '제한된 접근' 상태일 경우
-    } else if (status.isLimited) {
-      print("⚠️ [Step 4] '제한된 접근' 상태 확인. 커스텀 경고 다이얼로그를 표시합니다.");
-
-      // 👇 [수정] 직접 만든 경고창을 다시 호출합니다.
-      final shouldContinue = await _showLimitedAccessWarning(context);
-
-      if (shouldContinue) {
-        // '이대로 진행'을 선택한 경우에만 사진 선택 로직을 실행합니다.
-        print("✅ [Step 5] 사용자가 '이대로 진행' 선택 - 사진 선택기로 진행");
-        await _proceedToPickAssets(context);
-      } else {
-        print("❌ [Step 5] 사용자가 '설정 열기' 선택 - 종료");
-      }
-
-      // 3. 그 외 거부된 상태일 경우
+      // 권한이 거부된 경우
     } else {
       print("❌ [Step 4] 권한 없음 - 에러 상태 설정 및 종료");
       if (status.isDenied) {
