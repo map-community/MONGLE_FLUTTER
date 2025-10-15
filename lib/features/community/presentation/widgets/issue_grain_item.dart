@@ -20,14 +20,16 @@ import 'package:timeago/timeago.dart' as timeago;
 enum IssueGrainDisplayMode { mapPreview, boardPreview, fullView }
 
 class IssueGrainItem extends ConsumerStatefulWidget {
-  final IssueGrain grain;
+  final IssueGrain? grain; // 👈 [수정] nullable로 변경
+  final Object? error; // 👈 [추가] 에러 객체를 받을 파라미터
   final VoidCallback? onTap;
   final IssueGrainDisplayMode displayMode;
   final CloudProviderParam? cloudProviderParam;
 
   const IssueGrainItem({
     super.key,
-    required this.grain,
+    this.grain, // 👈 [수정] 필수가 아님
+    this.error, // 👈 [추가]
     this.onTap,
     this.displayMode = IssueGrainDisplayMode.mapPreview,
     this.cloudProviderParam,
@@ -40,7 +42,81 @@ class IssueGrainItem extends ConsumerStatefulWidget {
 class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
   @override
   Widget build(BuildContext context) {
-    final grain = widget.grain;
+    // [핵심 1] grain 데이터가 null이고, error 데이터가 있다면 에러 UI를 먼저 그립니다.
+    if (widget.grain == null && widget.error != null) {
+      // 에러가 발생했더라도, 버튼들이 포함된 기본 레이아웃은 유지합니다.
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 작성자 정보가 없으므로 Placeholder UI를 보여줍니다.
+            Row(
+              children: [
+                const UserProfileLine(profileImageUrl: null), // 기본 프로필
+                const SizedBox(width: 8),
+                Text('정보 없음', style: TextStyle(color: Colors.grey.shade600)),
+                const Spacer(),
+                // 에러 상태에서는 '더보기' 메뉴를 비활성화합니다.
+                IconButton(
+                  onPressed: null,
+                  icon: Icon(Icons.more_vert, color: Colors.grey.shade300),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // 게시글 내용 대신 에러 메시지를 표시합니다.
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      '게시글 정보를 불러오는 데 실패했습니다.',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 183, 28, 28),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // InteractionToolbar는 비활성화된 상태로 보여줍니다.
+            InteractionToolbar(
+              grain: IssueGrain(
+                postId: '',
+                author: const Author(id: '', nickname: ''),
+                content: '',
+                latitude: 0,
+                longitude: 0,
+                likeCount: 0,
+                dislikeCount: 0,
+                commentCount: 0,
+                viewCount: 0,
+                createdAt: DateTime.now(),
+              ),
+              onTap: null, // 탭 비활성화
+            ),
+          ],
+        ),
+      );
+    }
+
+    // [핵심 2] grain 데이터가 null이 아님을 확신할 수 있습니다.
+    // 사진 URL 로딩 실패 같은 '부분적인' 에러가 발생해도, 이전에 성공한 grain 데이터는 여기에 전달됩니다.
+    final grain = widget.grain!;
 
     Widget content;
     switch (widget.displayMode) {

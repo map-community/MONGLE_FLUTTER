@@ -28,51 +28,74 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // 👇 에러 상태를 추적하기 위한 변수
   bool _hasError = false;
 
-  @override
-  Widget build(BuildContext context) {
-    // 👇 ref.listen은 반드시 build 메서드 안에서 호출해야 합니다!
+  // ref.listen을 build 메서드 안에 배치하여 상태 변화를 감지하고 UI 부수 효과를 처리합니다.
+  void _setupErrorListener() {
     ref.listen<MapState>(mapViewModelProvider, (previous, next) {
       next.when(
         loading: () {
-          // 로딩 중에는 에러 상태 해제
           if (_hasError) {
             setState(() => _hasError = false);
           }
         },
         error: (message) {
-          print("🔴 [MapScreen] 에러 감지: $message");
-          // 에러 플래그 설정
           if (!_hasError) {
             setState(() => _hasError = true);
           }
-
-          // SnackBar 표시
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(message)),
-                ],
+          // SnackBar는 build가 완료된 후에 표시하는 것이 안전합니다.
+          Future.microtask(
+            () => ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(message)),
+                  ],
+                ),
+                backgroundColor: Colors.red.shade600,
+                duration: const Duration(seconds: 4),
+                behavior: SnackBarBehavior.floating,
               ),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
             ),
           );
         },
         data: (_, mapObjects, __) {
-          // 데이터가 성공적으로 로드되면 에러 상태 해제
           if (mapObjects != null && _hasError) {
             setState(() => _hasError = false);
           } else if (mapObjects == null && !_hasError) {
-            // mapObjects가 null이면 에러 상태로 설정
             setState(() => _hasError = true);
           }
         },
       );
     });
+
+    // ✅ [신규] 개별 게시글 로딩 실패 시 SnackBar를 띄우는 리스너 추가
+    ref.listen<AsyncValue>(
+      issueGrainProvider(
+        ref.watch(mapSheetStrategyProvider).selectedGrainId ?? '',
+      ),
+      (_, state) {
+        // 에러가 있고, 이전에 성공한 데이터가 있는 경우 (부분 실패)에만 SnackBar 표시
+        if (state.hasError && state.hasValue) {
+          Future.microtask(() {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('게시글 일부 정보를 불러오지 못했습니다.'),
+                backgroundColor: Colors.orange[700],
+              ),
+            );
+          });
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // build 메서드 내에서 리스너를 설정합니다.
+    _setupErrorListener();
+
+    // (기존 build 메서드의 나머지 코드는 동일)
     final mapState = ref.watch(mapViewModelProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final sheetState = ref.watch(mapSheetStrategyProvider);
@@ -90,7 +113,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final NLatLng initialPosition =
         mapState.whenOrNull(data: (pos, _, __) => pos) ??
-            const NLatLng(35.890, 128.612);
+        const NLatLng(35.890, 128.612);
 
     return PopScope(
       canPop: canPop,
@@ -172,26 +195,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
             // 👇 3. 초기 로딩 오버레이 (밝은 배경)
             mapState.whenOrNull(
-              loading: () => Container(
-                color: Colors.white,
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text(
-                        '지도를 불러오는 중...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
+                  loading: () => Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text(
+                            '지도를 불러오는 중...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ) ??
+                ) ??
                 const SizedBox.shrink(),
 
             // 4. FAB
@@ -314,10 +337,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildPreviewCard(
-      BuildContext context,
-      String grainId,
-      ScrollController scrollController,
-      ) {
+    BuildContext context,
+    String grainId,
+    ScrollController scrollController,
+  ) {
     final grainAsync = ref.watch(issueGrainProvider(grainId));
 
     return GestureDetector(
@@ -327,39 +350,41 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: SingleChildScrollView(
         controller: scrollController,
         physics: const ClampingScrollPhysics(),
-        child: AbsorbPointer(
-          child: Column(
-            children: [
-              _buildHandle(),
-              grainAsync.when(
-                loading: () => const SizedBox(
-                  height: 150,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Center(child: Text('오류: $e')),
-                ),
-                data: (grain) => IssueGrainItem(
-                  grain: grain,
-                  displayMode: IssueGrainDisplayMode.mapPreview,
-                  onTap: null,
-                ),
+        child: Column(
+          children: [
+            _buildHandle(),
+            // [핵심] 이제 when 구문은 위젯을 교체하는 대신,
+            // IssueGrainItem에 어떤 파라미터를 전달할지만 결정합니다.
+            grainAsync.when(
+              loading: () => const SizedBox(
+                height: 150,
+                child: Center(child: CircularProgressIndicator()),
               ),
-            ],
-          ),
+              // 👇 data와 error 블록 모두 IssueGrainItem을 호출합니다.
+              data: (grain) => IssueGrainItem(
+                grain: grain, // 성공 시 grain 데이터를 전달
+                displayMode: IssueGrainDisplayMode.mapPreview,
+              ),
+              error: (e, _) => IssueGrainItem(
+                error: e, // 실패 시 error 객체를 전달
+                displayMode: IssueGrainDisplayMode.mapPreview,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildFullScrollView(
-      BuildContext context,
-      ScrollController scrollController,
-      String grainId,
-      ) {
+    BuildContext context,
+    ScrollController scrollController,
+    String grainId,
+  ) {
+    // issueGrainProvider를 구독하여 특정 게시물의 데이터 상태를 추적합니다.
     final grainAsync = ref.watch(issueGrainProvider(grainId));
 
+    // 댓글 무한 스크롤을 위해 스크롤 이벤트를 감지하는 리스너입니다.
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         final metrics = notification.metrics;
@@ -373,48 +398,80 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         }
         return false;
       },
+      // 스크롤 가능한 UI 요소들을 조합하기 위해 CustomScrollView를 사용합니다.
       child: CustomScrollView(
         controller: scrollController,
         slivers: [
+          // 바텀시트 상단의 핸들 UI
           SliverToBoxAdapter(child: _buildHandle()),
+
+          // [핵심 수정] grainAsync.when 구문을 아래와 같이 변경합니다.
           grainAsync.when(
-            loading: () => const SliverToBoxAdapter(
-              child: SizedBox(
-                height: 300,
-                child: Center(child: CircularProgressIndicator()),
-              ),
+            // 로딩 중일 때는 화면 전체를 차지하는 로딩 인디케이터를 표시합니다.
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Center(child: Text('오류: $e')),
-              ),
+
+            // 데이터 로딩 성공 시:
+            data: (grain) => SliverMainAxisGroup(
+              slivers: [
+                // 1. 게시글 본문 위젯 (성공한 grain 데이터 전달)
+                SliverToBoxAdapter(
+                  child: IssueGrainItem(
+                    grain: grain,
+                    displayMode: IssueGrainDisplayMode.fullView,
+                  ),
+                ),
+                // 2. 구분선
+                SliverToBoxAdapter(
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Colors.grey.shade200,
+                  ),
+                ),
+                // 3. 댓글 섹션
+                CommentSection(postId: grainId),
+                // 4. 하단 여백
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              ],
             ),
-            data: (grain) => SliverToBoxAdapter(
-              child: IssueGrainItem(
-                grain: grain,
-                displayMode: IssueGrainDisplayMode.fullView,
-              ),
+
+            // 데이터 로딩 실패 시:
+            error: (e, _) => SliverMainAxisGroup(
+              slivers: [
+                // 1. 게시글 본문 위젯 (error 객체 전달)
+                // IssueGrainItem은 error를 받아 뼈대는 유지하되, 내용만 에러 UI로 표시합니다.
+                SliverToBoxAdapter(
+                  child: IssueGrainItem(
+                    error: e,
+                    displayMode: IssueGrainDisplayMode.fullView,
+                  ),
+                ),
+                // 2. 구분선 (에러가 나도 유지)
+                SliverToBoxAdapter(
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Colors.grey.shade200,
+                  ),
+                ),
+                // 3. 댓글 섹션 (에러가 나도 유지)
+                CommentSection(postId: grainId),
+                // 4. 하단 여백 (에러가 나도 유지)
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              ],
             ),
           ),
-          SliverToBoxAdapter(
-            child: Divider(
-              height: 1,
-              thickness: 1,
-              color: Colors.grey.shade200,
-            ),
-          ),
-          CommentSection(postId: grainId),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
   }
 
   Widget _buildLocalFeedSheet(
-      BuildContext context,
-      ScrollController scrollController,
-      ) {
+    BuildContext context,
+    ScrollController scrollController,
+  ) {
     final mapState = ref.watch(mapViewModelProvider);
 
     final NLatLngBounds? visibleBounds = mapState.whenOrNull(
