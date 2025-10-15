@@ -18,14 +18,15 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     required String content,
     required double latitude,
     required double longitude,
+    required bool isRandomLocationEnabled,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final newGrain = IssueGrain(
       postId: 'grain_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
       photoUrls: [],
-      latitude: latitude,
-      longitude: longitude,
+      latitude: isRandomLocationEnabled ? 35.890 : latitude, // 랜덤위치면 임의값
+      longitude: isRandomLocationEnabled ? 128.612 : longitude,
       author: mockCurrentUser,
       createdAt: DateTime.now(),
       viewCount: 0,
@@ -67,6 +68,7 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     required List<String> fileKeyList,
     required double latitude,
     required double longitude,
+    required bool isRandomLocationEnabled,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -79,8 +81,8 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
       postId: 'grain_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
       photoUrls: fakeFullUrls, // [수정] 변환된 URL 목록을 photoUrls에 저장
-      latitude: latitude,
-      longitude: longitude,
+      latitude: isRandomLocationEnabled ? 35.890 : latitude,
+      longitude: isRandomLocationEnabled ? 128.612 : longitude,
       author: mockCurrentUser,
       createdAt: DateTime.now(),
       viewCount: 0,
@@ -90,7 +92,9 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
     );
 
     _db.insert(0, newGrain);
-    print('✅ [FakeRepo] 새 알갱이 생성 완료 (파일 포함): ${newGrain.postId}');
+    print(
+      '✅ [FakeRepo] 새 알갱이 생성 완료 (파일 포함): ${newGrain.postId}, isRandom: $isRandomLocationEnabled',
+    );
   }
 
   // --- 🔽 아래 함수들은 수정됩니다. 🔽 ---

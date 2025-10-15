@@ -56,6 +56,7 @@ abstract class IssueGrainRepository {
     required String content,
     required double latitude,
     required double longitude,
+    required bool isRandomLocationEnabled,
   });
 
   /// 2. (파일이 있을 때 Step 1) 파일 업로드를 위한 Presigned URL들을 서버에 요청합니다.
@@ -69,6 +70,7 @@ abstract class IssueGrainRepository {
     required List<String> fileKeyList,
     required double latitude,
     required double longitude,
+    required bool isRandomLocationEnabled,
   });
 
   // --- 글 읽기 및 상호작용 관련 함수 (기존과 동일) ---

@@ -27,6 +27,7 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     required String content,
     required double latitude,
     required double longitude,
+    required bool isRandomLocationEnabled,
   }) async {
     try {
       // POST /api/v1/posts 엔드포인트에 데이터를 전송합니다.
@@ -36,6 +37,7 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
           'content': content,
           'latitude': latitude,
           'longitude': longitude,
+          'isRandomLocationEnabled': isRandomLocationEnabled,
         },
       );
     } catch (e) {
@@ -72,6 +74,7 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
     required List<String> fileKeyList,
     required double latitude,
     required double longitude,
+    required bool isRandomLocationEnabled,
   }) async {
     try {
       // POST /api/v1/posts/complete 엔드포인트에 데이터를 전송합니다.
@@ -82,6 +85,7 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
           'fileKeyList': fileKeyList,
           'latitude': latitude,
           'longitude': longitude,
+          'isRandomLocationEnabled': isRandomLocationEnabled,
         },
       );
     } catch (e) {

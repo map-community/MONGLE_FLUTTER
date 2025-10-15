@@ -50,6 +50,7 @@ abstract class WriteGrainState with _$WriteGrainState {
     @Default([]) List<AssetEntity> videos,
     LocationPermissionDenialType? permissionDenialType,
     LocationPermissionDenialType? photosPermissionDenialType,
+    @Default(false) bool isRandomLocationEnabled,
   }) = _WriteGrainState;
 }
 
@@ -58,6 +59,12 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
   final Ref _ref;
 
   WriteGrainNotifier(this._ref) : super(const WriteGrainState());
+
+  void toggleIsRandomLocationEnabled() {
+    state = state.copyWith(
+      isRandomLocationEnabled: !state.isRandomLocationEnabled,
+    );
+  }
 
   Future<PermissionStatus> _checkPhotosPermission() async {
     print("🟢 [Permission 1] _checkPhotosPermission 시작");
@@ -170,7 +177,6 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
 
     // 권한이 허용된 경우 (전체 또는 일부)
     if (status.isGranted || status.isLimited) {
-
       // --- ⬇️ [핵심 수정] Android '부분 접근' 감지 로직 추가 ---
       if (Platform.isAndroid && status.isGranted) {
         // photo_manager를 통해 상세 권한 상태를 요청합니다.
@@ -183,7 +189,6 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         }
       }
       // --- ⬆️ [핵심 수정] Android '부분 접근' 감지 로직 끝 ---
-
       // iOS에서 '제한된 접근'일 경우 (기존 로직 유지)
       else if (status.isLimited) {
         final shouldContinue = await _showLimitedAccessWarning(context);
@@ -233,13 +238,13 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       // 첨부 가능한 파일 개수를 계산합니다.
       final remainingSlots =
           PostFileUploadConstants.maxFileCount -
-              (state.photos.length + state.videos.length);
+          (state.photos.length + state.videos.length);
 
       // 더 이상 첨부할 수 없으면 사용자에게 알립니다.
       if (remainingSlots <= 0) {
         state = state.copyWith(
           errorMessage:
-          '파일은 최대 ${PostFileUploadConstants.maxFileCount}개까지 첨부할 수 있습니다.',
+              '파일은 최대 ${PostFileUploadConstants.maxFileCount}개까지 첨부할 수 있습니다.',
         );
         return;
       }
@@ -280,7 +285,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
           PostFileUploadConstants.maxVideoCount) {
         state = state.copyWith(
           errorMessage:
-          '동영상은 최대 ${PostFileUploadConstants.maxVideoCount}개까지 첨부할 수 있습니다.',
+              '동영상은 최대 ${PostFileUploadConstants.maxVideoCount}개까지 첨부할 수 있습니다.',
         );
         return;
       }
@@ -479,10 +484,12 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     }
   }
 
+  /// 게시글을 최종적으로 서버에 제출(등록)하는 함수입니다.
   Future<bool> submitPost({
     required String content,
-    NLatLng? designatedLocation,
+    NLatLng? designatedLocation, // 지도에서 길게 눌러 지정한 위치 (선택 사항)
   }) async {
+    // 1. **기본 유효성 검사**: 내용과 미디어가 모두 비어있는지 확인합니다.
     if (content.trim().isEmpty &&
         state.photos.isEmpty &&
         state.videos.isEmpty) {
@@ -490,6 +497,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       return false;
     }
 
+    // 2. **욕설/비속어 검사**: 내용에 금칙어가 포함되어 있는지 확인합니다.
     final filterService = _ref.read(profanityFilterProvider);
     final foundProfanity = filterService.findFirstProfanity(content);
     if (foundProfanity != null) {
@@ -499,12 +507,14 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
       return false;
     }
 
+    // 3. **파일 유효성 검사**: 첨부된 파일의 개수, 용량 등을 확인합니다.
     final fileValidationError = await _validateFiles();
     if (fileValidationError != null) {
       state = state.copyWith(errorMessage: fileValidationError);
       return false;
     }
 
+    // 4. **제출 시작**: 로딩 상태로 변경하고 이전 에러 메시지를 초기화합니다.
     state = state.copyWith(
       isSubmitting: true,
       errorMessage: null,
@@ -512,29 +522,33 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
     );
 
     try {
-      // 👇 위치 권한 요청 및 위치 가져오기
+      // 5. **위치 정보 확보**: '무작위 위치' 여부와 관계없이 항상 실제 위치를 가져옵니다.
+      // 서버가 이 위치를 기반으로 노이즈를 추가할지 결정합니다.
       final position = await _requestLocationAndGetPosition(
         designatedLocation: designatedLocation,
       );
 
-      // 👇 위치를 가져오지 못한 경우 (권한 거부 또는 위치 오류)
+      // 위치를 가져오지 못한 경우 (권한 거부 또는 위치 서비스 오류) 제출을 중단합니다.
       if (position == null) {
         state = state.copyWith(isSubmitting: false);
-        // errorMessage와 permissionDenialType은 _requestLocationAndGetPosition에서 이미 설정됨
         return false;
       }
 
       final repository = _ref.read(issueGrainRepositoryProvider);
-
       final allAssets = [...state.photos, ...state.videos];
 
+      // 6. **API 호출 분기**: 첨부 파일 유무에 따라 다른 API 함수를 호출합니다.
       if (allAssets.isEmpty) {
+        // 6-1. **텍스트 전용 게시글 생성**: 파일이 없으면 바로 게시글 생성 API를 호출합니다.
         await repository.createPost(
           content: content,
           latitude: position.latitude,
           longitude: position.longitude,
+          isRandomLocationEnabled: state.isRandomLocationEnabled,
         );
       } else {
+        // 6-2. **파일 포함 게시글 생성**: 파일이 있는 경우 3단계에 걸쳐 생성합니다.
+        // Step 1: 서버에 Presigned URL(파일 업로드용 임시 URL)을 요청합니다.
         final List<File> files = [];
         for (final asset in allAssets) {
           final file = await asset.file;
@@ -555,6 +569,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         final List<IssuedUrlInfo> issuedUrls = await repository
             .requestUploadUrls(files: filesToRequest);
 
+        // Step 2: 발급받은 Presigned URL로 실제 파일들을 S3 같은 저장소에 업로드합니다.
         await Future.wait(
           List.generate(
             files.length,
@@ -565,18 +580,22 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
           ),
         );
 
+        // Step 3: 업로드가 완료되었음을 서버에 알리며 최종적으로 게시글 생성을 완료합니다.
         final fileKeyList = issuedUrls.map((info) => info.fileKey).toList();
         await repository.completePostCreation(
           content: content,
           fileKeyList: fileKeyList,
           latitude: position.latitude,
           longitude: position.longitude,
+          isRandomLocationEnabled: state.isRandomLocationEnabled,
         );
       }
 
+      // 7. **제출 완료**: 로딩 상태를 해제하고 성공(true)을 반환합니다.
       state = state.copyWith(isSubmitting: false);
       return true;
     } catch (e) {
+      // 8. **에러 처리**: 과정 중 오류 발생 시 로딩 상태를 해제하고 실패(false)를 반환합니다.
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: "게시글 등록 중 오류가 발생했습니다: $e",

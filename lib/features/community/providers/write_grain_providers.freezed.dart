@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WriteGrainState {
 
- bool get isSubmitting; String? get errorMessage; List<AssetEntity> get photos; List<AssetEntity> get videos; LocationPermissionDenialType? get permissionDenialType; LocationPermissionDenialType? get photosPermissionDenialType;
+ bool get isSubmitting; String? get errorMessage; List<AssetEntity> get photos; List<AssetEntity> get videos; LocationPermissionDenialType? get permissionDenialType; LocationPermissionDenialType? get photosPermissionDenialType; bool get isRandomLocationEnabled;
 /// Create a copy of WriteGrainState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $WriteGrainStateCopyWith<WriteGrainState> get copyWith => _$WriteGrainStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WriteGrainState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&const DeepCollectionEquality().equals(other.photos, photos)&&const DeepCollectionEquality().equals(other.videos, videos)&&(identical(other.permissionDenialType, permissionDenialType) || other.permissionDenialType == permissionDenialType)&&(identical(other.photosPermissionDenialType, photosPermissionDenialType) || other.photosPermissionDenialType == photosPermissionDenialType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WriteGrainState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&const DeepCollectionEquality().equals(other.photos, photos)&&const DeepCollectionEquality().equals(other.videos, videos)&&(identical(other.permissionDenialType, permissionDenialType) || other.permissionDenialType == permissionDenialType)&&(identical(other.photosPermissionDenialType, photosPermissionDenialType) || other.photosPermissionDenialType == photosPermissionDenialType)&&(identical(other.isRandomLocationEnabled, isRandomLocationEnabled) || other.isRandomLocationEnabled == isRandomLocationEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isSubmitting,errorMessage,const DeepCollectionEquality().hash(photos),const DeepCollectionEquality().hash(videos),permissionDenialType,photosPermissionDenialType);
+int get hashCode => Object.hash(runtimeType,isSubmitting,errorMessage,const DeepCollectionEquality().hash(photos),const DeepCollectionEquality().hash(videos),permissionDenialType,photosPermissionDenialType,isRandomLocationEnabled);
 
 @override
 String toString() {
-  return 'WriteGrainState(isSubmitting: $isSubmitting, errorMessage: $errorMessage, photos: $photos, videos: $videos, permissionDenialType: $permissionDenialType, photosPermissionDenialType: $photosPermissionDenialType)';
+  return 'WriteGrainState(isSubmitting: $isSubmitting, errorMessage: $errorMessage, photos: $photos, videos: $videos, permissionDenialType: $permissionDenialType, photosPermissionDenialType: $photosPermissionDenialType, isRandomLocationEnabled: $isRandomLocationEnabled)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $WriteGrainStateCopyWith<$Res>  {
   factory $WriteGrainStateCopyWith(WriteGrainState value, $Res Function(WriteGrainState) _then) = _$WriteGrainStateCopyWithImpl;
 @useResult
 $Res call({
- bool isSubmitting, String? errorMessage, List<AssetEntity> photos, List<AssetEntity> videos, LocationPermissionDenialType? permissionDenialType, LocationPermissionDenialType? photosPermissionDenialType
+ bool isSubmitting, String? errorMessage, List<AssetEntity> photos, List<AssetEntity> videos, LocationPermissionDenialType? permissionDenialType, LocationPermissionDenialType? photosPermissionDenialType, bool isRandomLocationEnabled
 });
 
 
@@ -62,7 +62,7 @@ class _$WriteGrainStateCopyWithImpl<$Res>
 
 /// Create a copy of WriteGrainState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? isSubmitting = null,Object? errorMessage = freezed,Object? photos = null,Object? videos = null,Object? permissionDenialType = freezed,Object? photosPermissionDenialType = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? isSubmitting = null,Object? errorMessage = freezed,Object? photos = null,Object? videos = null,Object? permissionDenialType = freezed,Object? photosPermissionDenialType = freezed,Object? isRandomLocationEnabled = null,}) {
   return _then(_self.copyWith(
 isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -70,7 +70,8 @@ as String?,photos: null == photos ? _self.photos : photos // ignore: cast_nullab
 as List<AssetEntity>,videos: null == videos ? _self.videos : videos // ignore: cast_nullable_to_non_nullable
 as List<AssetEntity>,permissionDenialType: freezed == permissionDenialType ? _self.permissionDenialType : permissionDenialType // ignore: cast_nullable_to_non_nullable
 as LocationPermissionDenialType?,photosPermissionDenialType: freezed == photosPermissionDenialType ? _self.photosPermissionDenialType : photosPermissionDenialType // ignore: cast_nullable_to_non_nullable
-as LocationPermissionDenialType?,
+as LocationPermissionDenialType?,isRandomLocationEnabled: null == isRandomLocationEnabled ? _self.isRandomLocationEnabled : isRandomLocationEnabled // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -155,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isSubmitting,  String? errorMessage,  List<AssetEntity> photos,  List<AssetEntity> videos,  LocationPermissionDenialType? permissionDenialType,  LocationPermissionDenialType? photosPermissionDenialType)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isSubmitting,  String? errorMessage,  List<AssetEntity> photos,  List<AssetEntity> videos,  LocationPermissionDenialType? permissionDenialType,  LocationPermissionDenialType? photosPermissionDenialType,  bool isRandomLocationEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WriteGrainState() when $default != null:
-return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,_that.permissionDenialType,_that.photosPermissionDenialType);case _:
+return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,_that.permissionDenialType,_that.photosPermissionDenialType,_that.isRandomLocationEnabled);case _:
   return orElse();
 
 }
@@ -176,10 +177,10 @@ return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isSubmitting,  String? errorMessage,  List<AssetEntity> photos,  List<AssetEntity> videos,  LocationPermissionDenialType? permissionDenialType,  LocationPermissionDenialType? photosPermissionDenialType)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isSubmitting,  String? errorMessage,  List<AssetEntity> photos,  List<AssetEntity> videos,  LocationPermissionDenialType? permissionDenialType,  LocationPermissionDenialType? photosPermissionDenialType,  bool isRandomLocationEnabled)  $default,) {final _that = this;
 switch (_that) {
 case _WriteGrainState():
-return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,_that.permissionDenialType,_that.photosPermissionDenialType);case _:
+return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,_that.permissionDenialType,_that.photosPermissionDenialType,_that.isRandomLocationEnabled);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +197,10 @@ return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isSubmitting,  String? errorMessage,  List<AssetEntity> photos,  List<AssetEntity> videos,  LocationPermissionDenialType? permissionDenialType,  LocationPermissionDenialType? photosPermissionDenialType)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isSubmitting,  String? errorMessage,  List<AssetEntity> photos,  List<AssetEntity> videos,  LocationPermissionDenialType? permissionDenialType,  LocationPermissionDenialType? photosPermissionDenialType,  bool isRandomLocationEnabled)?  $default,) {final _that = this;
 switch (_that) {
 case _WriteGrainState() when $default != null:
-return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,_that.permissionDenialType,_that.photosPermissionDenialType);case _:
+return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,_that.permissionDenialType,_that.photosPermissionDenialType,_that.isRandomLocationEnabled);case _:
   return null;
 
 }
@@ -211,7 +212,7 @@ return $default(_that.isSubmitting,_that.errorMessage,_that.photos,_that.videos,
 
 
 class _WriteGrainState implements WriteGrainState {
-  const _WriteGrainState({this.isSubmitting = false, this.errorMessage, final  List<AssetEntity> photos = const [], final  List<AssetEntity> videos = const [], this.permissionDenialType, this.photosPermissionDenialType}): _photos = photos,_videos = videos;
+  const _WriteGrainState({this.isSubmitting = false, this.errorMessage, final  List<AssetEntity> photos = const [], final  List<AssetEntity> videos = const [], this.permissionDenialType, this.photosPermissionDenialType, this.isRandomLocationEnabled = false}): _photos = photos,_videos = videos;
   
 
 @override@JsonKey() final  bool isSubmitting;
@@ -232,6 +233,7 @@ class _WriteGrainState implements WriteGrainState {
 
 @override final  LocationPermissionDenialType? permissionDenialType;
 @override final  LocationPermissionDenialType? photosPermissionDenialType;
+@override@JsonKey() final  bool isRandomLocationEnabled;
 
 /// Create a copy of WriteGrainState
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +245,16 @@ _$WriteGrainStateCopyWith<_WriteGrainState> get copyWith => __$WriteGrainStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WriteGrainState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&const DeepCollectionEquality().equals(other._photos, _photos)&&const DeepCollectionEquality().equals(other._videos, _videos)&&(identical(other.permissionDenialType, permissionDenialType) || other.permissionDenialType == permissionDenialType)&&(identical(other.photosPermissionDenialType, photosPermissionDenialType) || other.photosPermissionDenialType == photosPermissionDenialType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WriteGrainState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&const DeepCollectionEquality().equals(other._photos, _photos)&&const DeepCollectionEquality().equals(other._videos, _videos)&&(identical(other.permissionDenialType, permissionDenialType) || other.permissionDenialType == permissionDenialType)&&(identical(other.photosPermissionDenialType, photosPermissionDenialType) || other.photosPermissionDenialType == photosPermissionDenialType)&&(identical(other.isRandomLocationEnabled, isRandomLocationEnabled) || other.isRandomLocationEnabled == isRandomLocationEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isSubmitting,errorMessage,const DeepCollectionEquality().hash(_photos),const DeepCollectionEquality().hash(_videos),permissionDenialType,photosPermissionDenialType);
+int get hashCode => Object.hash(runtimeType,isSubmitting,errorMessage,const DeepCollectionEquality().hash(_photos),const DeepCollectionEquality().hash(_videos),permissionDenialType,photosPermissionDenialType,isRandomLocationEnabled);
 
 @override
 String toString() {
-  return 'WriteGrainState(isSubmitting: $isSubmitting, errorMessage: $errorMessage, photos: $photos, videos: $videos, permissionDenialType: $permissionDenialType, photosPermissionDenialType: $photosPermissionDenialType)';
+  return 'WriteGrainState(isSubmitting: $isSubmitting, errorMessage: $errorMessage, photos: $photos, videos: $videos, permissionDenialType: $permissionDenialType, photosPermissionDenialType: $photosPermissionDenialType, isRandomLocationEnabled: $isRandomLocationEnabled)';
 }
 
 
@@ -263,7 +265,7 @@ abstract mixin class _$WriteGrainStateCopyWith<$Res> implements $WriteGrainState
   factory _$WriteGrainStateCopyWith(_WriteGrainState value, $Res Function(_WriteGrainState) _then) = __$WriteGrainStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool isSubmitting, String? errorMessage, List<AssetEntity> photos, List<AssetEntity> videos, LocationPermissionDenialType? permissionDenialType, LocationPermissionDenialType? photosPermissionDenialType
+ bool isSubmitting, String? errorMessage, List<AssetEntity> photos, List<AssetEntity> videos, LocationPermissionDenialType? permissionDenialType, LocationPermissionDenialType? photosPermissionDenialType, bool isRandomLocationEnabled
 });
 
 
@@ -280,7 +282,7 @@ class __$WriteGrainStateCopyWithImpl<$Res>
 
 /// Create a copy of WriteGrainState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? isSubmitting = null,Object? errorMessage = freezed,Object? photos = null,Object? videos = null,Object? permissionDenialType = freezed,Object? photosPermissionDenialType = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? isSubmitting = null,Object? errorMessage = freezed,Object? photos = null,Object? videos = null,Object? permissionDenialType = freezed,Object? photosPermissionDenialType = freezed,Object? isRandomLocationEnabled = null,}) {
   return _then(_WriteGrainState(
 isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -288,7 +290,8 @@ as String?,photos: null == photos ? _self._photos : photos // ignore: cast_nulla
 as List<AssetEntity>,videos: null == videos ? _self._videos : videos // ignore: cast_nullable_to_non_nullable
 as List<AssetEntity>,permissionDenialType: freezed == permissionDenialType ? _self.permissionDenialType : permissionDenialType // ignore: cast_nullable_to_non_nullable
 as LocationPermissionDenialType?,photosPermissionDenialType: freezed == photosPermissionDenialType ? _self.photosPermissionDenialType : photosPermissionDenialType // ignore: cast_nullable_to_non_nullable
-as LocationPermissionDenialType?,
+as LocationPermissionDenialType?,isRandomLocationEnabled: null == isRandomLocationEnabled ? _self.isRandomLocationEnabled : isRandomLocationEnabled // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

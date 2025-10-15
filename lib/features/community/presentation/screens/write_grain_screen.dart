@@ -514,55 +514,69 @@ class _WriteGrainScreenState extends ConsumerState<WriteGrainScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.photo_library_outlined),
-                iconSize: 28,
-                color: isMaxFiles ? Colors.grey : null,
-                onPressed: isMaxFiles
-                    ? null
-                    // 올바른 메서드 이름(`pickMediaWithAssetsPicker`)을 호출하고 `context`를 전달합니다.
-                    : () => notifier.pickMediaWithAssetsPicker(context),
-                tooltip: '사진 추가',
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                // 파일 첨부 제약 조건을 표시하는 위젯입니다.
-                child: _buildConstraintInfo(
-                  totalMediaCount,
-                  videoCount,
-                  isMaxFiles,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // 글자 수 카운터
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: isTextNearLimit
-                      ? Colors.orange.withOpacity(0.1)
-                      : Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '$textLength/$maxTextLength',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isTextNearLimit
-                        ? Colors.orange
-                        : Colors.grey.shade700,
-                    fontWeight: FontWeight.w500,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ✅ [추가] 무작위 위치 체크박스
+            CheckboxListTile(
+              value: writeState.isRandomLocationEnabled,
+              onChanged: (value) => notifier.toggleIsRandomLocationEnabled(),
+              title: const Text('정확한 위치 숨기기'),
+              subtitle: const Text('현재 위치 근처 임의의 장소에 글이 표시돼요.'),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.photo_library_outlined),
+                    iconSize: 28,
+                    color: isMaxFiles ? Colors.grey : null,
+                    onPressed: isMaxFiles
+                        ? null
+                        // 올바른 메서드 이름(`pickMediaWithAssetsPicker`)을 호출하고 `context`를 전달합니다.
+                        : () => notifier.pickMediaWithAssetsPicker(context),
+                    tooltip: '사진 추가',
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    // 파일 첨부 제약 조건을 표시하는 위젯입니다.
+                    child: _buildConstraintInfo(
+                      totalMediaCount,
+                      videoCount,
+                      isMaxFiles,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 글자 수 카운터
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isTextNearLimit
+                          ? Colors.orange.withOpacity(0.1)
+                          : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '$textLength/$maxTextLength',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isTextNearLimit
+                            ? Colors.orange
+                            : Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
