@@ -40,10 +40,13 @@ class FakeIssueGrainRepositoryImpl implements IssueGrainRepository {
 
   @override
   Future<List<IssuedUrlInfo>> requestUploadUrls({
+    required FileType fileType,
     required List<UploadFileInfo> files,
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
-    print('✅ [FakeRepo] ${files.length}개 파일에 대한 Presigned URL 요청 받음');
+    print(
+      '✅ [FakeRepo] ${files.length}개 파일(${fileType.name})에 대한 Presigned URL 요청 받음',
+    );
 
     final fakeUrls = files.map((fileInfo) {
       final fakeFileKey =

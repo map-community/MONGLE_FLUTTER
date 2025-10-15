@@ -9,6 +9,9 @@ import 'package:mongle_flutter/features/community/providers/write_grain_provider
 // 데이터 모델 (Data Models)
 // -----------------------------------------------------------------------------
 
+/// Presigned URL 요청 시 파일의 종류를 구분하기 위한 Enum
+enum FileType { POST_FILE, PROFILE_IMAGE }
+
 /// Presigned URL을 요청할 때 백엔드로 보낼 파일 1개의 정보를 담는 데이터 클래스입니다.
 class UploadFileInfo {
   final String fileName;
@@ -36,7 +39,7 @@ class IssuedUrlInfo {
   factory IssuedUrlInfo.fromJson(Map<String, dynamic> json) {
     return IssuedUrlInfo(
       fileKey: json['fileKey'],
-      presignedUrl: json['presignedUrl'],
+      presignedUrl: json['url'],
       expiresAt: json['expiresAt'],
     );
   }
@@ -61,6 +64,7 @@ abstract class IssueGrainRepository {
 
   /// 2. (파일이 있을 때 Step 1) 파일 업로드를 위한 Presigned URL들을 서버에 요청합니다.
   Future<List<IssuedUrlInfo>> requestUploadUrls({
+    required FileType fileType,
     required List<UploadFileInfo> files,
   });
 

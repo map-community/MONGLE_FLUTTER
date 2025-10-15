@@ -362,6 +362,7 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
         headers: {
           Headers.contentLengthHeader: fileSize,
           if (mimeType != null) Headers.contentTypeHeader: mimeType,
+          'x-amz-tagging': 'status=temp',
         },
       ),
     );
@@ -557,17 +558,26 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
           }
         }
 
-        final List<UploadFileInfo> filesToRequest = files
-            .map(
-              (file) => UploadFileInfo(
-                fileName: file.path.split('/').last,
-                fileSize: file.lengthSync(),
-              ),
-            )
-            .toList();
+        final List<UploadFileInfo> filesToRequest = files.map((file) {
+          String originalFileName = file.path.split('/').last;
+
+          // ❗️ 핵심: 공백 및 특수문자를 밑줄(_)로 변경하는 로직 ❗️
+          String safeFileName = originalFileName.replaceAll(
+            RegExp(r'[\s#?%&+]'),
+            '_',
+          );
+
+          return UploadFileInfo(
+            fileName: safeFileName, // 👈 안전한 파일 이름 사용
+            fileSize: file.lengthSync(),
+          );
+        }).toList();
 
         final List<IssuedUrlInfo> issuedUrls = await repository
-            .requestUploadUrls(files: filesToRequest);
+            .requestUploadUrls(
+              fileType: FileType.POST_FILE,
+              files: filesToRequest,
+            );
 
         // Step 2: 발급받은 Presigned URL로 실제 파일들을 S3 같은 저장소에 업로드합니다.
         await Future.wait(

@@ -16,7 +16,7 @@ class ApiConstants {
   static const String getMe = '/user/me';
 
   static const String posts = '/posts';
-  static const String postFileUploadUrls = '/post-files/upload-urls';
+  static const String postFileUploadUrls = '/files/upload-urls';
 
   static String postById(String postId) => '/posts/$postId';
 

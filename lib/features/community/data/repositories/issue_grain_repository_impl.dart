@@ -49,13 +49,17 @@ class IssueGrainRepositoryImpl implements IssueGrainRepository {
 
   @override
   Future<List<IssuedUrlInfo>> requestUploadUrls({
+    required FileType fileType,
     required List<UploadFileInfo> files,
   }) async {
     try {
       // POST /api/v1/post-files/upload-urls 엔드포인트에 파일 목록을 전송합니다.
       final response = await _dio.post(
         ApiConstants.postFileUploadUrls,
-        data: {'files': files.map((fileInfo) => fileInfo.toJson()).toList()},
+        data: {
+          'fileType': fileType.name,
+          'files': files.map((fileInfo) => fileInfo.toJson()).toList(),
+        },
       );
       // 서버 응답(JSON)을 List<IssuedUrlInfo> 객체로 변환하여 반환합니다.
       return (response.data['issuedUrls'] as List)
