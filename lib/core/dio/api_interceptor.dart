@@ -174,31 +174,30 @@ class ApiInterceptor extends Interceptor {
 
   /// 동기화된 토큰 재발급
   Future<TokenInfo?> _refreshTokenWithLock() async {
-    return await _lock.synchronized(() async {
-      // 이렇게 수정!
-      // 이미 재발급 진행 중이면 기다림
-      if (_refreshCompleter != null && !_refreshCompleter!.isCompleted) {
-        print("⏳ [ApiInterceptor] 이미 토큰 재발급 중... 대기");
-        return _refreshCompleter!.future;
-      }
+    // [수정] synchronized 블록 안으로 completer를 옮기지 않고,
+    // lock의 핵심 기능에만 집중합니다.
+    if (_refreshCompleter != null) {
+      print("⏳ [ApiInterceptor] 이미 토큰 재발급 중... 대기");
+      return _refreshCompleter!.future;
+    }
 
-      // 새로운 재발급 시작
-      _refreshCompleter = Completer<TokenInfo>();
+    // 새로운 재발급 시작
+    _refreshCompleter = Completer<TokenInfo>();
 
-      try {
-        final tokenInfo = await _refreshToken();
-        _refreshCompleter!.complete(tokenInfo);
-        return tokenInfo;
-      } catch (e) {
-        _refreshCompleter!.completeError(e);
-        rethrow;
-      } finally {
-        // 완료 후 정리
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _refreshCompleter = null;
-        });
-      }
-    });
+    try {
+      final tokenInfo = await _refreshToken();
+      // 성공 시 결과를 모든 대기자에게 전달
+      _refreshCompleter!.complete(tokenInfo);
+      return tokenInfo;
+    } catch (e) {
+      // 실패 시 에러를 모든 대기자에게 전달
+      _refreshCompleter!.completeError(e);
+      rethrow; // 현재 요청에 대한 에러는 다시 던져서 처리
+    } finally {
+      // [수정] 작업이 끝나면 즉시 completer를 null로 만들어 다음 요청이 새 작업을 시작할 수 있도록 합니다.
+      // delayed를 사용하면 그 사이에 다른 요청이 들어와 문제를 일으킬 수 있습니다.
+      _refreshCompleter = null;
+    }
   }
 
   /// 실제 토큰 재발급 로직
