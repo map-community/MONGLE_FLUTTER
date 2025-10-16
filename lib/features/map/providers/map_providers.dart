@@ -15,9 +15,3 @@ final mapRepositoryProvider = Provider<MapRepository>((ref) {
   // return FakeMapRepositoryImpl();
   return MapRepositoryImpl(ref.watch(dioProvider));
 });
-
-final nearbyGrainsProvider = FutureProvider.autoDispose
-    .family<PaginatedPosts, NLatLngBounds>((ref, bounds) async {
-      final repository = ref.watch(issueGrainRepositoryProvider);
-      return repository.getNearbyGrains(bounds);
-    });

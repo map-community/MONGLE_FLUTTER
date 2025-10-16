@@ -47,20 +47,14 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
   void syncHeightFromUI(double currentHeight) {
     const tolerance = 0.01;
 
-    // [핵심 수정] 선택된 알갱이가 없을 때의 동작 정의
     if (state.selectedGrainId == null) {
-      SheetMode newMode;
-      // 높이가 거의 전체화면이면 localFeed 모드로, 아니면 minimized 모드로 판단
-      if ((currentHeight - fullFraction).abs() < tolerance) {
-        newMode = SheetMode.localFeed;
-      } else {
-        newMode = SheetMode.minimized;
+      if (state.mode != SheetMode.minimized) {
+        state = state.copyWith(
+          mode: SheetMode.minimized,
+          height: currentHeight,
+        );
       }
-
-      if (state.mode != newMode) {
-        state = state.copyWith(mode: newMode, height: currentHeight);
-      }
-      return; // 함수 종료
+      return;
     }
 
     // --- 이하 선택된 알갱이가 있을 때의 기존 로직 ---

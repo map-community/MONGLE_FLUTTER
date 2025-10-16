@@ -126,7 +126,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             notifier.showGrainPreview(selectedGrainId!);
             break;
           case SheetMode.preview:
-          case SheetMode.localFeed:
             notifier.minimize();
             break;
           case SheetMode.minimized:
@@ -287,8 +286,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       selectedGrainId!,
                       scrollController,
                     );
-                  case SheetMode.localFeed:
-                    return _buildLocalFeedSheet(context, scrollController);
                   case SheetMode.minimized:
                   default:
                     return _buildDefaultSheet(scrollController);
@@ -465,89 +462,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLocalFeedSheet(
-    BuildContext context,
-    ScrollController scrollController,
-  ) {
-    final mapState = ref.watch(mapViewModelProvider);
-
-    final NLatLngBounds? visibleBounds = mapState.whenOrNull(
-      data: (initialPosition, mapObjects, currentBounds) => currentBounds,
-    );
-
-    if (visibleBounds == null) {
-      return Column(
-        children: [
-          _buildHandle(),
-          const Expanded(child: Center(child: CircularProgressIndicator())),
-        ],
-      );
-    }
-
-    final nearbyGrainsAsync = ref.watch(nearbyGrainsProvider(visibleBounds));
-
-    return nearbyGrainsAsync.when(
-      loading: () => Column(
-        children: [
-          _buildHandle(),
-          const Expanded(child: Center(child: CircularProgressIndicator())),
-        ],
-      ),
-      error: (e, _) => Column(
-        children: [
-          _buildHandle(),
-          Expanded(child: Center(child: Text('오류: $e'))),
-        ],
-      ),
-      data: (paginatedPosts) {
-        final posts = paginatedPosts.posts;
-
-        if (posts.isEmpty) {
-          return Column(
-            children: [
-              _buildHandle(),
-              const Expanded(
-                child: Center(child: Text('현재 위치에 알갱이가 없어요.\n첫 알갱이를 만들어 보세요!')),
-              ),
-            ],
-          );
-        }
-
-        return CustomScrollView(
-          controller: scrollController,
-          slivers: [
-            SliverToBoxAdapter(child: _buildHandle()),
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  '주변 알갱이 목록',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            SliverList.builder(
-              itemCount: posts.length,
-              itemBuilder: (context, index) {
-                final post = posts[index];
-
-                return IssueGrainItem(
-                  grain: post,
-                  displayMode: IssueGrainDisplayMode.boardPreview,
-                  onTap: () {
-                    ref
-                        .read(mapSheetStrategyProvider.notifier)
-                        .showGrainPreview(post.postId);
-                  },
-                );
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 
