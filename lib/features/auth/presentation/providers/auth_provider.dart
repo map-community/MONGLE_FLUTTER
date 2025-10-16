@@ -29,6 +29,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
   final TokenStorageService _tokenStorage;
 
+  /// 토큰 만료로 인한 강제 로그아웃
+  void forceLogout() {
+    state = const AuthState.unauthenticated(
+      message: '세션이 만료되었습니다. 다시 로그인해주세요.',
+    );
+
+    // 필요시 앱 재시작
+    _ref.read(appRestartTriggerProvider.notifier).triggerRestart();
+  }
+
   /// 생성자에서 Repository와 TokenStorage를 받고, 초기 상태를 .initial()로 설정합니다.
   AuthNotifier(this._ref, this._authRepository, this._tokenStorage)
     : super(const AuthState.initial()) {

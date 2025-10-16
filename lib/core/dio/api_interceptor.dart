@@ -6,16 +6,17 @@ import 'package:mongle_flutter/core/dio/dio_provider.dart';
 import 'package:mongle_flutter/core/errors/exceptions.dart';
 import 'package:mongle_flutter/features/auth/data/data_sources/token_storage_service.dart';
 import 'package:mongle_flutter/features/auth/domain/entities/token_info.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:synchronized/synchronized.dart';
 
 class ApiInterceptor extends Interceptor {
   final Ref ref;
-  final Dio dio;
 
   // 토큰 재발급 중복 방지를 위한 변수
-  Completer<TokenInfo>? _refreshCompleter;
+  static Completer<TokenInfo>? _refreshCompleter;
+  static final _lock = Lock(); // Object() 대신 Lock() 사용
 
-  ApiInterceptor(this.ref, this.dio);
+  ApiInterceptor(this.ref);
 
   @override
   void onRequest(
@@ -23,14 +24,20 @@ class ApiInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     // 토큰 재발급 요청은 Authorization 헤더를 추가하지 않음
-    if (options.path == ApiConstants.reissue) {
+    if (options.path.contains(ApiConstants.reissue)) {
       return handler.next(options);
     }
 
-    final token = await ref.read(tokenStorageServiceProvider).getAccessToken();
+    try {
+      final token = await ref
+          .read(tokenStorageServiceProvider)
+          .getAccessToken();
 
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (e) {
+      print("❌ [ApiInterceptor] 토큰 읽기 실패: $e");
     }
 
     return handler.next(options);
@@ -38,6 +45,12 @@ class ApiInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
+    // 토큰 재발급 응답은 그대로 통과
+    if (response.requestOptions.path.contains(ApiConstants.reissue)) {
+      return handler.next(response);
+    }
+
+    // 일반 응답 처리
     if (response.data is Map<String, dynamic> &&
         response.data.containsKey('code') &&
         response.data.containsKey('data')) {
@@ -45,8 +58,7 @@ class ApiInterceptor extends Interceptor {
         response.data = response.data['data'];
         return handler.next(response);
       } else {
-        final errorMessage =
-            response.data['message'] ?? 'Unknown success-error';
+        final errorMessage = response.data['message'] ?? 'Unknown error';
         final exception = ApiException(errorMessage);
 
         return handler.reject(
@@ -58,156 +70,204 @@ class ApiInterceptor extends Interceptor {
         );
       }
     }
+
     return handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    print("🚨 [ApiInterceptor] onError 진입! 에러 타입: ${err.type}");
-    print("   - 요청 경로: ${err.requestOptions.path}");
-    if (err.response != null) {
-      print('   - ❗ 응답 상태 코드: ${err.response?.statusCode}');
-      print('   - ❗ 응답 데이터: ${err.response?.data}');
+    print("🚨 [ApiInterceptor] Error: ${err.response?.statusCode}");
+    print("   - Path: ${err.requestOptions.path}");
+    print("   - Response: ${err.response?.data}");
+
+    // 토큰 재발급 요청 자체가 실패한 경우
+    if (err.requestOptions.path.contains(ApiConstants.reissue)) {
+      print("❌ [ApiInterceptor] 토큰 재발급 자체가 실패!");
+      await _handleLogout();
+      return handler.reject(err);
     }
-    final responseData = err.response?.data;
 
-    // 401 에러 및 AUTH-016 코드 확인
-    if (err.response?.statusCode == 401 &&
-        err.requestOptions.path != ApiConstants.reissue) {
-      print("🔑 [ApiInterceptor] 401 Unauthorized 에러 감지!");
-      print("   - 서버 응답 데이터: $responseData");
+    // 401 에러 처리
+    if (err.response?.statusCode == 401) {
+      final responseData = err.response?.data;
 
-      if (responseData is Map<String, dynamic> &&
-          responseData['code'] == 'AUTH-016') {
-        print("🔄 [ApiInterceptor] 'AUTH-016' 코드 확인! 토큰 재발급을 시도합니다.");
+      if (responseData is Map<String, dynamic>) {
+        final errorCode = responseData['code'];
 
-        try {
-          // 토큰 재발급 (중복 방지 로직 포함)
-          final newTokenInfo = await _refreshToken();
-
-          // 원래 요청 재시도
-          final originalRequest = err.requestOptions;
-          originalRequest.headers['Authorization'] =
-              'Bearer ${newTokenInfo.accessToken}';
-
-          print("🔁 [ApiInterceptor] 새로운 토큰으로 원래 요청을 재시도합니다.");
-
-          // ⚠️ 핵심: 인터셉터를 거치지 않는 새로운 Dio 인스턴스로 재시도
-          final retryDio = Dio(dio.options);
-          final response = await retryDio.fetch(originalRequest);
-
-          return handler.resolve(response);
-        } catch (e) {
-          print("‼️ [ApiInterceptor] 토큰 재발급 실패! 로그인 필요.");
-          print("   - 실패 원인: $e");
-
-          final finalException = ApiException("세션이 만료되었습니다. 다시 로그인해주세요.");
-
-          // 로그아웃 처리 (선택사항)
-          // ref.read(authProvider.notifier).logout();
+        // ✅ AUTH-015: 유효하지 않은 토큰 → 즉시 로그아웃
+        if (errorCode == 'AUTH-015') {
+          print("❌ [ApiInterceptor] 유효하지 않은 토큰 감지! 로그아웃 처리...");
+          await _handleLogout();
 
           return handler.reject(
             DioException(
               requestOptions: err.requestOptions,
-              error: finalException,
+              error: ApiException("세션이 만료되었습니다. 다시 로그인해주세요."),
               response: err.response,
             ),
           );
         }
+
+        // ✅ AUTH-016: 만료된 토큰 → 재발급 시도
+        if (errorCode == 'AUTH-016') {
+          print("🔄 [ApiInterceptor] 액세스 토큰 만료 감지! 재발급 시도...");
+
+          try {
+            final newTokenInfo = await _refreshTokenWithLock();
+
+            if (newTokenInfo != null) {
+              final originalRequest = err.requestOptions;
+              originalRequest.headers['Authorization'] =
+                  'Bearer ${newTokenInfo.accessToken}';
+
+              print("🔁 [ApiInterceptor] 새 토큰으로 재시도...");
+
+              // refreshDioProvider 사용 (무한루프 방지)
+              final retryDio = ref.read(refreshDioProvider);
+
+              final response = await retryDio.request(
+                originalRequest.path,
+                data: originalRequest.data,
+                queryParameters: originalRequest.queryParameters,
+                options: Options(
+                  method: originalRequest.method,
+                  headers: originalRequest.headers,
+                ),
+              );
+
+              // ✅ 추가: SUCCESS 체크 및 data 추출
+              if (response.data is Map<String, dynamic> &&
+                  response.data['code'] == 'SUCCESS') {
+                response.data = response.data['data'];
+              }
+
+              return handler.resolve(response);
+            }
+          } catch (e) {
+            print("❌ [ApiInterceptor] 토큰 재발급 또는 재시도 실패: $e");
+            await _handleLogout();
+
+            return handler.reject(
+              DioException(
+                requestOptions: err.requestOptions,
+                error: ApiException("세션이 만료되었습니다. 다시 로그인해주세요."),
+                response: err.response,
+              ),
+            );
+          }
+        }
       }
     }
 
-    // 401 외 다른 에러 처리
-    String errorMessage = '알 수 없는 오류가 발생했습니다.';
-
-    if (responseData is Map<String, dynamic>) {
-      if (responseData.containsKey('message')) {
-        errorMessage = responseData['message'];
-      } else if (responseData.containsKey('error')) {
-        final status = responseData['status'] ?? '';
-        final error = responseData['error'] ?? '';
-        errorMessage = '서버 요청 실패 ($status $error)';
-      }
-    } else {
-      switch (err.type) {
-        case DioExceptionType.connectionTimeout:
-        case DioExceptionType.receiveTimeout:
-        case DioExceptionType.sendTimeout:
-          errorMessage = '네트워크 연결 시간을 초과했습니다.';
-          break;
-        case DioExceptionType.cancel:
-          errorMessage = '요청이 취소되었습니다.';
-          break;
-        default:
-          errorMessage = '서버가 응답하지 않습니다.';
-          break;
-      }
-    }
-
-    final apiException = ApiException(errorMessage);
+    // 기타 에러 처리
+    String errorMessage = _extractErrorMessage(err);
 
     return handler.reject(
       DioException(
         requestOptions: err.requestOptions,
-        error: apiException,
+        error: ApiException(errorMessage),
         response: err.response,
         type: err.type,
-        message: err.message,
       ),
     );
   }
 
-  /// 토큰 재발급 (중복 요청 방지 로직 포함)
-  Future<TokenInfo> _refreshToken() async {
-    // 이미 재발급 진행 중이면 기존 Future를 반환
-    if (_refreshCompleter != null) {
-      print("⏳ [ApiInterceptor] 이미 토큰 재발급 진행 중... 대기합니다.");
-      return _refreshCompleter!.future;
-    }
-
-    // 새로운 재발급 시작
-    _refreshCompleter = Completer<TokenInfo>();
-
-    try {
-      final tokenStorage = ref.read(tokenStorageServiceProvider);
-      final refreshToken = await tokenStorage.getRefreshToken();
-
-      if (refreshToken == null) {
-        throw Exception('No refresh token');
+  /// 동기화된 토큰 재발급
+  Future<TokenInfo?> _refreshTokenWithLock() async {
+    return await _lock.synchronized(() async {
+      // 이렇게 수정!
+      // 이미 재발급 진행 중이면 기다림
+      if (_refreshCompleter != null && !_refreshCompleter!.isCompleted) {
+        print("⏳ [ApiInterceptor] 이미 토큰 재발급 중... 대기");
+        return _refreshCompleter!.future;
       }
 
-      // 인터셉터가 없는 깨끗한 Dio 인스턴스 생성
-      final refreshDio = Dio(
-        BaseOptions(
-          baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080',
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 8),
-        ),
-      );
+      // 새로운 재발급 시작
+      _refreshCompleter = Completer<TokenInfo>();
 
-      print("📡 [ApiInterceptor] 토큰 재발급 API 호출 중...");
+      try {
+        final tokenInfo = await _refreshToken();
+        _refreshCompleter!.complete(tokenInfo);
+        return tokenInfo;
+      } catch (e) {
+        _refreshCompleter!.completeError(e);
+        rethrow;
+      } finally {
+        // 완료 후 정리
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _refreshCompleter = null;
+        });
+      }
+    });
+  }
 
-      final refreshResponse = await refreshDio.post(
-        ApiConstants.reissue,
-        data: {'refreshToken': refreshToken},
-      );
+  /// 실제 토큰 재발급 로직
+  Future<TokenInfo> _refreshToken() async {
+    final tokenStorage = ref.read(tokenStorageServiceProvider);
+    final refreshToken = await tokenStorage.getRefreshToken();
 
-      final newTokenInfo = TokenInfo.fromJson(refreshResponse.data['data']);
+    if (refreshToken == null) {
+      throw Exception('리프레시 토큰이 없습니다');
+    }
 
+    print("📡 [ApiInterceptor] 토큰 재발급 API 호출...");
+
+    // refreshDioProvider 사용
+    final refreshDio = ref.read(refreshDioProvider);
+
+    final response = await refreshDio.post(
+      ApiConstants.reissue,
+      data: {'refreshToken': refreshToken},
+    );
+
+    // 응답 데이터 파싱
+    Map<String, dynamic> responseData = response.data;
+
+    if (responseData['code'] == 'SUCCESS') {
+      final newTokenInfo = TokenInfo.fromJson(responseData['data']);
+
+      // 토큰 저장
       await tokenStorage.saveTokens(newTokenInfo);
 
       print("✅ [ApiInterceptor] 토큰 재발급 성공!");
 
-      // 대기 중인 모든 요청에 결과 전달
-      _refreshCompleter!.complete(newTokenInfo);
-
       return newTokenInfo;
+    } else {
+      throw ApiException(responseData['message'] ?? '토큰 재발급 실패');
+    }
+  }
+
+  /// 로그아웃 처리
+  Future<void> _handleLogout() async {
+    try {
+      // 토큰 삭제
+      await ref.read(tokenStorageServiceProvider).clearTokens();
+
+      // 인증 상태 업데이트
+      ref.read(authProvider.notifier).forceLogout();
     } catch (e) {
-      print("❌ [ApiInterceptor] 토큰 재발급 실패: $e");
-      _refreshCompleter!.completeError(e);
-      rethrow;
-    } finally {
-      _refreshCompleter = null;
+      print("❌ [ApiInterceptor] 로그아웃 처리 중 오류: $e");
+    }
+  }
+
+  String _extractErrorMessage(DioException err) {
+    final responseData = err.response?.data;
+
+    if (responseData is Map<String, dynamic>) {
+      if (responseData.containsKey('message')) {
+        return responseData['message'];
+      }
+    }
+
+    switch (err.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return '네트워크 연결 시간을 초과했습니다.';
+      case DioExceptionType.connectionError:
+        return '네트워크 연결에 실패했습니다.';
+      default:
+        return '서버가 응답하지 않습니다.';
     }
   }
 }
