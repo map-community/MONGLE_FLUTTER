@@ -154,13 +154,18 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
     );
 
     // 가장 가까운 snap 위치 찾기
-    // DraggableScrollableSheet의 snap 동작과 일치하도록 정확한 snap 위치로 보정
     const snapSizes = [peekFraction, grainPreviewFraction, fullFraction];
     double closestSnap = snapSizes.reduce(
       (a, b) => (currentHeight - a).abs() < (currentHeight - b).abs() ? a : b,
     );
 
     print("🔄 STRATEGY: 가장 가까운 snap 위치: $closestSnap");
+
+    // ✅ 특수 규칙: Full 모드에서 Preview로 내려가려는 경우 Peek으로 강제 이동
+    if (state.mode == SheetMode.full && closestSnap == grainPreviewFraction) {
+      print("🔄 STRATEGY: Full → Preview 감지! Peek으로 강제 변경");
+      closestSnap = peekFraction;
+    }
 
     // snap 위치에 따라 적절한 SheetMode 결정
     SheetMode newMode;
