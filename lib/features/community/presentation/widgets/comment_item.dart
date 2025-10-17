@@ -142,8 +142,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               : Icons.thumb_up_outlined,
           count: widget.comment.likeCount,
           color: myReaction == ReactionType.LIKE
-              ? Theme.of(context).primaryColor
-              : Colors.grey.shade700,
+              ? Colors.blueAccent
+              : Colors.grey.shade600,
           onTap: () {
             if (widget.isReply && widget.parentCommentId != null) {
               ref
@@ -163,8 +163,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               : Icons.thumb_down_outlined,
           count: widget.comment.dislikeCount,
           color: myReaction == ReactionType.DISLIKE
-              ? Colors.grey.shade800
-              : Colors.grey.shade700,
+              ? Colors.grey.shade600
+              : Colors.grey.shade600,
           onTap: () {
             if (widget.isReply && widget.parentCommentId != null) {
               ref
