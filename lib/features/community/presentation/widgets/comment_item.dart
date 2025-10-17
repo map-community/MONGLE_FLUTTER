@@ -55,12 +55,14 @@ class _CommentItemState extends ConsumerState<CommentItem> {
 
             Row(
               children: [
-                if (widget.isReply)
-                  const SizedBox(width: 50), // 프로필사진(36) + 간격(14) 만큼 들여쓰기
+                if (widget.isReply) const SizedBox(width: 40),
                 Expanded(
                   child: Padding(
                     // 댓글 내용의 좌우 패딩을 유지합니다.
-                    padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                    padding: const EdgeInsets.only(
+                      top: 4.0,
+                      bottom: 8.0,
+                    ).add(const EdgeInsets.symmetric(horizontal: 8.0)),
                     child: Text(
                       widget.comment.content,
                       style: const TextStyle(fontSize: 14, height: 1.5),
@@ -71,7 +73,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
             ),
             Row(
               children: [
-                if (widget.isReply) const SizedBox(width: 50),
+                if (widget.isReply) const SizedBox(width: 40),
                 Expanded(child: _buildActionBar(context, ref)),
               ],
             ),

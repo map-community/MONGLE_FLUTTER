@@ -165,11 +165,14 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                grain.content,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(height: 1.5, fontSize: 15),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  grain.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(height: 1.5, fontSize: 15),
+                ),
               ),
               if (isTextOverflow)
                 const Padding(
@@ -258,11 +261,14 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  grain.content,
-                  maxLines: maxLinesForBoardPreview,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(height: 1.5, fontSize: 15),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    grain.content,
+                    maxLines: maxLinesForBoardPreview,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(height: 1.5, fontSize: 15),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
@@ -277,11 +283,14 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             ),
           )
         else
-          Text(
-            grain.content,
-            style: const TextStyle(height: 1.5, fontSize: 15),
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              grain.content,
+              style: const TextStyle(height: 1.5, fontSize: 15),
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         if (grain.photoUrls.isNotEmpty)
           Padding(
@@ -307,9 +316,15 @@ class _IssueGrainItemState extends ConsumerState<IssueGrainItem> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            grain.content,
-            style: const TextStyle(height: 1.6, fontSize: 15),
+          Padding(
+            // 👈 추가
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8.0,
+            ), // 👈 추가: 좌우로 8.0만큼 더 여백 주기
+            child: Text(
+              grain.content,
+              style: const TextStyle(height: 1.6, fontSize: 15),
+            ),
           ),
           if (grain.photoUrls.isNotEmpty) ...[
             const SizedBox(height: 16),
