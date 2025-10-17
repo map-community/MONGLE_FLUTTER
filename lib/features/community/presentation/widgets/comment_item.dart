@@ -117,14 +117,26 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           author: widget.comment.author,
           isAuthor: widget.comment.isAuthor,
           onDelete: () {
-            // 삭제 확인 다이얼로그는 MoreOptionsMenu에서 처리하므로,
-            // 여기서는 실제 삭제 로직만 실행합니다.
-            ref
-                .read(commentProvider(widget.postId).notifier)
-                .deleteComment(
-                  widget.comment.commentId,
-                  widget.comment.author.id!,
-                );
+            // 👇 대댓글 삭제 로직 분기
+            if (widget.isReply && widget.parentCommentId != null) {
+              // 대댓글이면 RepliesNotifier 호출
+              ref
+                  .read(
+                    repliesProvider(widget.parentCommentId!).notifier,
+                  ) // RepliesNotifier 찾기
+                  .deleteReply(
+                    widget.comment.commentId,
+                    widget.comment.author.id!,
+                  ); // 새로 만든 deleteReply 호출
+            } else {
+              // 일반 댓글이면 CommentNotifier 호출 (기존 로직)
+              ref
+                  .read(commentProvider(widget.postId).notifier)
+                  .deleteComment(
+                    widget.comment.commentId,
+                    widget.comment.author.id!,
+                  );
+            }
           },
         ),
       ],
