@@ -112,19 +112,39 @@ class ApiInterceptor extends Interceptor {
         if (errorCode == 'AUTH-016') {
           print("🔄 [ApiInterceptor] 액세스 토큰 만료 감지! 재발급 시도...");
 
-          try {
-            final newTokenInfo = await _refreshTokenWithLock();
+          TokenInfo? newTokenInfo; // 새 토큰 정보를 담을 변수
 
-            if (newTokenInfo != null) {
+          // --- 1단계: 토큰 갱신 시도 ---
+          try {
+            // 오직 토큰 재발급 로직만 try 블록 안에서 실행
+            newTokenInfo = await _refreshTokenWithLock();
+            // 갱신 성공! newTokenInfo 변수에 새 토큰 정보가 담김
+          } catch (refreshError) {
+            // 토큰 재발급 자체가 실패한 경우 (예: 리프레시 토큰 만료)
+            print("❌ [ApiInterceptor] 토큰 재발급 실패: $refreshError");
+            await _handleLogout(); // 즉시 로그아웃 처리
+
+            // 토큰 재발급 실패 에러를 reject하여 외부로 전파
+            return handler.reject(
+              DioException(
+                requestOptions: err.requestOptions,
+                error: ApiException("세션이 만료되었습니다. 다시 로그인해주세요."), // 사용자 친화적 메시지
+                response: err.response, // 원래 401 응답 첨부
+              ),
+            );
+          }
+
+          // --- 2단계: 토큰 갱신 성공 후, 원래 요청 재시도 ---
+          if (newTokenInfo != null) {
+            try {
               final originalRequest = err.requestOptions;
               originalRequest.headers['Authorization'] =
-                  'Bearer ${newTokenInfo.accessToken}';
+                  'Bearer ${newTokenInfo.accessToken}'; // 새 토큰으로 헤더 교체
 
               print("🔁 [ApiInterceptor] 새 토큰으로 재시도...");
 
-              // refreshDioProvider 사용 (무한루프 방지)
+              // 인터셉터 없는 Dio로 재시도
               final retryDio = ref.read(refreshDioProvider);
-
               final response = await retryDio.request(
                 originalRequest.path,
                 data: originalRequest.data,
@@ -135,26 +155,37 @@ class ApiInterceptor extends Interceptor {
                 ),
               );
 
-              // ✅ 추가: SUCCESS 체크 및 data 추출
+              // 재시도 성공 시, 응답 데이터를 가공하고 resolve
               if (response.data is Map<String, dynamic> &&
                   response.data['code'] == 'SUCCESS') {
                 response.data = response.data['data'];
               }
-
-              return handler.resolve(response);
+              return handler.resolve(response); // 성공한 응답 반환
+            } on DioException catch (retryError) {
+              // 재시도 자체가 실패한 경우 (토큰 외 다른 문제, 예: 404, 500 등)
+              print(
+                "❌ [ApiInterceptor] 새 토큰으로 재시도했으나 실패: ${retryError.response?.statusCode}",
+              );
+              // 🔥 중요: 여기서 로그아웃 처리(_handleLogout)를 하지 않음!
+              // 재시도 실패 에러(retryError)를 그대로 reject하여,
+              // 이 onError 함수의 맨 아래에 있는 일반 에러 처리 로직으로 넘김
+              return handler.reject(retryError);
+            } catch (e) {
+              // DioException 외의 예외 (거의 발생하지 않음)
+              print("❌ [ApiInterceptor] 재시도 중 예상치 못한 오류: $e");
+              // 이 경우에도 일반 에러 처리 로직으로 넘김
+              return handler.reject(
+                DioException(
+                  requestOptions: err.requestOptions,
+                  error: ApiException("요청 처리 중 오류가 발생했습니다."),
+                  response: err.response, // 원래 401 응답 첨부
+                ),
+              );
             }
-          } catch (e) {
-            print("❌ [ApiInterceptor] 토큰 재발급 또는 재시도 실패: $e");
-            await _handleLogout();
-
-            return handler.reject(
-              DioException(
-                requestOptions: err.requestOptions,
-                error: ApiException("세션이 만료되었습니다. 다시 로그인해주세요."),
-                response: err.response,
-              ),
-            );
           }
+          // newTokenInfo가 null인 경우는 이론상 발생하기 어려움 (1단계에서 이미 처리됨)
+          // 만약을 대비해 원래 에러를 reject
+          return handler.reject(err);
         }
       }
     }
