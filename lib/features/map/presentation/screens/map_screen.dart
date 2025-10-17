@@ -137,10 +137,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         body: Stack(
           children: [
             // 1. 지도 (항상 표시)
-            MapView(
-              initialPosition: initialPosition,
-              bottomPadding: screenHeight * sheetState.height,
-            ),
+            MapView(initialPosition: initialPosition),
 
             // 👇 2. 에러 오버레이 (반투명 검은색 + 인디케이터 + 재시도 버튼)
             if (_hasError)
