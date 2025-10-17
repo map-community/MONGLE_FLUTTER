@@ -45,38 +45,58 @@ class MapSheetStrategy extends StateNotifier<MapSheetState> {
   }
 
   void syncHeightFromUI(double currentHeight) {
+    // 오차 허용 범위
     const tolerance = 0.01;
 
+    // 1. 선택된 알갱이가 없으면 무조건 최소화 모드로 처리 (기존 로직 유지)
     if (state.selectedGrainId == null) {
       if (state.mode != SheetMode.minimized) {
         state = state.copyWith(
           mode: SheetMode.minimized,
-          height: currentHeight,
+          height: currentHeight, // UI에서 전달된 실제 높이 사용
         );
       }
       return;
     }
 
-    // --- 이하 선택된 알갱이가 있을 때의 기존 로직 ---
-    SheetMode newMode;
+    // --- 이하 선택된 알갱이가 있을 때의 로직 ---
+
+    // 2. 현재 높이를 기준으로 목표 모드를 계산 (기존 로직)
+    SheetMode calculatedMode;
     if ((currentHeight - fullFraction).abs() < tolerance) {
-      newMode = SheetMode.full;
+      calculatedMode = SheetMode.full;
     } else if ((currentHeight - grainPreviewFraction).abs() < tolerance) {
-      newMode = SheetMode.preview;
+      calculatedMode = SheetMode.preview;
     } else {
-      newMode = SheetMode.minimized;
+      calculatedMode = SheetMode.minimized;
     }
 
-    if (state.mode != newMode ||
-        (state.height - currentHeight).abs() > tolerance) {
-      final newSelectedGrainId = (newMode == SheetMode.minimized)
-          ? null
-          : state.selectedGrainId;
+    // 3. ✨ 핵심 수정: 상태 전환 로직 ✨
+    SheetMode finalMode = calculatedMode; // 최종적으로 결정될 모드
+    double finalHeight = currentHeight; // 최종적으로 결정될 높이
+    String? finalSelectedGrainId = state.selectedGrainId; // 선택된 알갱이 ID
 
+    // 이전 모드가 'full'이었고, 계산된 새 모드가 'preview' 라면...
+    if (state.mode == SheetMode.full && calculatedMode == SheetMode.preview) {
+      // ... 강제로 'minimized' 모드로 변경하고, 높이도 peekFraction으로 설정!
+      finalMode = SheetMode.minimized;
+      finalHeight = peekFraction; // 높이도 강제로 최소 높이로 설정
+      finalSelectedGrainId = null; // 최소화 모드에서는 선택된 알갱이 ID 해제
+      print("🚀 Full -> Preview 감지! Minimized로 강제 전환!");
+    }
+    // 최소화 모드로 전환될 때는 항상 선택된 알갱이 ID 해제
+    else if (calculatedMode == SheetMode.minimized) {
+      finalSelectedGrainId = null;
+    }
+
+    // 4. 상태 업데이트: 현재 상태와 최종 결정된 상태가 다를 경우에만 업데이트
+    if (state.mode != finalMode ||
+        (state.height - finalHeight).abs() > tolerance ||
+        state.selectedGrainId != finalSelectedGrainId) {
       state = state.copyWith(
-        mode: newMode,
-        height: currentHeight,
-        selectedGrainId: newSelectedGrainId,
+        mode: finalMode,
+        height: finalHeight, // 계산되거나 강제 지정된 높이 사용
+        selectedGrainId: finalSelectedGrainId,
       );
     }
   }

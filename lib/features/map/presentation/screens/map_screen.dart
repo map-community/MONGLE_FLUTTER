@@ -123,7 +123,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         final notifier = ref.read(mapSheetStrategyProvider.notifier);
         switch (sheetState.mode) {
           case SheetMode.full:
-            notifier.showGrainPreview(selectedGrainId!);
+            // notifier.showGrainPreview(selectedGrainId!);
+            notifier.minimize();
             break;
           case SheetMode.preview:
             notifier.minimize();

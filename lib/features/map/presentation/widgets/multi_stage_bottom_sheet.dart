@@ -46,7 +46,16 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
   Widget build(BuildContext context) {
     ref.listen<MapSheetState>(widget.strategyProvider, (previous, next) {
       // 이전 높이와 다음 높이가 다를 때만 애니메이션 실행
-      if (previous?.height == next.height) return;
+      if (previous == null || previous.height == next.height)
+        return; // 👈 null 체크 추가
+
+      // ✨ 내려가는지 올라가는지 확인 ✨
+      final bool isMovingDown = next.height < previous.height;
+
+      // ✨ 내려갈 때는 더 짧은 duration (예: 200ms), 올라갈 때는 기존 duration (300ms) ✨
+      final animationDuration = Duration(
+        milliseconds: isMovingDown ? 200 : 300,
+      );
 
       // 이번 프레임 렌더링(리빌드)이 끝난 후 애니메이션을 실행하도록 예약
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -54,7 +63,7 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
         if (_scrollController.isAttached) {
           _scrollController.animateTo(
             next.height,
-            duration: const Duration(milliseconds: 300),
+            duration: animationDuration, // 👈 수정된 duration 사용
             curve: Curves.easeOutCubic,
           );
         }
