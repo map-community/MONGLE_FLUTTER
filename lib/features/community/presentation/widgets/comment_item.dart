@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/common/widgets/more_options_menu.dart';
+import 'package:mongle_flutter/common/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
@@ -93,14 +94,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               size: 20,
             ),
           ),
-        CircleAvatar(
-          radius: 18,
-          backgroundImage: widget.comment.author.profileImageUrl != null
-              ? NetworkImage(widget.comment.author.profileImageUrl!)
-              : null,
-          child: widget.comment.author.profileImageUrl == null
-              ? const Icon(Icons.person, size: 18)
-              : null,
+        UserProfileLine(
+          profileImageUrl: widget.comment.author.profileImageUrl,
+          profileRadius: 18, // 기존 CircleAvatar의 radius와 동일하게 설정
         ),
         const SizedBox(width: 12),
         Text(

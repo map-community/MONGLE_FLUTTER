@@ -3,16 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/common/widgets/more_options_menu.dart'; // ✨ 1. [추가] 공통 메뉴 위젯 import
+import 'package:mongle_flutter/common/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/issue_grain.dart';
 import 'package:mongle_flutter/features/community/domain/entities/report_models.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/image_carousel.dart';
 import 'package:mongle_flutter/features/community/presentation/widgets/interaction_toolbar.dart';
-import 'package:mongle_flutter/features/community/presentation/widgets/user_profile_line.dart';
-import 'package:mongle_flutter/features/community/providers/block_providers.dart';
 import 'package:mongle_flutter/features/community/providers/issue_grain_providers.dart';
-import 'package:mongle_flutter/features/community/providers/report_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
 import 'package:timeago/timeago.dart' as timeago;

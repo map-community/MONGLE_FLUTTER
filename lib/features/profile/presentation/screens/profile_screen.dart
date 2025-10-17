@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mongle_flutter/common/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -22,14 +23,9 @@ class ProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundImage: user.profileImageUrl != null
-                        ? NetworkImage(user.profileImageUrl!)
-                        : null,
-                    child: user.profileImageUrl == null
-                        ? const Icon(Icons.person, size: 32)
-                        : null,
+                  UserProfileLine(
+                    profileImageUrl: user.profileImageUrl,
+                    profileRadius: 32,
                   ),
                   const SizedBox(width: 16),
                   Column(
