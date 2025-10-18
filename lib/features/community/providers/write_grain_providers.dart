@@ -14,6 +14,7 @@ import 'package:mongle_flutter/features/community/domain/repositories/issue_grai
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:mongle_flutter/core/services/profanity_filter_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 
 part 'write_grain_providers.freezed.dart';
 
@@ -57,6 +58,7 @@ abstract class WriteGrainState with _$WriteGrainState {
 /// 글쓰기 상태를 관리하는 StateNotifier
 class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
   final Ref _ref;
+  static const _platform = MethodChannel('com.mongle/permissions');
 
   WriteGrainNotifier(this._ref) : super(const WriteGrainState());
 
@@ -177,18 +179,20 @@ class WriteGrainNotifier extends StateNotifier<WriteGrainState> {
 
     // 권한이 허용된 경우 (전체 또는 일부)
     if (status.isGranted || status.isLimited) {
-      // --- ⬇️ [핵심 수정] Android '부분 접근' 감지 로직 추가 ---
+      // Android '부분 접근' 감지 로직
       if (Platform.isAndroid && status.isGranted) {
-        // photo_manager를 통해 상세 권한 상태를 요청합니다.
-        final ps = await PhotoManager.requestPermissionExtend();
-
-        // hasAccess가 false이면 '일부 사진만 선택'한 상태입니다.
-        if (!ps.hasAccess) {
-          // 이 경우에만 사용자에게 안내 다이얼로그를 보여줍니다.
-          await _showLimitedAccessWarning(context);
+        try {
+          final isPartial = await _platform.invokeMethod<bool>(
+            'isPartialPhotoAccess',
+          );
+          if (isPartial == true) {
+            final shouldContinue = await _showLimitedAccessWarning(context);
+            if (!shouldContinue) return;
+          }
+        } catch (e) {
+          print("⚠️ Method Channel 오류: $e");
         }
       }
-      // --- ⬆️ [핵심 수정] Android '부분 접근' 감지 로직 끝 ---
       // iOS에서 '제한된 접근'일 경우 (기존 로직 유지)
       else if (status.isLimited) {
         final shouldContinue = await _showLimitedAccessWarning(context);
