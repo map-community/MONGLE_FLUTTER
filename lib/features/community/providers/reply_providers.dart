@@ -3,6 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mongle_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/community/data/repositories/reaction_repository_impl.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/paginated_comments.dart';
@@ -118,6 +119,64 @@ class RepliesNotifier extends StateNotifier<AsyncValue<RepliesState>> {
         // 여기에 SnackBar 등으로 사용자에게 '더보기에 실패했습니다'라고 알려주는 로직을 추가할 수 있습니다.
         print('대댓글 더보기 실패: $e');
       }
+    }
+  }
+
+  // 대댓글 삭제
+  Future<bool> deleteReply(String replyId, String authorId) async {
+    // 1. [권한 확인] 현재 로그인 사용자와 댓글 작성자가 같은지 확인 (CommentNotifier와 동일)
+    final currentUserId = await _ref.read(currentMemberIdProvider.future);
+    if (currentUserId != authorId) {
+      print("삭제 권한이 없습니다.");
+      return false; // 권한 없으면 중단
+    }
+
+    // 2. [상태 확인] 현재 상태가 유효한지 확인
+    final currentState = state.valueOrNull;
+    if (currentState == null) return false; // 데이터 없으면 중단
+
+    // 3. [백업] 만약을 위해 현재 상태(대댓글 목록 포함)를 백업
+    final backupState = currentState;
+
+    // 4. ✨ [낙관적 UI 업데이트 수정] ✨
+    //    목록에서 제외하는 대신, isDeleted를 true로 *표시* 합니다.
+    final newReplies = backupState.replies.map((reply) {
+      // replies 리스트를 map으로 순회
+      if (reply.commentId == replyId) {
+        // ID가 일치하는 대댓글을 찾으면 isDeleted를 true로 설정한 새 객체를 반환
+        return reply.copyWith(isDeleted: true); // 👈 여기가 핵심!
+      } else {
+        // ID가 다르면 원래 객체를 그대로 반환
+        return reply;
+      }
+    }).toList(); // map()은 항상 새 리스트를 반환해요.
+
+    // 5. [화면 즉시 반영] 'isDeleted'가 true로 표시된 대댓글이 포함된 새 목록으로 상태 업데이트
+    state = AsyncValue.data(
+      backupState.copyWith(replies: newReplies),
+    ); // replies 업데이트
+
+    // 5. [화면 즉시 반영] 새 목록으로 상태를 업데이트해서 화면에서 바로 숨김
+    state = AsyncValue.data(currentState.copyWith(replies: newReplies));
+
+    // 6. [서버 요청] 백그라운드에서 실제 삭제 API 호출
+    try {
+      // CommentRepository는 댓글/대댓글 구분 없이 ID로 삭제 가능
+      await _ref
+          .read(commentRepositoryProvider)
+          .deleteComment(commentId: replyId);
+      // 성공! (이미 화면은 업데이트됨)
+      // 필요하다면 여기서 _fetchInitialReplies()를 다시 호출해서 목록을 완전히 동기화할 수도 있음
+      // await _fetchInitialReplies(); // 주석 처리하거나 필요에 따라 활성화
+      return true;
+    } catch (e) {
+      // 7. [롤백] 서버 요청 실패 시, 백업해 둔 상태로 되돌림
+      if (mounted) {
+        // Notifier가 아직 활성 상태인지 확인
+        state = AsyncValue.data(backupState);
+      }
+      print("대댓글 삭제 실패: $e");
+      return false; // 실패 반환
     }
   }
 

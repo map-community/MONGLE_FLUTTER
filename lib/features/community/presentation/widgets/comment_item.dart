@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/common/widgets/more_options_menu.dart';
+import 'package:mongle_flutter/common/widgets/user_profile_line.dart';
 import 'package:mongle_flutter/features/community/domain/entities/author.dart';
 import 'package:mongle_flutter/features/community/domain/entities/comment.dart';
 import 'package:mongle_flutter/features/community/domain/entities/reaction_models.dart';
@@ -54,12 +55,14 @@ class _CommentItemState extends ConsumerState<CommentItem> {
 
             Row(
               children: [
-                if (widget.isReply)
-                  const SizedBox(width: 50), // 프로필사진(36) + 간격(14) 만큼 들여쓰기
+                if (widget.isReply) const SizedBox(width: 40),
                 Expanded(
                   child: Padding(
                     // 댓글 내용의 좌우 패딩을 유지합니다.
-                    padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                    padding: const EdgeInsets.only(
+                      top: 4.0,
+                      bottom: 8.0,
+                    ).add(const EdgeInsets.symmetric(horizontal: 8.0)),
                     child: Text(
                       widget.comment.content,
                       style: const TextStyle(fontSize: 14, height: 1.5),
@@ -70,7 +73,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
             ),
             Row(
               children: [
-                if (widget.isReply) const SizedBox(width: 50),
+                if (widget.isReply) const SizedBox(width: 40),
                 Expanded(child: _buildActionBar(context, ref)),
               ],
             ),
@@ -93,14 +96,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               size: 20,
             ),
           ),
-        CircleAvatar(
-          radius: 18,
-          backgroundImage: widget.comment.author.profileImageUrl != null
-              ? NetworkImage(widget.comment.author.profileImageUrl!)
-              : null,
-          child: widget.comment.author.profileImageUrl == null
-              ? const Icon(Icons.person, size: 18)
-              : null,
+        UserProfileLine(
+          profileImageUrl: widget.comment.author.profileImageUrl,
+          profileRadius: 18, // 기존 CircleAvatar의 radius와 동일하게 설정
         ),
         const SizedBox(width: 12),
         Text(
@@ -119,14 +117,26 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           author: widget.comment.author,
           isAuthor: widget.comment.isAuthor,
           onDelete: () {
-            // 삭제 확인 다이얼로그는 MoreOptionsMenu에서 처리하므로,
-            // 여기서는 실제 삭제 로직만 실행합니다.
-            ref
-                .read(commentProvider(widget.postId).notifier)
-                .deleteComment(
-                  widget.comment.commentId,
-                  widget.comment.author.id!,
-                );
+            // 👇 대댓글 삭제 로직 분기
+            if (widget.isReply && widget.parentCommentId != null) {
+              // 대댓글이면 RepliesNotifier 호출
+              ref
+                  .read(
+                    repliesProvider(widget.parentCommentId!).notifier,
+                  ) // RepliesNotifier 찾기
+                  .deleteReply(
+                    widget.comment.commentId,
+                    widget.comment.author.id!,
+                  ); // 새로 만든 deleteReply 호출
+            } else {
+              // 일반 댓글이면 CommentNotifier 호출 (기존 로직)
+              ref
+                  .read(commentProvider(widget.postId).notifier)
+                  .deleteComment(
+                    widget.comment.commentId,
+                    widget.comment.author.id!,
+                  );
+            }
           },
         ),
       ],
@@ -144,8 +154,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               : Icons.thumb_up_outlined,
           count: widget.comment.likeCount,
           color: myReaction == ReactionType.LIKE
-              ? Theme.of(context).primaryColor
-              : Colors.grey.shade700,
+              ? Colors.blueAccent
+              : Colors.grey.shade600,
           onTap: () {
             if (widget.isReply && widget.parentCommentId != null) {
               ref
@@ -165,8 +175,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               : Icons.thumb_down_outlined,
           count: widget.comment.dislikeCount,
           color: myReaction == ReactionType.DISLIKE
-              ? Colors.grey.shade800
-              : Colors.grey.shade700,
+              ? Colors.grey.shade600
+              : Colors.grey.shade600,
           onTap: () {
             if (widget.isReply && widget.parentCommentId != null) {
               ref

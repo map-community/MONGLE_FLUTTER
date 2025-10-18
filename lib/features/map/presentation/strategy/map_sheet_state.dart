@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'map_sheet_state.freezed.dart';
 
 // 1. 시트의 상태를 명확하게 정의하는 enum 생성
-enum SheetMode { minimized, preview, full, localFeed }
+enum SheetMode { minimized, preview, full }
 
 @freezed
 abstract class MapSheetState with _$MapSheetState {

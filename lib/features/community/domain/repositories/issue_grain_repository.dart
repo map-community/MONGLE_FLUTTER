@@ -91,9 +91,6 @@ abstract class IssueGrainRepository {
     String? cursor,
   });
 
-  /// 지도 상의 특정 영역 내에 있는 알갱이 게시물들을 가져옵니다.
-  Future<PaginatedPosts> getNearbyGrains(NLatLngBounds bounds);
-
   /// 고유 ID를 통해 단일 이슈 알갱이 정보를 가져옵니다.
   Future<IssueGrain> getIssueGrainById(String id);
 

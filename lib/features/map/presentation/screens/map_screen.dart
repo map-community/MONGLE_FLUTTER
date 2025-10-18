@@ -69,12 +69,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
     });
 
-    // ✅ [신규] 개별 게시글 로딩 실패 시 SnackBar를 띄우는 리스너 추가
-    ref.listen<AsyncValue>(
-      issueGrainProvider(
-        ref.watch(mapSheetStrategyProvider).selectedGrainId ?? '',
-      ),
-      (_, state) {
+    // selectedGrainId를 가져옵니다.
+    final selectedGrainId = ref.watch(mapSheetStrategyProvider).selectedGrainId;
+
+    // selectedGrainId가 유효한 값일 때만 개별 게시글 상태를 감시합니다.
+    if (selectedGrainId != null && selectedGrainId.isNotEmpty) {
+      ref.listen<AsyncValue>(issueGrainProvider(selectedGrainId), (_, state) {
         // 에러가 있고, 이전에 성공한 데이터가 있는 경우 (부분 실패)에만 SnackBar 표시
         if (state.hasError && state.hasValue) {
           Future.microtask(() {
@@ -86,8 +86,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             );
           });
         }
-      },
-    );
+      });
+    }
   }
 
   @override
@@ -123,13 +123,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         final notifier = ref.read(mapSheetStrategyProvider.notifier);
         switch (sheetState.mode) {
           case SheetMode.full:
-            notifier.showGrainPreview(selectedGrainId!);
+            // selectedGrainId가 있을 때만 minimize 호출
+            if (sheetState.selectedGrainId != null) {
+              notifier.minimize();
+            }
             break;
           case SheetMode.preview:
-          case SheetMode.localFeed:
             notifier.minimize();
             break;
           case SheetMode.minimized:
+            // 이미 최소화 상태이므로 아무것도 하지 않음
             break;
         }
       },
@@ -137,10 +140,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         body: Stack(
           children: [
             // 1. 지도 (항상 표시)
-            MapView(
-              initialPosition: initialPosition,
-              bottomPadding: screenHeight * sheetState.height,
-            ),
+            MapView(initialPosition: initialPosition),
 
             // 👇 2. 에러 오버레이 (반투명 검은색 + 인디케이터 + 재시도 버튼)
             if (_hasError)
@@ -279,16 +279,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     return _buildFullScrollView(
                       context,
                       scrollController,
-                      selectedGrainId!,
+                      selectedGrainId,
                     );
                   case SheetMode.preview:
                     return _buildPreviewCard(
                       context,
-                      selectedGrainId!,
+                      selectedGrainId,
                       scrollController,
                     );
-                  case SheetMode.localFeed:
-                    return _buildLocalFeedSheet(context, scrollController);
                   case SheetMode.minimized:
                   default:
                     return _buildDefaultSheet(scrollController);
@@ -338,9 +336,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Widget _buildPreviewCard(
     BuildContext context,
-    String grainId,
+    String? grainId,
     ScrollController scrollController,
   ) {
+    // grainId가 유효하지 않을 경우 기본 시트(핸들+안내문구)를 표시합니다.
+    if (grainId == null || grainId.isEmpty) {
+      return _buildDefaultSheet(scrollController);
+    }
+
     final grainAsync = ref.watch(issueGrainProvider(grainId));
 
     return GestureDetector(
@@ -379,8 +382,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildFullScrollView(
     BuildContext context,
     ScrollController scrollController,
-    String grainId,
+    String? grainId,
   ) {
+    // grainId가 유효하지 않을 경우 에러 메시지를 표시합니다.
+    if (grainId == null || grainId.isEmpty) {
+      return CustomScrollView(
+        controller: scrollController,
+        slivers: [
+          SliverToBoxAdapter(child: _buildHandle()),
+          const SliverFillRemaining(
+            child: Center(child: Text("게시글 정보를 표시할 수 없습니다.")),
+          ),
+        ],
+      );
+    }
+
     // issueGrainProvider를 구독하여 특정 게시물의 데이터 상태를 추적합니다.
     final grainAsync = ref.watch(issueGrainProvider(grainId));
 
@@ -465,89 +481,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLocalFeedSheet(
-    BuildContext context,
-    ScrollController scrollController,
-  ) {
-    final mapState = ref.watch(mapViewModelProvider);
-
-    final NLatLngBounds? visibleBounds = mapState.whenOrNull(
-      data: (initialPosition, mapObjects, currentBounds) => currentBounds,
-    );
-
-    if (visibleBounds == null) {
-      return Column(
-        children: [
-          _buildHandle(),
-          const Expanded(child: Center(child: CircularProgressIndicator())),
-        ],
-      );
-    }
-
-    final nearbyGrainsAsync = ref.watch(nearbyGrainsProvider(visibleBounds));
-
-    return nearbyGrainsAsync.when(
-      loading: () => Column(
-        children: [
-          _buildHandle(),
-          const Expanded(child: Center(child: CircularProgressIndicator())),
-        ],
-      ),
-      error: (e, _) => Column(
-        children: [
-          _buildHandle(),
-          Expanded(child: Center(child: Text('오류: $e'))),
-        ],
-      ),
-      data: (paginatedPosts) {
-        final posts = paginatedPosts.posts;
-
-        if (posts.isEmpty) {
-          return Column(
-            children: [
-              _buildHandle(),
-              const Expanded(
-                child: Center(child: Text('현재 위치에 알갱이가 없어요.\n첫 알갱이를 만들어 보세요!')),
-              ),
-            ],
-          );
-        }
-
-        return CustomScrollView(
-          controller: scrollController,
-          slivers: [
-            SliverToBoxAdapter(child: _buildHandle()),
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  '주변 알갱이 목록',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            SliverList.builder(
-              itemCount: posts.length,
-              itemBuilder: (context, index) {
-                final post = posts[index];
-
-                return IssueGrainItem(
-                  grain: post,
-                  displayMode: IssueGrainDisplayMode.boardPreview,
-                  onTap: () {
-                    ref
-                        .read(mapSheetStrategyProvider.notifier)
-                        .showGrainPreview(post.postId);
-                  },
-                );
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 
