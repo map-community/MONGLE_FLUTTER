@@ -123,13 +123,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         final notifier = ref.read(mapSheetStrategyProvider.notifier);
         switch (sheetState.mode) {
           case SheetMode.full:
-            // notifier.showGrainPreview(selectedGrainId!);
-            notifier.minimize();
+            // selectedGrainId가 있을 때만 minimize 호출
+            if (sheetState.selectedGrainId != null) {
+              notifier.minimize();
+            }
             break;
           case SheetMode.preview:
             notifier.minimize();
             break;
           case SheetMode.minimized:
+            // 이미 최소화 상태이므로 아무것도 하지 않음
             break;
         }
       },

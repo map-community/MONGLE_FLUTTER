@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/base_bottom_sheet_strategy.dart';
@@ -5,32 +6,13 @@ import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_stat
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 
 /// 다단계 스냅 기능을 가진 바텀시트 위젯
-///
-/// 특징:
-/// - DraggableScrollableSheet를 기반으로 구현
-/// - 여러 단계의 고정 높이(snapSizes)에 자동으로 달라붙음
-/// - Strategy 패턴을 통해 논리적 상태와 UI 상태 동기화
-///
-/// 핵심 동작:
-/// 1. Strategy의 상태 변경 감지 → 프로그램 애니메이션 실행
-/// 2. 사용자 드래그 감지 → 드래그 완료 후 Strategy와 동기화
-/// 3. 애니메이션 중 사용자 터치 → 즉시 제어권 이양
 class MultiStageBottomSheet extends ConsumerStatefulWidget {
-  /// 이 시트를 제어할 Strategy의 Provider
   final AutoDisposeStateNotifierProvider<MapSheetStrategy, MapSheetState>
   strategyProvider;
-
-  /// 시트 내부에 실제로 그려질 내용을 만드는 빌더 함수
   final Widget Function(BuildContext context, ScrollController scrollController)
   builder;
-
-  /// 시트가 자동으로 달라붙을 높이 지점 목록 (화면 높이 대비 비율)
   final List<double> snapSizes;
-
-  /// 시트의 최소 높이 (화면 높이 대비 비율)
   final double minSnapSize;
-
-  /// 시트의 최대 높이 (화면 높이 대비 비율)
   final double maxSnapSize;
 
   const MultiStageBottomSheet({
@@ -48,24 +30,74 @@ class MultiStageBottomSheet extends ConsumerStatefulWidget {
 }
 
 class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
-  /// DraggableScrollableSheet를 제어하는 컨트롤러
   final DraggableScrollableController _scrollController =
       DraggableScrollableController();
+
+  /// 사용자가 현재 드래그 중인지 추적
+  bool _isUserDragging = false;
+
+  /// 마지막으로 동기화된 높이 (중복 호출 방지)
+  double? _lastSyncedHeight;
+
+  /// 🔥 드래그 중 도달한 snap 위치 (드래그 종료 후 즉시 동기화용)
+  double? _pendingSnapHeight;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScrollControllerChange);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScrollControllerChange);
     _scrollController.dispose();
     super.dispose();
   }
 
+  /// DraggableScrollableController의 변화를 감지하는 리스너
+  void _onScrollControllerChange() {
+    if (!mounted || !_scrollController.isAttached) return;
+
+    final strategy = ref.read(widget.strategyProvider.notifier);
+    final currentHeight = _scrollController.size;
+
+    // 프로그램 애니메이션 중에는 무시
+    if (strategy.isAnimating) {
+      return;
+    }
+
+    // 🔥 핵심: 드래그 중이면 snap 위치 도달 여부만 확인하고 기록
+    if (_isUserDragging) {
+      final isAtSnapPosition = widget.snapSizes.any(
+        (snap) => (currentHeight - snap).abs() < 0.001,
+      );
+
+      if (isAtSnapPosition) {
+        print("📏 드래그 중 snap 위치 도달 감지: $currentHeight (대기 중)");
+        _pendingSnapHeight = currentHeight;
+      }
+      return;
+    }
+
+    // 드래그 중이 아닐 때는 즉시 동기화
+    final isAtSnapPosition = widget.snapSizes.any(
+      (snap) => (currentHeight - snap).abs() < 0.001,
+    );
+
+    if (isAtSnapPosition) {
+      if (_lastSyncedHeight == null ||
+          (currentHeight - _lastSyncedHeight!).abs() > 0.001) {
+        print("📏 ✅ Snap 위치 도달: $currentHeight → 즉시 동기화");
+        _lastSyncedHeight = currentHeight;
+        strategy.syncHeightFromUI(currentHeight);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Strategy의 상태 변경을 감지하여 프로그램 애니메이션 실행
+    // Strategy 상태 변경 감지 → 프로그램 애니메이션 실행
     ref.listen<MapSheetState>(widget.strategyProvider, (previous, next) {
       print(
         "👂 STATE LISTEN: 상태 변경 감지! "
@@ -73,28 +105,24 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
         "이전 모드: ${previous?.mode}, 다음 모드: ${next.mode}",
       );
 
-      // 높이 변경이 없으면 애니메이션 불필요
-      if (previous == null || previous.height == next.height) {
+      if (previous == null || (previous.height - next.height).abs() < 0.001) {
         print("👂 STATE LISTEN: 높이 변경 없음, 애니메이션 건너뜀.");
         return;
       }
 
-      // 올라가는 애니메이션과 내려가는 애니메이션의 속도 차별화
-      // 내려갈 때는 더 빠르게(200ms), 올라갈 때는 부드럽게(300ms)
       final bool isMovingDown = next.height < previous.height;
       final animationDuration = Duration(
         milliseconds: isMovingDown ? 200 : 300,
       );
 
-      // 현재 프레임의 리빌드가 완료된 후 애니메이션 시작
-      // 이는 DraggableScrollableSheet가 완전히 준비된 후 animateTo를 호출하기 위함
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.isAttached) {
-          // Strategy에게 애니메이션 시작 알림
-          // 이 시점부터 minimize(), syncHeightFromUI() 호출은 무시됨
-          ref.read(widget.strategyProvider.notifier).notifyAnimationStart();
+          final strategyNotifier = ref.read(widget.strategyProvider.notifier);
 
+          strategyNotifier.notifyAnimationStart();
           print("🎬 프로그램 애니메이션 시작: ${next.height}");
+
+          _lastSyncedHeight = null;
 
           _scrollController
               .animateTo(
@@ -105,67 +133,63 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
               .whenComplete(() {
                 if (mounted) {
                   print("🎬 프로그램 애니메이션 완료");
-                  // Strategy에게 애니메이션 완료 알림
-                  // 이제 다시 minimize(), syncHeightFromUI() 호출이 정상 처리됨
-                  ref
-                      .read(widget.strategyProvider.notifier)
-                      .notifyAnimationComplete();
+                  strategyNotifier.notifyAnimationComplete();
+                  _lastSyncedHeight = next.height;
                 }
               });
         }
       });
     });
 
-    // 사용자 스크롤 이벤트 감지 및 처리
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         final strategy = ref.read(widget.strategyProvider.notifier);
 
-        // 케이스 1: 프로그램 애니메이션 중 사용자 터치
-        if (strategy.isAnimating && notification is ScrollStartNotification) {
-          print("⚠️ 사용자가 애니메이션 중 터치! 즉시 제어권 이양");
-          strategy.notifyAnimationComplete();
+        // 사용자 드래그 시작
+        if (notification is ScrollStartNotification) {
+          if (strategy.isAnimating) {
+            print("⚠️ 사용자가 애니메이션 중 터치! 즉시 제어권 이양");
+            strategy.notifyAnimationComplete();
+          }
+
+          _lastSyncedHeight = null;
+          _pendingSnapHeight = null; // 대기 중인 snap 초기화
+          _isUserDragging = true;
+          print("👆 사용자 드래그 시작");
           return false;
         }
 
-        // 케이스 2: 프로그램 애니메이션 중 ScrollEnd
-        if (strategy.isAnimating && notification is ScrollEndNotification) {
-          print("🚫 프로그램 애니메이션 중이므로 ScrollEnd 무시");
+        // 🔥 사용자 드래그 종료 - 핵심!
+        if (notification is ScrollEndNotification && _isUserDragging) {
+          print("👆 사용자 드래그 종료");
+          _isUserDragging = false;
+
+          // 🔥 드래그 중 snap 위치에 도달했으면 즉시 동기화!
+          if (_pendingSnapHeight != null) {
+            print("🎯 대기 중이던 snap 위치로 즉시 동기화: $_pendingSnapHeight");
+
+            if (_lastSyncedHeight == null ||
+                (_pendingSnapHeight! - _lastSyncedHeight!).abs() > 0.001) {
+              _lastSyncedHeight = _pendingSnapHeight;
+              strategy.syncHeightFromUI(_pendingSnapHeight!);
+            }
+
+            _pendingSnapHeight = null;
+          }
+
           return false;
-        }
-
-        // 케이스 3: 사용자 드래그 완료
-        if (!strategy.isAnimating && notification is ScrollEndNotification) {
-          print("👆 사용자 드래그 종료 감지");
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || !_scrollController.isAttached) return;
-
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted || !_scrollController.isAttached) return;
-
-              final snappedHeight = _scrollController.size;
-              print("🎯 SNAP 완료: $snappedHeight → Strategy 동기화");
-
-              if (!strategy.isAnimating) {
-                strategy.syncHeightFromUI(snappedHeight);
-              }
-            });
-          });
         }
 
         return false;
       },
       child: DraggableScrollableSheet(
         controller: _scrollController,
-        // Strategy의 초기 높이를 시트의 초기 높이로 설정
         initialChildSize: ref.read(widget.strategyProvider).height,
         minChildSize: widget.minSnapSize,
         maxChildSize: widget.maxSnapSize,
-        snap: true, // 자동 snap 기능 활성화
-        snapSizes: widget.snapSizes, // snap될 높이 지점들
+        snap: true,
+        snapSizes: widget.snapSizes,
         builder: (BuildContext context, ScrollController scrollController) {
-          // 디버깅을 위한 현재 상태 출력
           final currentState = ref.watch(widget.strategyProvider);
           print(
             "🏗️ BUILDER: 시트 내용 빌드. "
@@ -173,7 +197,6 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
             "ID=${currentState.selectedGrainId}",
           );
 
-          // 시트의 시각적 스타일 정의
           return Container(
             decoration: BoxDecoration(
               color: Theme.of(context).canvasColor,
@@ -184,7 +207,6 @@ class _MultiStageBottomSheetState extends ConsumerState<MultiStageBottomSheet> {
                 BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8),
               ],
             ),
-            // 실제 시트 내용은 builder 함수에서 제공
             child: widget.builder(context, scrollController),
           );
         },
