@@ -18,8 +18,9 @@ final dioProvider = Provider<Dio>((ref) {
   // ApiInterceptor 추가 (ref만 전달)
   dio.interceptors.add(ApiInterceptor(ref));
 
-  dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
-
+  dio.interceptors.add(
+    LogInterceptor(responseBody: true /*, requestBody: false */),
+  ); // 👈 수정
   return dio;
 });
 
@@ -36,7 +37,8 @@ final refreshDioProvider = Provider<Dio>((ref) {
   );
 
   // 리프레시용 Dio는 인터셉터 없음 (무한 루프 방지)
-  dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
-
+  dio.interceptors.add(
+    LogInterceptor(responseBody: true /*, requestBody: false */),
+  ); // 👈 수정
   return dio;
 });

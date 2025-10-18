@@ -8,12 +8,13 @@ import 'package:mongle_flutter/core/providers/config_provider.dart';
 import 'package:mongle_flutter/features/auth/providers/user_provider.dart';
 import 'package:mongle_flutter/features/map/presentation/manager/map_overlay_manager.dart';
 import 'package:mongle_flutter/features/map/presentation/providers/map_interaction_providers.dart';
+import 'package:mongle_flutter/features/map/presentation/services/center_marker_detector.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_state.dart';
 import 'package:mongle_flutter/features/map/presentation/strategy/map_sheet_strategy.dart';
 import 'package:mongle_flutter/features/map/presentation/viewmodels/map_viewmodel.dart';
+import 'package:mongle_flutter/features/map/presentation/widgets/center_indicator_overlay.dart';
 import 'package:mongle_flutter/features/map/presentation/widgets/marker_factory.dart';
 
-// ConsumerStatefulWidget으로 위젯의 생명주기와 ref를 모두 사용합니다.
 class MapView extends ConsumerStatefulWidget {
   final NLatLng initialPosition;
   final double bottomPadding;
@@ -32,13 +33,24 @@ class _MapViewState extends ConsumerState<MapView> {
   NaverMapController? _mapController;
   MapOverlayManager? _overlayManager;
   final MarkerFactory _markerFactory = MarkerFactory();
+
+  // 👇 새로 추가: 중앙 마커 감지기
+  final CenterMarkerDetector _centerMarkerDetector = CenterMarkerDetector();
+
   Timer? _debounce;
+  Timer? _throttleTimer;
+  Timer? _bottomSheetDebounceTimer; // 👈 새로 추가
+
+  // 👇 중앙 인디케이터 상태
+  CenterIndicatorState _indicatorState = CenterIndicatorState.idle;
+
+  // 👇 새로 추가: 현재 인디케이터가 가리키는 마커 ID 추적
+  String? _currentCenterMarkerId;
 
   @override
   Widget build(BuildContext context) {
     print("🔄 [MapView] build 호출");
 
-    // 👇 mapObjects가 실제로 변경되었을 때만 업데이트
     ref.listen<MapState>(mapViewModelProvider, (previous, next) {
       if (previous != next) {
         next.whenOrNull(
@@ -57,12 +69,10 @@ class _MapViewState extends ConsumerState<MapView> {
 
     final screenHeight = MediaQuery.of(context).size.height;
     final sheetState = ref.watch(mapSheetStrategyProvider);
-    final isButtonVisible =
-        sheetState.mode == SheetMode.minimized; // 👈 FAB과 동일
+    final isButtonVisible = sheetState.mode == SheetMode.minimized;
 
     return Stack(
       children: [
-        // 👇 지도는 한 번만 빌드되고 재빌드되지 않음
         _NaverMapWidget(
           initialPosition: widget.initialPosition,
           onMapReady: (controller) {
@@ -83,14 +93,11 @@ class _MapViewState extends ConsumerState<MapView> {
           onMapTapped: (point, latLng) {
             ref.read(mapSheetStrategyProvider.notifier).minimize();
           },
+          // 👇 핵심: onCameraChange에서 Throttle 처리
           onCameraChange: (reason, animated) {
+            // gesture로 인한 카메라 이동만 처리
             if (reason == NCameraUpdateReason.gesture) {
-              final currentSheetHeight = ref
-                  .read(mapSheetStrategyProvider)
-                  .height;
-              if (currentSheetHeight > peekFraction) {
-                ref.read(mapSheetStrategyProvider.notifier).minimize();
-              }
+              _handleCameraChangeWithThrottle();
             }
           },
           onMapLongTapped: (point, latLng) {
@@ -123,10 +130,12 @@ class _MapViewState extends ConsumerState<MapView> {
           },
         ),
 
-        // 투명 오버레이
         const _BottomPaddingOverlay(),
 
-        // 👇 커스텀 현위치 버튼 (우측 상단, 세련된 디자인)
+        // 👇 새로 추가: 중앙 인디케이터
+        Positioned.fill(child: CenterIndicatorOverlay(state: _indicatorState)),
+
+        // 현위치 버튼
         Positioned(
           left: 16,
           bottom: (screenHeight * peekFraction) + 16,
@@ -154,10 +163,85 @@ class _MapViewState extends ConsumerState<MapView> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _throttleTimer?.cancel();
+    _bottomSheetDebounceTimer?.cancel(); // 👈 정리
     super.dispose();
   }
 
-  /// 카메라 이동이 멈췄을 때 호출되는 공통 함수
+  /// Throttle 처리된 카메라 변경 핸들러
+  void _handleCameraChangeWithThrottle() {
+    if (_throttleTimer?.isActive ?? false) return;
+
+    _throttleTimer = Timer(const Duration(milliseconds: 150), () async {
+      await _checkCenterMarkerAndUpdateIndicator();
+      _prepareBottomSheetTrigger();
+    });
+  }
+
+  /// 바텀시트 트리거 준비 (Debounce)
+  void _prepareBottomSheetTrigger() {
+    _bottomSheetDebounceTimer?.cancel();
+
+    _bottomSheetDebounceTimer = Timer(
+      const Duration(milliseconds: 200),
+      () async {
+        await _triggerBottomSheetIfCentered();
+      },
+    );
+  }
+
+  /// 중앙에 마커가 있으면 바텀시트 트리거
+  Future<void> _triggerBottomSheetIfCentered() async {
+    if (_mapController == null) return;
+
+    try {
+      final cameraPosition = await _mapController!.getCameraPosition();
+      final centerLatLng = cameraPosition.target;
+      final zoomLevel = cameraPosition.zoom;
+
+      if (zoomLevel < 14) return;
+
+      final mapState = ref.read(mapViewModelProvider);
+      final markers =
+          mapState.whenOrNull(
+            data: (_, mapObjects, __) => mapObjects?.grains ?? [],
+          ) ??
+          [];
+
+      final result = _centerMarkerDetector.detectCenterMarker(
+        centerPosition: centerLatLng,
+        markers: markers,
+        zoomLevel: zoomLevel,
+      );
+
+      print("🎯 [BottomSheetTrigger] 중앙 마커 감지: $result");
+
+      final strategyNotifier = ref.read(mapSheetStrategyProvider.notifier);
+      final currentSheetState = ref.read(mapSheetStrategyProvider);
+
+      if (result.isWithinThreshold && result.marker != null) {
+        // 👇 개선: 같은 마커면 중복 호출 방지, 다른 마커면 전환
+        if (currentSheetState.selectedGrainId != result.marker!.postId) {
+          print("✅ [BottomSheetTrigger] 바텀시트 올림/전환: ${result.marker!.postId}");
+          strategyNotifier.showGrainPreview(result.marker!.postId);
+        } else {
+          print("ℹ️ [BottomSheetTrigger] 같은 마커 → 유지");
+        }
+      } else {
+        // 👇 개선: 마커 벗어났을 때만 내림 (이미 _handleMarkerChange에서 처리됨)
+        // 여기서는 최종 확인만
+        if (currentSheetState.mode == SheetMode.preview &&
+            currentSheetState.selectedGrainId != null) {
+          print("⬇️ [BottomSheetTrigger] 최종 확인: 바텀시트 내림");
+          strategyNotifier.minimize();
+        }
+      }
+    } catch (e) {
+      print("⚠️ [BottomSheetTrigger] 오류: $e");
+    }
+  }
+
+  /// 기존 onCameraIdle 수정 - 바텀시트 로직은 위로 이동했으므로 간소화
   void onCameraIdle() async {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () async {
@@ -167,6 +251,10 @@ class _MapViewState extends ConsumerState<MapView> {
       final currentZoom = cameraPosition.zoom;
       print("📸 현재 지도 줌 레벨: $currentZoom");
 
+      // 최종 확인
+      await _triggerBottomSheetIfCentered();
+
+      // 데이터 페칭
       if (currentZoom > 13) {
         print("➡️ [MapView] onCameraIdle: 줌 레벨이 13보다 크므로 데이터 요청을 시작합니다.");
         final bounds = await _mapController!.getContentBounds();
@@ -176,9 +264,109 @@ class _MapViewState extends ConsumerState<MapView> {
       }
     });
   }
+
+  /// 중앙 마커 체크 및 인디케이터 업데이트
+  Future<void> _checkCenterMarkerAndUpdateIndicator() async {
+    if (_mapController == null) return;
+
+    try {
+      final cameraPosition = await _mapController!.getCameraPosition();
+      final centerLatLng = cameraPosition.target;
+      final zoomLevel = cameraPosition.zoom;
+
+      if (zoomLevel < 14) {
+        if (_indicatorState != CenterIndicatorState.disabled) {
+          setState(() {
+            _indicatorState = CenterIndicatorState.disabled;
+            _currentCenterMarkerId = null; // 👈 추적 초기화
+          });
+        }
+        // 👇 새로 추가: 줌 레벨 낮아지면 바텀시트도 내림
+        _handleMarkerLost();
+        return;
+      }
+
+      final mapState = ref.read(mapViewModelProvider);
+      final markers =
+          mapState.whenOrNull(
+            data: (_, mapObjects, __) => mapObjects?.grains ?? [],
+          ) ??
+          [];
+
+      final result = _centerMarkerDetector.detectCenterMarker(
+        centerPosition: centerLatLng,
+        markers: markers,
+        zoomLevel: zoomLevel,
+      );
+
+      print("🎯 [CenterMarker] 감지 결과: $result");
+
+      // 인디케이터 상태 업데이트
+      CenterIndicatorState newState;
+      String? newCenterMarkerId;
+
+      if (!result.isWithinThreshold) {
+        newState = CenterIndicatorState.idle;
+        newCenterMarkerId = null;
+      } else if (result.distanceMeters! < 8.0) {
+        newState = CenterIndicatorState.centered;
+        newCenterMarkerId = result.marker?.postId;
+      } else {
+        newState = CenterIndicatorState.nearby;
+        newCenterMarkerId = result.marker?.postId;
+      }
+
+      // 👇 핵심: 마커가 변경되었는지 확인
+      final markerChanged = _currentCenterMarkerId != newCenterMarkerId;
+
+      if (_indicatorState != newState || markerChanged) {
+        setState(() {
+          _indicatorState = newState;
+          _currentCenterMarkerId = newCenterMarkerId;
+        });
+
+        // 👇 마커가 변경되거나 사라졌으면 바텀시트 처리
+        if (markerChanged) {
+          _handleMarkerChange(newCenterMarkerId);
+        }
+      }
+    } catch (e) {
+      print("⚠️ [CenterMarker] 체크 중 오류: $e");
+    }
+  }
+
+  /// 👇 새로 추가: 마커 변경 시 바텀시트 처리
+  void _handleMarkerChange(String? newMarkerId) {
+    final currentSheetState = ref.read(mapSheetStrategyProvider);
+
+    // 케이스 1: 마커를 벗어남 (null로 변경)
+    if (newMarkerId == null) {
+      if (currentSheetState.mode == SheetMode.preview) {
+        print("⬇️ [MarkerChange] 마커 벗어남 → 바텀시트 내림");
+        ref.read(mapSheetStrategyProvider.notifier).minimize();
+      }
+      return;
+    }
+
+    // 케이스 2: 다른 마커로 이동
+    if (currentSheetState.selectedGrainId != null &&
+        currentSheetState.selectedGrainId != newMarkerId) {
+      print("🔄 [MarkerChange] 다른 마커로 이동 → Debounce 타이머만 리셋");
+      // Debounce 타이머가 자연스럽게 새 마커로 전환할 것임
+    }
+  }
+
+  /// 👇 새로 추가: 마커를 완전히 벗어났을 때 처리
+  void _handleMarkerLost() {
+    final currentSheetState = ref.read(mapSheetStrategyProvider);
+    if (currentSheetState.mode == SheetMode.preview) {
+      print("⬇️ [MarkerLost] 바텀시트 내림");
+      ref.read(mapSheetStrategyProvider.notifier).minimize();
+    }
+  }
 }
 
-// 👇 지도 위젯을 별도 StatelessWidget으로 완전히 분리
+// 👇 기존 위젯들은 그대로 유지
 class _NaverMapWidget extends StatelessWidget {
   final NLatLng initialPosition;
   final Function(NaverMapController) onMapReady;
@@ -206,10 +394,8 @@ class _NaverMapWidget extends StatelessWidget {
           target: initialPosition,
           zoom: 15,
         ),
-        // 네이버 로고를 우측 상단으로
         logoAlign: NLogoAlign.rightTop,
         logoMargin: const EdgeInsets.only(right: 12, top: 30),
-        // 기본 UI 요소는 모두 끄기 (커스텀으로 대체)
         scaleBarEnable: false,
         locationButtonEnable: false,
       ),
@@ -222,7 +408,6 @@ class _NaverMapWidget extends StatelessWidget {
   }
 }
 
-// 👇 바텀시트에 따른 투명 오버레이 (터치는 통과시킴)
 class _BottomPaddingOverlay extends ConsumerWidget {
   const _BottomPaddingOverlay();
 
@@ -252,8 +437,8 @@ class _CustomLocationButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 6, // 👈 그림자 강화 (2 → 6)
-      shadowColor: Colors.black.withOpacity(0.3), // 👈 그림자 진하게
+      elevation: 6,
+      shadowColor: Colors.black.withOpacity(0.3),
       borderRadius: BorderRadius.circular(12),
       color: Colors.white,
       child: InkWell(
@@ -264,10 +449,7 @@ class _CustomLocationButton extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade300, // 👈 테두리 진하게 (shade200 → shade300)
-              width: 1.5, // 👈 테두리 두껍게 (1 → 1.5)
-            ),
+            border: Border.all(color: Colors.grey.shade300, width: 1.5),
           ),
           child: const Icon(
             Icons.my_location,
